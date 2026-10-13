@@ -12,32 +12,6 @@ WorkPilot AI is an intelligent project management platform that helps teams plan
 > **Team Size:** 4 Members  
 > **Primary Stack:** React, FastAPI, PostgreSQL, Python, LangGraph
 
----
-
-## 📌 Table of Contents
-
-1. [Problem Statement](#-problem-statement)
-2. [Proposed Solution](#-proposed-solution)
-3. [Project Objectives](#-project-objectives)
-4. [Key Features](#-key-features)
-5. [Agentic AI System](#-agentic-ai-system)
-6. [Technology Stack](#-technology-stack)
-7. [System Architecture](#-system-architecture)
-8. [Database Design](#-database-design)
-9. [API Design](#-api-design)
-10. [User Roles](#-user-roles)
-11. [Project Workflow](#-project-workflow)
-12. [Security and Privacy](#-security-and-privacy)
-13. [Installation and Setup](#-installation-and-setup)
-14. [Project Structure](#-project-structure)
-15. [Team Responsibilities](#-team-responsibilities)
-16. [15-Day Development Roadmap](#-15-day-development-roadmap)
-17. [Expected Outcomes](#-expected-outcomes)
-18. [Future Enhancements](#-future-enhancements)
-19. [Project Status](#-project-status)
-
----
-
 ## 🔴 Problem Statement
 
 Traditional project management systems primarily focus on task assignment, progress tracking, and deadline management. However, teams frequently face problems that basic project tracking alone cannot adequately address.
