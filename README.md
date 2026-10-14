@@ -22,41 +22,27 @@ WorkPilot AI is a modern SaaS platform designed to optimize project management, 
 -   **State Management:** React Context API (AuthContext, ToastContext)
 -   **API Layer:** Axios (Configured with interceptors and mock service layers for backend handoff)
 
-## 📂 Folder Structure
-```text
-frontend/
-├── src/
-│   ├── assets/       # Static images and icons
-│   ├── components/   # Reusable UI elements (buttons, modals, cards)
-│   ├── context/      # Global state (Auth, Toast notifications)
-│   ├── layouts/      # MainLayout with role-based sidebar
-│   ├── pages/        # Main route components (Dashboards, Recovery Planner, etc.)
-│   └── services/     # Axios API instances and mock data services
-├── .env              # Environment variables (API Base URL)
-├── package.json      # Dependencies and scripts
-└── vite.config.js    # Vite configuration 
-
-🛠️ Setup Instructions
-1. Clone the repository:
+## 🛠️ Setup Instructions
+1. **Clone the repository:**
 
 git clone https://github.com/your-username/workpilot-ai.git
 cd workpilot-ai
 
-2. Install dependencies:
+2. **Install dependencies:**
 
 npm install
 
-3. Configure environment variables:
+3. **Configure environment variables:**
 
 VITE_API_BASE_URL=http://localhost:8000/api/v1
 
-4. Run the development server:
+4. **Run the development server:**
 
 npm run dev
 
-🔌 Backend API Contracts (Handoff Guide)
+## 🔌 Backend API Contracts (Handoff Guide)
 
-AI Recovery Planner
+**AI Recovery Planner**
 GET /projects/{id}/recovery-plan
 
 JSON
@@ -70,7 +56,7 @@ JSON
   "requires_manager_approval": true
 }
 
-Automation Advisor
+**Automation Advisor**
 GET /ai/automations
 
 JSON
@@ -85,7 +71,7 @@ JSON
   }
 ]
 
-Leave Management Impact
+**Leave Management Impact**
 GET /leave-requests
 
 JSON
@@ -99,3 +85,18 @@ JSON
     "impact": "Delays API Migration by 3 days"
   }
 ]
+
+## 📂 Folder Structure
+```text
+frontend/
+├── src/
+│   ├── assets/       # Static images and icons
+│   ├── components/   # Reusable UI elements (buttons, modals, cards)
+│   ├── context/      # Global state (Auth, Toast notifications)
+│   ├── layouts/      # MainLayout with role-based sidebar
+│   ├── pages/        # Main route components (Dashboards, Recovery Planner, etc.)
+│   └── services/     # Axios API instances and mock data services
+├── .env              # Environment variables (API Base URL)
+├── package.json      # Dependencies and scripts
+└── vite.config.js    # Vite configuration 
+
