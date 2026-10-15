@@ -1,0 +1,186 @@
+@import "tailwindcss";
+
+@theme {
+  /* Neutral accent palette */
+  --color-forest-50: #f8fafc;
+  --color-forest-100: #f1f5f9;
+  --color-forest-200: #e2e8f0;
+  --color-forest-300: #cbd5e1;
+  --color-forest-400: #94a3b8;
+  --color-forest-500: #64748b;
+  --color-forest-600: #475569;
+  --color-forest-700: #334155;
+  --color-forest-800: #1e293b;
+  --color-forest-900: #0f172a;
+  --color-forest-950: #020617;
+
+  /* Charcoal palette */
+  --color-charcoal-50: #f7f7f8;
+  --color-charcoal-100: #e8e9eb;
+  --color-charcoal-200: #d1d3d6;
+  --color-charcoal-300: #b0b3b8;
+  --color-charcoal-400: #858a91;
+  --color-charcoal-500: #686e75;
+  --color-charcoal-600: #50565d;
+  --color-charcoal-700: #3c4249;
+  --color-charcoal-800: #282d33;
+  --color-charcoal-900: #1c2025;
+  --color-charcoal-950: #101317;
+
+  /* Neutral palette for existing sage utility classes */
+  --color-sage-50: #f7f7f8;
+  --color-sage-100: #e8e9eb;
+  --color-sage-200: #d1d3d6;
+  --color-sage-300: #b0b3b8;
+  --color-sage-400: #858a91;
+  --color-sage-500: #686e75;
+
+  --color-offwhite: #f8fafc;
+  --color-white: #ffffff;
+
+  /* Replace green success/accent utilities with the same neutral palette. */
+  --color-emerald-50: #f8fafc;
+  --color-emerald-100: #f1f5f9;
+  --color-emerald-200: #e2e8f0;
+  --color-emerald-300: #cbd5e1;
+  --color-emerald-400: #94a3b8;
+  --color-emerald-500: #64748b;
+  --color-emerald-600: #475569;
+  --color-emerald-700: #334155;
+  --color-emerald-800: #1e293b;
+  --color-emerald-900: #0f172a;
+
+  /* Shadows */
+  --shadow-subtle: 0 1px 2px 0 rgba(0, 0, 0, 0.04), 0 1px 3px 0 rgba(0, 0, 0, 0.02);
+  --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+  --shadow-popover: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+
+  /* Font */
+  --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --color-white: #24292e;
+  --color-offwhite: #14171a;
+
+  --color-charcoal-50: #1d2125;
+  --color-charcoal-100: #30363c;
+  --color-charcoal-200: #cbd1d6;
+  --color-charcoal-300: #c7cdd3;
+  --color-charcoal-400: #b4bcc4;
+  --color-charcoal-500: #9da6af;
+  --color-charcoal-600: #858f99;
+  --color-charcoal-700: #cbd1d6;
+  --color-charcoal-800: #dce1e5;
+  --color-charcoal-900: #edf0f2;
+  --color-charcoal-950: #f8f9fa;
+
+  --color-forest-50: #24292e;
+  --color-forest-100: #2b3035;
+  --color-forest-200: #353b41;
+  --color-forest-300: #454c53;
+  --color-forest-400: #5b636b;
+  --color-forest-500: #78818a;
+  --color-forest-600: #aeb4ba;
+  --color-forest-700: #c4c9ce;
+  --color-forest-800: #d9dde1;
+  --color-forest-900: #edf0f2;
+  --color-forest-950: #f8f9fa;
+
+  --color-sage-50: #1d2125;
+  --color-sage-100: #272c31;
+  --color-sage-200: #353b41;
+  --color-sage-300: #4c535a;
+  --color-sage-400: #6b737b;
+  --color-sage-500: #90979e;
+
+  --color-emerald-50: #24292e;
+  --color-emerald-100: #2b3035;
+  --color-emerald-200: #353b41;
+  --color-emerald-300: #454c53;
+  --color-emerald-400: #5b636b;
+  --color-emerald-500: #78818a;
+  --color-emerald-600: #aeb4ba;
+  --color-emerald-700: #c4c9ce;
+  --color-emerald-800: #d9dde1;
+  --color-emerald-900: #edf0f2;
+}
+
+:root[data-theme='dark'] .text-white {
+  color: #f8f9fa;
+}
+
+:root[data-theme='dark'] .text-charcoal-100 {
+  color: #e1e4e6;
+}
+
+:root[data-theme='dark'] .bg-charcoal-900,
+:root[data-theme='dark'] .bg-charcoal-950,
+:root[data-theme='dark'] .bg-charcoal-800,
+:root[data-theme='dark'] .bg-charcoal-700 {
+  background-color: #20252a;
+}
+
+:root[data-theme='dark'] .bg-charcoal-200 {
+  background-color: #41484f;
+}
+
+:root[data-theme='dark'] .border-charcoal-200 {
+  border-color: #41484f;
+}
+
+:root[data-theme='dark'] .bg-forest-600,
+:root[data-theme='dark'] .bg-forest-700,
+:root[data-theme='dark'] .bg-forest-800,
+:root[data-theme='dark'] .bg-forest-900,
+:root[data-theme='dark'] .bg-emerald-500,
+:root[data-theme='dark'] .bg-emerald-700,
+:root[data-theme='dark'] .bg-emerald-800 {
+  background-color: #626b75;
+}
+
+:root[data-theme='dark'] [class~='bg-charcoal-950/30'] {
+  background-color: rgb(16 19 23 / 30%);
+}
+
+:root[data-theme='dark'] [class~='bg-charcoal-950/40'] {
+  background-color: rgb(16 19 23 / 40%);
+}
+
+:root[data-theme='dark'] [class~='bg-charcoal-800/50']:hover,
+:root[data-theme='dark'] [class~='bg-charcoal-800/70']:hover,
+:root[data-theme='dark'] [class~='bg-charcoal-800/80']:hover {
+  background-color: #353b41;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-offwhite);
+    color: var(--color-charcoal-800);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background-color: var(--color-forest-200);
+    color: var(--color-charcoal-900);
+  }
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #d1d3d6;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #b0b3b8;
+}
