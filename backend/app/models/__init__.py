@@ -9,6 +9,7 @@ from app.models.recovery import RecoveryProposal, ProposalDecision, ProposalStat
 from app.models.audit import AuditEvent
 from app.models.notification import Notification
 from app.models.email_verification import EmailVerification
+from app.models.focus_context import FocusContext
 
 __all__ = [
     "Base",
@@ -33,4 +34,5 @@ __all__ = [
     "AuditEvent",
     "Notification",
     "EmailVerification",
+    "FocusContext",
 ]

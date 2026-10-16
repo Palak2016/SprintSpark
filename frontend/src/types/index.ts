@@ -147,7 +147,7 @@ export interface RiskAnalysis {
 
 export interface ProposedAction {
   action_id: string;
-  action_type: 'REASSIGN' | 'EXTEND_DEADLINE' | 'RESOLVE_DEPENDENCY' | 'SPLIT_EFFORT';
+  action_type: 'REASSIGN' | 'EXTEND_DEADLINE' | 'RESOLVE_DEPENDENCY' | 'ESCALATE_BLOCKER' | 'SPLIT_EFFORT';
   task_id: number;
   task_title: string;
   original_values: Record<string, any>;
@@ -167,6 +167,17 @@ export interface ProposalDecision {
   decider?: UserSimple;
 }
 
+export interface FocusGuardianContext {
+  id: number;
+  task_id: number;
+  task_title: string;
+  user_id: number;
+  employee_name: string;
+  reason: string;
+  context: string;
+  created_at: string;
+}
+
 export interface RecoveryProposal {
   id: number;
   project_id: number;
@@ -174,6 +185,7 @@ export interface RecoveryProposal {
   title: string;
   summary: string;
   proposed_actions: ProposedAction[];
+  focus_contexts: FocusGuardianContext[];
   rationale: string;
   assumptions: string[];
   status: 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED' | 'DEFERRED' | 'SUPERSEDED';

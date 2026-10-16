@@ -1,8 +1,20 @@
+
 import React, { useState, useEffect } from 'react';
 import { Modal } from '../common/Modal';
-import { Task, UserSimple, TaskPriority, TaskStatus } from '../../types';
+import {
+  Task,
+  UserSimple,
+  TaskPriority,
+  TaskStatus,
+} from '../../types';
 import { api } from '../../services/api';
-import { AlertCircle, Link2, Check } from 'lucide-react';
+import {
+  AlertCircle,
+  Link2,
+  Check,
+  CalendarDays,
+  ChevronDown,
+} from 'lucide-react';
 
 interface TaskModalProps {
   isOpen: boolean;
@@ -14,6 +26,20 @@ interface TaskModalProps {
   onSaved: () => void;
 }
 
+const inputClass =
+  'w-full rounded-xl border border-white/10 bg-[#130D21] px-3 py-2.5 text-sm text-[#FAF8FF] placeholder:text-[#807493] outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20';
+
+const labelClass =
+  'mb-1.5 block text-xs font-semibold uppercase tracking-wider text-[#B7ADC9]';
+
+const selectClass =
+  'w-full min-w-0 appearance-none rounded-xl border border-white/10 bg-[#130D21] px-3 py-2.5 pr-9 text-sm text-[#FAF8FF] outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 [color-scheme:dark]';
+
+const optionStyle: React.CSSProperties = {
+  color: '#FAF8FF',
+  backgroundColor: '#19112B',
+};
+
 export const TaskModal: React.FC<TaskModalProps> = ({
   isOpen,
   onClose,
@@ -21,11 +47,11 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   projectId,
   availableTasks,
   availableUsers,
-  onSaved
+  onSaved,
 }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [assigneeId, setAssigneeId] = useState<number | undefined>(undefined);
+  const [assigneeId, setAssigneeId] = useState<number | undefined>();
   const [priority, setPriority] = useState<TaskPriority>('MEDIUM');
   const [status, setStatus] = useState<TaskStatus>('TODO');
   const [estimatedHours, setEstimatedHours] = useState<number>(8);
@@ -37,6 +63,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!isOpen) return;
+
     if (task) {
       setTitle(task.title);
       setDescription(task.description || '');
@@ -47,10 +75,17 @@ export const TaskModal: React.FC<TaskModalProps> = ({
       setProgressPct(task.progress_pct);
       setStartDate(task.start_date);
       setDueDate(task.due_date);
-      setSelectedPrereqIds(task.dependencies ? task.dependencies.map(d => d.prerequisite_task_id) : []);
+      setSelectedPrereqIds(
+        task.dependencies
+          ? task.dependencies.map((d) => d.prerequisite_task_id)
+          : []
+      );
     } else {
       const today = new Date().toISOString().split('T')[0];
-      const nextWeek = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
+      const nextWeek = new Date(
+        Date.now() + 7 * 86400000
+      ).toISOString().split('T')[0];
+
       setTitle('');
       setDescription('');
       setAssigneeId(undefined);
@@ -62,6 +97,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
       setDueDate(nextWeek);
       setSelectedPrereqIds([]);
     }
+
     setErrorMessage(null);
   }, [task, isOpen]);
 
@@ -72,7 +108,6 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 
     try {
       if (task) {
-        // Update
         await api.updateTask(task.id, {
           title,
           description,
@@ -82,22 +117,29 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           estimated_hours: Number(estimatedHours),
           progress_pct: Number(progressPct),
           start_date: startDate,
-          due_date: dueDate
+          due_date: dueDate,
         });
 
-        // Update dependencies
-        const currentPrereqIds = task.dependencies ? task.dependencies.map(d => d.prerequisite_task_id) : [];
-        const toAdd = selectedPrereqIds.filter(id => !currentPrereqIds.includes(id));
-        const toRemove = currentPrereqIds.filter(id => !selectedPrereqIds.includes(id));
+        const currentPrereqIds = task.dependencies
+          ? task.dependencies.map((d) => d.prerequisite_task_id)
+          : [];
 
-        for (const pId of toAdd) {
-          await api.addTaskDependency(task.id, pId);
+        const toAdd = selectedPrereqIds.filter(
+          (id) => !currentPrereqIds.includes(id)
+        );
+
+        const toRemove = currentPrereqIds.filter(
+          (id) => !selectedPrereqIds.includes(id)
+        );
+
+        for (const prerequisiteId of toAdd) {
+          await api.addTaskDependency(task.id, prerequisiteId);
         }
-        for (const pId of toRemove) {
-          await api.removeTaskDependency(task.id, pId);
+
+        for (const prerequisiteId of toRemove) {
+          await api.removeTaskDependency(task.id, prerequisiteId);
         }
       } else {
-        // Create
         await api.createTask({
           project_id: projectId,
           title,
@@ -108,147 +150,200 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           estimated_hours: Number(estimatedHours),
           start_date: startDate,
           due_date: dueDate,
-          prerequisite_ids: selectedPrereqIds
+          prerequisite_ids: selectedPrereqIds,
         });
       }
 
       onSaved();
       onClose();
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to save task.');
+    } catch (err: unknown) {
+      setErrorMessage(
+        err instanceof Error ? err.message : 'Failed to save task.'
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const togglePrereq = (id: number) => {
-    setSelectedPrereqIds(prev =>
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    setSelectedPrereqIds((prev) =>
+      prev.includes(id)
+        ? prev.filter((item) => item !== id)
+        : [...prev, id]
     );
   };
 
-  const candidatePrereqs = availableTasks.filter(t => !task || t.id !== task.id);
+  const candidatePrereqs = availableTasks.filter(
+    (item) => !task || item.id !== task.id
+  );
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
       title={task ? `Edit Task #${task.id}` : 'Create New Task'}
-      subtitle={task ? task.title : 'Configure task attributes, estimates, and prerequisite dependencies'}
+      subtitle={
+        task
+          ? task.title
+          : 'Configure task attributes, estimates, and prerequisite dependencies'
+      }
       maxWidth="xl"
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Error Message */}
         {errorMessage && (
-          <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
+          <div className="flex items-start gap-2 rounded-xl border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-200">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-400" />
             <div>
-              <p className="font-semibold">Scheduling Conflict</p>
-              <p className="mt-0.5">{errorMessage}</p>
+              <p className="font-semibold">Unable to save task</p>
+              <p className="mt-0.5 text-xs">{errorMessage}</p>
             </div>
           </div>
         )}
 
-        {/* Title */}
+        {/* Task Title */}
         <div>
-          <label className="block text-xs font-semibold text-charcoal-700 uppercase tracking-wider mb-1">
-            Task Title *
-          </label>
+          <label className={labelClass}>Task Title *</label>
           <input
             type="text"
             required
             placeholder="e.g. Implement distributed session cache"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full px-3 py-2 text-sm rounded-lg border border-charcoal-200 focus:outline-none focus:ring-1 focus:ring-forest-600"
+            className={inputClass}
           />
         </div>
 
         {/* Description */}
         <div>
-          <label className="block text-xs font-semibold text-charcoal-700 uppercase tracking-wider mb-1">
+          <label className={labelClass}>
             Description & Acceptance Criteria
           </label>
           <textarea
-            rows={2}
+            rows={3}
             placeholder="Details, technical requirements, links..."
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="w-full px-3 py-2 text-sm rounded-lg border border-charcoal-200 focus:outline-none focus:ring-1 focus:ring-forest-600"
+            className={`${inputClass} resize-y`}
           />
         </div>
 
-        {/* Assignee, Priority, Status */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div>
-            <label className="block text-xs font-semibold text-charcoal-700 uppercase tracking-wider mb-1">
-              Assignee
-            </label>
-            <select
-              value={assigneeId || ''}
-              onChange={(e) => setAssigneeId(e.target.value ? Number(e.target.value) : undefined)}
-              className="w-full px-3 py-2 text-xs rounded-lg border border-charcoal-200 bg-white"
-            >
-              <option value="">Unassigned</option>
-              {availableUsers.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.full_name} ({u.role})
+        {/* Assignee, Priority and Status */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {/* Assignee */}
+          <div className="min-w-0">
+            <label className={labelClass}>Assignee</label>
+
+            <div className="relative">
+              <select
+                value={assigneeId ?? ''}
+                onChange={(e) =>
+                  setAssigneeId(
+                    e.target.value
+                      ? Number(e.target.value)
+                      : undefined
+                  )
+                }
+                className={selectClass}
+                style={{
+                  color: '#FAF8FF',
+                  backgroundColor: '#130D21',
+                  colorScheme: 'dark',
+                }}
+              >
+                <option value="" style={optionStyle}>
+                  Unassigned
                 </option>
-              ))}
-            </select>
+
+                {availableUsers.map((user) => (
+                  <option
+                    key={user.id}
+                    value={user.id}
+                    style={optionStyle}
+                  >
+                    {user.full_name} ({user.role})
+                  </option>
+                ))}
+              </select>
+
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-300" />
+            </div>
+
+            {availableUsers.length === 0 && (
+              <p className="mt-1.5 text-xs text-amber-300">
+                No team members available.
+              </p>
+            )}
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-charcoal-700 uppercase tracking-wider mb-1">
-              Priority
-            </label>
-            <select
-              value={priority}
-              onChange={(e) => setPriority(e.target.value as TaskPriority)}
-              className="w-full px-3 py-2 text-xs rounded-lg border border-charcoal-200 bg-white"
-            >
-              <option value="LOW">Low</option>
-              <option value="MEDIUM">Medium</option>
-              <option value="HIGH">High</option>
-              <option value="CRITICAL">Critical</option>
-            </select>
+          {/* Priority */}
+          <div className="min-w-0">
+            <label className={labelClass}>Priority</label>
+
+            <div className="relative">
+              <select
+                value={priority}
+                onChange={(e) =>
+                  setPriority(e.target.value as TaskPriority)
+                }
+                className={selectClass}
+              >
+                <option value="LOW" style={optionStyle}>Low</option>
+                <option value="MEDIUM" style={optionStyle}>Medium</option>
+                <option value="HIGH" style={optionStyle}>High</option>
+                <option value="CRITICAL" style={optionStyle}>Critical</option>
+              </select>
+
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-300" />
+            </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-charcoal-700 uppercase tracking-wider mb-1">
-              Status
-            </label>
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value as TaskStatus)}
-              className="w-full px-3 py-2 text-xs rounded-lg border border-charcoal-200 bg-white"
-            >
-              <option value="TODO">To Do</option>
-              <option value="IN_PROGRESS">In Progress</option>
-              <option value="BLOCKED">Blocked</option>
-              <option value="COMPLETED">Completed</option>
-            </select>
+          {/* Status */}
+          <div className="min-w-0">
+            <label className={labelClass}>Status</label>
+
+            <div className="relative">
+              <select
+                value={status}
+                onChange={(e) =>
+                  setStatus(e.target.value as TaskStatus)
+                }
+                className={selectClass}
+              >
+                <option value="TODO" style={optionStyle}>To Do</option>
+                <option value="IN_PROGRESS" style={optionStyle}>
+                  In Progress
+                </option>
+                <option value="BLOCKED" style={optionStyle}>Blocked</option>
+                <option value="COMPLETED" style={optionStyle}>
+                  Completed
+                </option>
+              </select>
+
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-300" />
+            </div>
           </div>
         </div>
 
-        {/* Estimates & Progress */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {/* Estimated Hours and Progress */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
-            <label className="block text-xs font-semibold text-charcoal-700 uppercase tracking-wider mb-1">
-              Estimated Hours
-            </label>
+            <label className={labelClass}>Estimated Hours</label>
             <input
               type="number"
               step="0.5"
               min="0"
               required
               value={estimatedHours}
-              onChange={(e) => setEstimatedHours(parseFloat(e.target.value) || 0)}
-              className="w-full px-3 py-2 text-xs rounded-lg border border-charcoal-200"
+              onChange={(e) =>
+                setEstimatedHours(parseFloat(e.target.value) || 0)
+              }
+              className={inputClass}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-charcoal-700 uppercase tracking-wider mb-1">
+            <label className={labelClass}>
               Progress ({progressPct}%)
             </label>
             <input
@@ -256,88 +351,129 @@ export const TaskModal: React.FC<TaskModalProps> = ({
               min="0"
               max="100"
               value={progressPct}
-              onChange={(e) => setProgressPct(parseInt(e.target.value) || 0)}
-              className="w-full accent-forest-700 mt-2"
+              onChange={(e) =>
+                setProgressPct(parseInt(e.target.value, 10) || 0)
+              }
+              className="mt-3 w-full accent-violet-500"
             />
+
+            <div className="mt-1 flex justify-between text-xs text-[#807493]">
+              <span>0%</span>
+              <span>100%</span>
+            </div>
           </div>
         </div>
 
-        {/* Dates */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {/* Dates with Visible Calendar Icons */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {/* Start Date */}
           <div>
-            <label className="block text-xs font-semibold text-charcoal-700 uppercase tracking-wider mb-1">
-              Start Date
-            </label>
-            <input
-              type="date"
-              required
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-lg border border-charcoal-200"
-            />
+            <label className={labelClass}>Start Date</label>
+
+            <div className="relative">
+              <input
+                type="date"
+                required
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className={`${inputClass} pr-11 [color-scheme:dark]`}
+                style={{ colorScheme: 'dark' }}
+              />
+
+              <CalendarDays className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-300" />
+            </div>
           </div>
 
+          {/* Due Date */}
           <div>
-            <label className="block text-xs font-semibold text-charcoal-700 uppercase tracking-wider mb-1">
-              Due Date
-            </label>
-            <input
-              type="date"
-              required
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-lg border border-charcoal-200"
-            />
+            <label className={labelClass}>Due Date</label>
+
+            <div className="relative">
+              <input
+                type="date"
+                required
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className={`${inputClass} pr-11 [color-scheme:dark]`}
+                style={{ colorScheme: 'dark' }}
+              />
+
+              <CalendarDays className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-300" />
+            </div>
           </div>
         </div>
 
         {/* Prerequisite Dependencies */}
-        <div className="pt-2 border-t border-charcoal-100">
-          <label className="block text-xs font-semibold text-charcoal-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-            <Link2 className="w-3.5 h-3.5 text-forest-700" />
-            <span>Prerequisites (Tasks that must finish before this task starts)</span>
+        <div className="border-t border-white/[0.08] pt-4">
+          <label className="mb-2 flex items-start gap-2 text-xs font-semibold uppercase tracking-wider text-[#B7ADC9]">
+            <Link2 className="mt-0.5 h-4 w-4 shrink-0 text-violet-300" />
+
+            <span>
+              Prerequisites
+              <span className="mt-1 block normal-case tracking-normal text-[#807493]">
+                Tasks that must finish before this task starts
+              </span>
+            </span>
           </label>
-          <div className="max-h-36 overflow-y-auto border border-charcoal-200 rounded-lg p-2 space-y-1 bg-offwhite/50">
+
+          <div className="max-h-40 space-y-1 overflow-y-auto rounded-xl border border-white/10 bg-[#130D21] p-2">
             {candidatePrereqs.length === 0 ? (
-              <p className="text-xs text-charcoal-400 p-2 text-center">No other tasks in this project</p>
+              <p className="p-3 text-center text-xs text-[#807493]">
+                No other tasks in this project
+              </p>
             ) : (
-              candidatePrereqs.map((cp) => {
-                const isSelected = selectedPrereqIds.includes(cp.id);
+              candidatePrereqs.map((item) => {
+                const isSelected = selectedPrereqIds.includes(item.id);
+
                 return (
-                  <div
-                    key={cp.id}
-                    onClick={() => togglePrereq(cp.id)}
-                    className={`flex items-center justify-between p-2 rounded text-xs cursor-pointer transition-colors ${
-                      isSelected ? 'bg-forest-100/70 text-forest-900 border border-forest-300' : 'hover:bg-white text-charcoal-700'
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => togglePrereq(item.id)}
+                    aria-pressed={isSelected}
+                    className={`flex w-full items-center justify-between gap-3 rounded-lg border p-2.5 text-left text-sm transition-colors ${
+                      isSelected
+                        ? 'border-violet-400/30 bg-violet-500/15 text-[#E5D9FF]'
+                        : 'border-transparent text-[#B7ADC9] hover:border-white/[0.08] hover:bg-white/[0.04] hover:text-[#FAF8FF]'
                     }`}
                   >
-                    <div className="flex items-center gap-2 truncate">
-                      <span className="font-mono text-charcoal-400">#{cp.id}</span>
-                      <span className="truncate">{cp.title}</span>
-                    </div>
-                    {isSelected && <Check className="w-3.5 h-3.5 text-forest-700 flex-shrink-0" />}
-                  </div>
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span className="shrink-0 font-mono text-xs text-[#807493]">
+                        #{item.id}
+                      </span>
+                      <span className="truncate">{item.title}</span>
+                    </span>
+
+                    {isSelected && (
+                      <Check className="h-4 w-4 shrink-0 text-violet-300" />
+                    )}
+                  </button>
                 );
               })
             )}
           </div>
         </div>
 
-        {/* Buttons */}
-        <div className="pt-4 border-t border-charcoal-100 flex items-center justify-end gap-3">
+        {/* Footer Actions */}
+        <div className="flex items-center justify-end gap-3 border-t border-white/[0.08] pt-4">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-xs font-medium text-charcoal-600 hover:text-charcoal-900 hover:bg-charcoal-100 rounded-lg transition-colors"
+            className="rounded-xl border border-white/10 px-4 py-2.5 text-sm font-medium text-[#B7ADC9] transition hover:bg-white/[0.05] hover:text-white"
           >
             Cancel
           </button>
+
           <button
             type="submit"
             disabled={isSubmitting}
-            className="px-4 py-2 text-xs font-medium bg-forest-700 text-white hover:bg-forest-800 rounded-lg shadow-sm transition-colors disabled:opacity-50"
+            className="rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-950/20 transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isSubmitting ? 'Saving...' : task ? 'Update Task' : 'Create Task'}
+            {isSubmitting
+              ? 'Saving...'
+              : task
+                ? 'Update Task'
+                : 'Create Task'}
           </button>
         </div>
       </form>

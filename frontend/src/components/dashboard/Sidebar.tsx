@@ -1,10 +1,29 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, FolderKanban, CheckSquare, Users, CalendarDays,
-  AlertTriangle, Sparkles, History, Settings, ChevronLeft, ChevronRight,
-  Clock, Send, Eye, UserRound, Sun, Moon, CircleHelp, UsersRound, LogOut,
-  X, Check, ArrowUpRight
+  LayoutDashboard,
+  FolderKanban,
+  CheckSquare,
+  Users,
+  CalendarDays,
+  Sparkles,
+  History,
+  Settings,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Send,
+  Eye,
+  UserRound,
+  Sun,
+  Moon,
+  CircleHelp,
+  UsersRound,
+  LogOut,
+  X,
+  Check,
+  ArrowUpRight,
 } from 'lucide-react';
 import { Logo } from '../common/Logo';
 import { useAuth } from '../../context/AuthContext';
@@ -17,21 +36,32 @@ interface SidebarProps {
 interface NavItem {
   name: string;
   href: string;
-  icon: any;
+  icon: React.ElementType;
   highlight?: boolean;
   badge?: string;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => {
+export const Sidebar: React.FC<SidebarProps> = ({
+  collapsed,
+  setCollapsed,
+}) => {
   const { user, isManager, isAdmin, logout } = useAuth();
   const navigate = useNavigate();
   const accountMenuRef = useRef<HTMLDivElement>(null);
+
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
   const [quickstartOpen, setQuickstartOpen] = useState(false);
-  const [theme, setTheme] = useState<'light' | 'dark'>(() =>
-    document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light'
-  );
+
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const savedTheme = window.localStorage.getItem('workpilot_theme');
+
+    if (savedTheme === 'light' || savedTheme === 'dark') {
+      return savedTheme;
+    }
+
+    return 'dark';
+  });
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -42,11 +72,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => 
     if (!accountMenuOpen && !quickstartOpen) return;
 
     const closeOnOutsideClick = (event: MouseEvent) => {
-      if (event.target instanceof Node && !accountMenuRef.current?.contains(event.target)) {
+      if (
+        event.target instanceof Node &&
+        !accountMenuRef.current?.contains(event.target)
+      ) {
         setAccountMenuOpen(false);
         setThemeMenuOpen(false);
       }
     };
+
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setAccountMenuOpen(false);
@@ -57,6 +91,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => 
 
     document.addEventListener('mousedown', closeOnOutsideClick);
     window.addEventListener('keydown', closeOnEscape);
+
     return () => {
       document.removeEventListener('mousedown', closeOnOutsideClick);
       window.removeEventListener('keydown', closeOnEscape);
@@ -69,8 +104,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => 
     { name: 'Tasks Board', href: '/manager/tasks', icon: CheckSquare },
     { name: 'Team & Capacity', href: '/manager/team', icon: Users },
     { name: 'Leave Requests', href: '/manager/leave', icon: CalendarDays },
-    { name: 'Risk Intelligence', href: '/manager/risk', icon: AlertTriangle, highlight: true },
-    { name: 'Recovery Plans', href: '/manager/recovery', icon: Sparkles, badge: 'AI' },
+    {
+      name: 'Recovery Plans',
+      href: '/manager/recovery',
+      icon: Sparkles,
+      badge: 'AI',
+    },
     { name: 'Activity History', href: '/manager/audit', icon: History },
     { name: 'Settings', href: '/manager/settings', icon: Settings },
   ];
@@ -84,8 +123,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => 
     { name: 'Focus Guardian', href: '/employee/focus', icon: Eye },
   ];
 
-  const navItems: NavItem[] = isManager ? managerNav : employeeNav;
-  const accountSettingsPath = isManager ? '/manager/settings' : '/employee/settings';
+  const navItems = isManager ? managerNav : employeeNav;
+
+  const accountSettingsPath = isManager
+    ? '/manager/settings'
+    : '/employee/settings';
+
   const quickstartLinks = isManager
     ? [
         { label: 'Review your overview', path: '/manager' },
@@ -105,96 +148,153 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => 
     navigate(path);
   };
 
-  const selectTheme = (selectedTheme: 'light' | 'dark') => {
-    setTheme(selectedTheme);
-  };
-
-  const switchAccount = () => {
+  const switchAccount = async () => {
     setAccountMenuOpen(false);
     setThemeMenuOpen(false);
-    logout();
-    navigate('/login');
+    await logout();
+    navigate('/login', { replace: true });
   };
 
-  const initials = user?.full_name
-    ?.trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part.charAt(0))
-    .join('')
-    .toUpperCase() || 'U';
+  const handleLogout = async () => {
+    setAccountMenuOpen(false);
+    setThemeMenuOpen(false);
+    await logout();
+    navigate('/login', { replace: true });
+  };
+
+  const initials =
+    user?.full_name
+      ?.trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part) => part.charAt(0))
+      .join('')
+      .toUpperCase() || 'U';
+
+  const iconButtonClass =
+    'rounded-lg p-1.5 text-[#B7ADC9] transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400';
+
+  const menuItemClass =
+    'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-[#D8D0E7] transition-colors hover:bg-violet-500/15 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400';
 
   return (
-    <aside className={`fixed inset-y-0 left-0 z-30 flex flex-col bg-charcoal-900 text-charcoal-300 transition-all duration-200 border-r border-charcoal-800 ${
-      collapsed ? 'w-20' : 'w-64'
-    }`}>
+    <aside
+      className={`fixed inset-y-0 left-0 z-30 flex flex-col border-r border-white/[0.08] bg-[#100B1D] text-[#D8D0E7] shadow-[8px_0_32px_rgba(0,0,0,0.12)] transition-[width] duration-200 ${
+        collapsed ? 'w-20' : 'w-64'
+      }`}
+    >
       {/* Brand Header */}
-      <div className="flex items-center justify-between h-16 px-4 border-b border-charcoal-800">
-        <div className="flex items-center overflow-hidden">
+      <div className="flex h-16 shrink-0 items-center justify-between border-b border-white/[0.08] px-4">
+        <div className="flex min-w-0 items-center overflow-hidden">
           <Logo size="sm" showText={!collapsed} onDarkBackground />
         </div>
+
         <button
+          type="button"
           onClick={() => setCollapsed(!collapsed)}
-          className="hidden md:flex p-1.5 rounded-lg text-charcoal-400 hover:text-white hover:bg-charcoal-800 transition-colors"
-          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className={`${iconButtonClass} hidden md:flex`}
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+          {collapsed ? (
+            <ChevronRight className="h-4 w-4" />
+          ) : (
+            <ChevronLeft className="h-4 w-4" />
+          )}
         </button>
       </div>
 
-      {/* Role Tag */}
+      {/* Workspace Role */}
       {!collapsed && (
-        <div className="px-4 py-2 border-b border-charcoal-800/60 bg-charcoal-950/40">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-charcoal-400 uppercase tracking-wider font-semibold text-[10px]">
+        <div className="border-b border-white/[0.06] bg-white/[0.02] px-4 py-3">
+          <div className="flex flex-col gap-2">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8F83A7]">
               Workspace
             </span>
-            <span className={`px-2 py-0.5 rounded text-[11px] font-medium ${
-              isManager ? 'bg-forest-900 text-forest-200 border border-forest-700' : 'bg-charcoal-800 text-charcoal-200'
-            }`}>
-              {isAdmin ? 'Admin Portal' : isManager ? 'Manager Portal' : 'Contributor Workspace'}
+
+            <span className="inline-flex w-fit max-w-full items-center gap-1.5 rounded-full border border-violet-400/20 bg-violet-500/10 px-2.5 py-1 text-[11px] font-medium text-violet-200">
+              <span className="h-1.5 w-1.5 rounded-full bg-violet-400" />
+              {isAdmin
+                ? 'Admin Portal'
+                : isManager
+                  ? 'Manager Portal'
+                  : 'Contributor Workspace'}
             </span>
           </div>
         </div>
       )}
 
-      {/* Navigation items */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+      {/* Navigation */}
+      <nav
+        className="flex-1 space-y-1 overflow-y-auto px-3 py-5"
+        aria-label="Dashboard navigation"
+      >
+        {!collapsed && (
+          <p className="mb-3 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#76698D]">
+            Main Menu
+          </p>
+        )}
+
         {navItems.map((item) => (
           <NavLink
             key={item.name}
             to={item.href}
             end={item.href === '/manager' || item.href === '/employee'}
-            className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group ${
-              isActive
-                ? 'bg-forest-700 text-white shadow-sm'
-                : 'text-charcoal-400 hover:text-white hover:bg-charcoal-800/80'
-            }`}
+            title={collapsed ? item.name : undefined}
+            className={({ isActive }) =>
+              `group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+                isActive
+                  ? 'bg-gradient-to-r from-violet-500/25 via-violet-500/15 to-transparent text-white shadow-[inset_2px_0_0_#A78BFA]'
+                  : 'text-[#A99DBD] hover:bg-white/[0.055] hover:text-white'
+              }`
+            }
           >
-            <item.icon className={`w-5 h-5 flex-shrink-0 transition-colors ${
-              item.highlight ? 'text-amber-400' : ''
-            }`} />
-            {!collapsed && (
-              <span className="truncate flex-1 flex items-center justify-between">
-                <span>{item.name}</span>
-                {item.badge && (
-                  <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.2 rounded bg-forest-900 text-forest-300 border border-forest-700">
-                    {item.badge}
+            {({ isActive }) => (
+              <>
+                <item.icon
+                  className={`h-5 w-5 shrink-0 transition-colors ${
+                    isActive
+                      ? 'text-[#C4B5FD]'
+                      : item.highlight
+                        ? 'text-amber-300 group-hover:text-amber-200'
+                        : 'text-[#8F83A7] group-hover:text-[#D8CCF5]'
+                  }`}
+                />
+
+                {!collapsed && (
+                  <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
+                    <span className="truncate">{item.name}</span>
+
+                    {item.badge && (
+                      <span className="rounded-md border border-violet-400/25 bg-violet-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-violet-200">
+                        {item.badge}
+                      </span>
+                    )}
                   </span>
                 )}
-              </span>
+
+                {collapsed && item.badge && (
+                  <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-violet-400" />
+                )}
+              </>
             )}
           </NavLink>
         ))}
       </nav>
 
-      {/* User Card at bottom */}
-      <div className="relative p-3 border-t border-charcoal-800 bg-charcoal-950/30" ref={accountMenuRef}>
+      {/* Account Section */}
+      <div
+        ref={accountMenuRef}
+        className="relative shrink-0 border-t border-white/[0.08] bg-[#130D21] p-3"
+      >
+        {/* Account Dropdown */}
         {accountMenuOpen && (
-          <div className="absolute left-3 bottom-full mb-2 w-72 max-w-[calc(100vw-2rem)] rounded-xl border border-charcoal-700 bg-charcoal-800 p-2 text-charcoal-100 shadow-2xl">
-            <div className="mb-1 flex items-center gap-3 rounded-lg bg-charcoal-950 p-3">
-              <div className="relative flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-charcoal-200 text-base font-semibold text-charcoal-900">
+          <div className="absolute bottom-full left-3 z-40 mb-3 w-72 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-violet-300/15 bg-[#19112B] p-2 text-white shadow-[0_16px_60px_rgba(0,0,0,0.5)]">
+            {/* User Details */}
+            <div className="mb-2 flex items-center gap-3 rounded-xl border border-white/[0.05] bg-white/[0.035] p-3">
+              <div className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-violet-300/25 bg-gradient-to-br from-violet-500 to-indigo-700 text-sm font-bold text-white">
                 <span aria-hidden="true">{initials}</span>
+
                 {user?.avatar_url && (
                   <img
                     src={user.avatar_url}
@@ -206,54 +306,94 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => 
                   />
                 )}
               </div>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-white">{user?.full_name || 'Your account'}</p>
-                <p className="truncate text-sm text-charcoal-400">{user?.email}</p>
+
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-white">
+                  {user?.full_name || 'Your account'}
+                </p>
+                <p className="truncate text-xs text-[#A99DBD]">
+                  {user?.email}
+                </p>
+                <p className="mt-1 text-[10px] font-medium uppercase tracking-wider text-violet-300">
+                  {isAdmin
+                    ? 'Administrator'
+                    : isManager
+                      ? 'Manager'
+                      : 'Employee'}
+                </p>
               </div>
             </div>
 
-            <div className="space-y-0.5 py-1" role="menu" aria-label="Account menu">
+            {/* Account Actions */}
+            <div
+              className="space-y-0.5 py-1"
+              role="menu"
+              aria-label="Account menu"
+            >
               <button
                 type="button"
                 role="menuitem"
                 onClick={() => navigateFromMenu('/profile')}
-                className="flex w-full items-center gap-3 rounded-md px-2.5 py-2 text-left text-sm hover:bg-charcoal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-charcoal-400"
+                className={menuItemClass}
               >
-                <UserRound className="h-4 w-4" />
+                <UserRound className="h-4 w-4 text-[#A78BFA]" />
                 <span>Profile</span>
               </button>
+
               <button
                 type="button"
                 role="menuitem"
                 onClick={() => navigateFromMenu(accountSettingsPath)}
-                className="flex w-full items-center gap-3 rounded-md px-2.5 py-2 text-left text-sm hover:bg-charcoal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-charcoal-400"
+                className={menuItemClass}
               >
-                <Settings className="h-4 w-4" />
+                <Settings className="h-4 w-4 text-[#A78BFA]" />
                 <span>Account settings</span>
               </button>
 
+              {/* Theme Selector */}
               <button
                 type="button"
                 role="menuitem"
                 aria-expanded={themeMenuOpen}
                 onClick={() => setThemeMenuOpen(!themeMenuOpen)}
-                className="flex w-full items-center gap-3 rounded-md px-2.5 py-2 text-left text-sm hover:bg-charcoal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-charcoal-400"
+                className={menuItemClass}
               >
-                {theme === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+                {theme === 'dark' ? (
+                  <Moon className="h-4 w-4 text-[#A78BFA]" />
+                ) : (
+                  <Sun className="h-4 w-4 text-amber-300" />
+                )}
+
                 <span className="flex-1">Theme</span>
-                <ChevronRight className={`h-4 w-4 transition-transform ${themeMenuOpen ? 'rotate-90' : ''}`} />
+
+                <ChevronRight
+                  className={`h-4 w-4 text-[#8F83A7] transition-transform ${
+                    themeMenuOpen ? 'rotate-90' : ''
+                  }`}
+                />
               </button>
+
               {themeMenuOpen && (
-                <div className="ml-9 space-y-0.5 pb-1" role="group" aria-label="Choose theme">
-                  {(['light', 'dark'] as const).map((option) => (
+                <div
+                  className="ml-5 space-y-1 border-l border-violet-400/20 py-1 pl-3"
+                  role="group"
+                  aria-label="Choose theme"
+                >
+                  {(['dark', 'light'] as const).map((option) => (
                     <button
                       key={option}
                       type="button"
-                      onClick={() => selectTheme(option)}
-                      className="flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-left text-sm capitalize hover:bg-charcoal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-charcoal-400"
+                      onClick={() => setTheme(option)}
+                      className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm capitalize transition-colors ${
+                        theme === option
+                          ? 'bg-violet-500/15 text-violet-200'
+                          : 'text-[#B7ADC9] hover:bg-white/[0.05] hover:text-white'
+                      }`}
                     >
                       <span>{option}</span>
-                      {theme === option && <Check className="h-4 w-4" />}
+                      {theme === option && (
+                        <Check className="h-4 w-4 text-violet-300" />
+                      )}
                     </button>
                   ))}
                 </div>
@@ -267,27 +407,29 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => 
                   setThemeMenuOpen(false);
                   setQuickstartOpen(true);
                 }}
-                className="flex w-full items-center gap-3 rounded-md px-2.5 py-2 text-left text-sm hover:bg-charcoal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-charcoal-400"
+                className={menuItemClass}
               >
-                <CircleHelp className="h-4 w-4" />
+                <CircleHelp className="h-4 w-4 text-[#A78BFA]" />
                 <span>Open Quickstart</span>
               </button>
 
-              <div className="my-1 border-t border-charcoal-700" />
+              <div className="my-2 border-t border-white/[0.08]" />
+
               <button
                 type="button"
                 role="menuitem"
                 onClick={switchAccount}
-                className="flex w-full items-center gap-3 rounded-md px-2.5 py-2 text-left text-sm hover:bg-charcoal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-charcoal-400"
+                className={menuItemClass}
               >
-                <UsersRound className="h-4 w-4" />
+                <UsersRound className="h-4 w-4 text-[#A78BFA]" />
                 <span>Switch account</span>
               </button>
+
               <button
                 type="button"
                 role="menuitem"
-                onClick={() => navigateFromMenu('/')}
-                className="flex w-full items-center gap-3 rounded-md px-2.5 py-2 text-left text-sm hover:bg-charcoal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-charcoal-400"
+                onClick={handleLogout}
+                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-rose-300 transition-colors hover:bg-rose-500/10 hover:text-rose-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
               >
                 <LogOut className="h-4 w-4" />
                 <span>Log out</span>
@@ -296,6 +438,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => 
           </div>
         )}
 
+        {/* Account Button */}
         <button
           type="button"
           aria-label="Open account menu"
@@ -305,10 +448,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => 
             setAccountMenuOpen(!accountMenuOpen);
             setThemeMenuOpen(false);
           }}
-          className="flex w-full items-center gap-3 rounded-lg p-2 text-left transition-colors hover:bg-charcoal-800/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-charcoal-400"
+          className="flex w-full items-center gap-3 rounded-xl border border-transparent p-2 text-left transition-all hover:border-white/[0.08] hover:bg-white/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
         >
-          <div className="relative flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-charcoal-200 text-xs font-semibold text-charcoal-900">
+          <div className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-violet-300/25 bg-gradient-to-br from-violet-500 to-indigo-700 text-xs font-bold text-white">
             <span aria-hidden="true">{initials}</span>
+
             {user?.avatar_url && (
               <img
                 src={user.avatar_url}
@@ -320,61 +464,95 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => 
               />
             )}
           </div>
+
           {!collapsed && (
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">{user?.full_name}</p>
-              <p className="text-xs text-charcoal-400 truncate">{user?.email}</p>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-white">
+                {user?.full_name || 'Your account'}
+              </p>
+              <p className="truncate text-xs text-[#9487AA]">
+                {user?.email}
+              </p>
             </div>
           )}
-          {!collapsed && <ChevronRight className={`h-4 w-4 flex-shrink-0 text-charcoal-400 transition-transform ${accountMenuOpen ? '-rotate-90' : ''}`} />}
+
+          {!collapsed && (
+            <ChevronRight
+              className={`h-4 w-4 shrink-0 text-[#8F83A7] transition-transform ${
+                accountMenuOpen ? '-rotate-90' : ''
+              }`}
+            />
+          )}
         </button>
       </div>
 
+      {/* Quickstart Dialog */}
       {quickstartOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-charcoal-950/60 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4 backdrop-blur-md">
           <section
             role="dialog"
             aria-modal="true"
             aria-labelledby="quickstart-title"
-            className="w-full max-w-md rounded-2xl border border-charcoal-100 bg-white p-6 text-charcoal-800 shadow-2xl"
+            className="w-full max-w-md rounded-2xl border border-violet-300/20 bg-[#19112B] p-6 text-white shadow-[0_20px_80px_rgba(0,0,0,0.55)]"
           >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-charcoal-500">Workpilot guide</p>
-                <h2 id="quickstart-title" className="mt-1 text-xl font-bold text-charcoal-900">Quickstart</h2>
-                <p className="mt-2 text-sm text-charcoal-600">
-                  Start with your overview, then jump straight to the work you need to manage.
+                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl border border-violet-300/20 bg-violet-500/15">
+                  <Sparkles className="h-5 w-5 text-violet-300" />
+                </div>
+
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-300">
+                  WorkPilot AI Guide
+                </p>
+
+                <h2
+                  id="quickstart-title"
+                  className="mt-1 text-xl font-semibold tracking-tight"
+                >
+                  Quickstart
+                </h2>
+
+                <p className="mt-2 text-sm leading-6 text-[#B7ADC9]">
+                  Start with your overview, then jump straight to the work you
+                  need to manage.
                 </p>
               </div>
+
               <button
                 type="button"
-                aria-label="Close quickstart"
+                aria-label="Close Quickstart"
                 onClick={() => setQuickstartOpen(false)}
-                className="rounded-lg p-1.5 text-charcoal-500 hover:bg-charcoal-100 hover:text-charcoal-900"
+                className="rounded-lg p-2 text-[#A99DBD] transition-colors hover:bg-white/10 hover:text-white"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
+
             <div className="mt-5 space-y-2">
               {quickstartLinks.map((link, index) => (
                 <button
                   key={link.path}
                   type="button"
                   onClick={() => navigateFromMenu(link.path)}
-                  className="flex w-full items-center gap-3 rounded-xl border border-charcoal-100 px-3 py-3 text-left transition-colors hover:bg-charcoal-50"
+                  className="group flex w-full items-center gap-3 rounded-xl border border-white/[0.08] bg-white/[0.025] px-3 py-3 text-left transition-all hover:border-violet-400/30 hover:bg-violet-500/10"
                 >
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-charcoal-100 text-xs font-semibold text-charcoal-700">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-violet-300/15 bg-violet-500/10 text-xs font-semibold text-violet-200">
                     {index + 1}
                   </span>
-                  <span className="flex-1 text-sm font-medium">{link.label}</span>
-                  <ArrowUpRight className="h-4 w-4 text-charcoal-400" />
+
+                  <span className="flex-1 text-sm font-medium text-[#E5DDF2] group-hover:text-white">
+                    {link.label}
+                  </span>
+
+                  <ArrowUpRight className="h-4 w-4 text-[#8F83A7] transition-colors group-hover:text-violet-300" />
                 </button>
               ))}
             </div>
+
             <button
               type="button"
               onClick={() => setQuickstartOpen(false)}
-              className="mt-5 w-full rounded-lg bg-forest-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-forest-800"
+              className="mt-5 w-full rounded-xl bg-gradient-to-r from-violet-500 to-indigo-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-950/30 transition-all hover:from-violet-400 hover:to-indigo-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#19112B]"
             >
               Done
             </button>
@@ -384,3 +562,5 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, setCollapsed }) => 
     </aside>
   );
 };
+
+export default Sidebar;

@@ -33,6 +33,17 @@ class ProposalDecisionOut(BaseModel):
     decider: Optional[UserSimple] = None
 
 
+class FocusContextEvidence(BaseModel):
+    id: int
+    task_id: int
+    task_title: str
+    user_id: int
+    employee_name: str
+    reason: str
+    context: str
+    created_at: datetime
+
+
 class RecoveryProposalOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -42,6 +53,7 @@ class RecoveryProposalOut(BaseModel):
     title: str
     summary: str
     proposed_actions: List[ProposedAction] = []
+    focus_contexts: List[FocusContextEvidence] = []
     rationale: str
     assumptions: List[str] = []
     status: str

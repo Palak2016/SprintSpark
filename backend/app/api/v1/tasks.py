@@ -1,7 +1,9 @@
 from datetime import datetime, timezone
 from typing import List, Optional
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, require_manager
 from app.models.user import User
@@ -10,34 +12,49 @@ from app.models.task import Task, TaskDependency, TaskStatus
 from app.models.audit import AuditEvent
 from app.models.notification import Notification
 from app.schemas.task import (
-    TaskCreate, TaskUpdate, TaskOut, TaskProgressUpdate,
-    TaskBlockerReport, TaskDependencyCreate, TaskDependencyOut
+    TaskCreate,
+    TaskUpdate,
+    TaskOut,
+    TaskProgressUpdate,
+    TaskBlockerReport,
+    TaskDependencyCreate,
+    TaskDependencyOut,
 )
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
 
-def would_create_cycle(db: Session, task_id: int, new_prereq_id: int) -> bool:
-    """Detects if making new_prereq_id a prerequisite of task_id causes a circular cycle."""
+def would_create_cycle(
+    db: Session,
+    task_id: int,
+    new_prereq_id: int,
+) -> bool:
+    """Check whether adding a dependency would create a circular cycle."""
     if task_id == new_prereq_id:
         return True
 
-    # Traverse upstream from new_prereq_id
     visited = set()
     stack = [new_prereq_id]
 
     while stack:
         current = stack.pop()
+
         if current == task_id:
             return True
+
         if current in visited:
             continue
+
         visited.add(current)
 
-        # Get all prerequisites of current
-        deps = db.query(TaskDependency).filter(TaskDependency.task_id == current).all()
-        for d in deps:
-            stack.append(d.prerequisite_task_id)
+        dependencies = (
+            db.query(TaskDependency)
+            .filter(TaskDependency.task_id == current)
+            .all()
+        )
+
+        for dependency in dependencies:
+            stack.append(dependency.prerequisite_task_id)
 
     return False
 
@@ -49,52 +66,93 @@ def list_tasks(
     status_filter: Optional[str] = None,
     priority: Optional[str] = None,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     query = db.query(Task)
+
     if project_id:
         query = query.filter(Task.project_id == project_id)
+
     if assignee_id:
         query = query.filter(Task.assignee_id == assignee_id)
+
     if status_filter:
         query = query.filter(Task.status == status_filter)
+
     if priority:
         query = query.filter(Task.priority == priority)
 
     tasks = query.order_by(Task.due_date.asc()).all()
 
-    # Enrich dependency info
-    task_map = {t.id: t for t in tasks}
+    task_map = {task.id: task for task in tasks}
     results = []
-    for t in tasks:
-        t_out = TaskOut.model_validate(t)
-        # Format dependencies with titles
-        dep_outs = []
-        for d in t.dependencies:
-            prereq = task_map.get(d.prerequisite_task_id) or db.query(Task).filter(Task.id == d.prerequisite_task_id).first()
-            dep_outs.append(TaskDependencyOut(
-                id=d.id,
-                task_id=d.task_id,
-                prerequisite_task_id=d.prerequisite_task_id,
-                created_at=d.created_at,
-                prerequisite_task_title=prereq.title if prereq else "Unknown Task",
-                prerequisite_task_status=prereq.status if prereq else "UNKNOWN"
-            ))
-        t_out.dependencies = dep_outs
-        results.append(t_out)
+
+    for task in tasks:
+        task_out = TaskOut.model_validate(task)
+        dependency_outputs = []
+
+        for dependency in task.dependencies:
+            prerequisite = task_map.get(
+                dependency.prerequisite_task_id
+            )
+
+            if prerequisite is None:
+                prerequisite = (
+                    db.query(Task)
+                    .filter(
+                        Task.id == dependency.prerequisite_task_id
+                    )
+                    .first()
+                )
+
+            dependency_outputs.append(
+                TaskDependencyOut(
+                    id=dependency.id,
+                    task_id=dependency.task_id,
+                    prerequisite_task_id=(
+                        dependency.prerequisite_task_id
+                    ),
+                    created_at=dependency.created_at,
+                    prerequisite_task_title=(
+                        prerequisite.title
+                        if prerequisite
+                        else "Unknown Task"
+                    ),
+                    prerequisite_task_status=(
+                        prerequisite.status
+                        if prerequisite
+                        else "UNKNOWN"
+                    ),
+                )
+            )
+
+        task_out.dependencies = dependency_outputs
+        results.append(task_out)
 
     return results
 
 
-@router.post("", response_model=TaskOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=TaskOut,
+    status_code=status.HTTP_201_CREATED,
+)
 def create_task(
     data: TaskCreate,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    project = db.query(Project).filter(Project.id == data.project_id).first()
+    project = (
+        db.query(Project)
+        .filter(Project.id == data.project_id)
+        .first()
+    )
+
     if not project:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Project not found",
+        )
 
     new_task = Task(
         project_id=data.project_id,
@@ -105,34 +163,65 @@ def create_task(
         status=data.status,
         estimated_hours=data.estimated_hours,
         start_date=data.start_date,
-        due_date=data.due_date
+        due_date=data.due_date,
     )
+
     db.add(new_task)
     db.flush()
 
-    # Handle prerequisite dependencies
+    if new_task.assignee_id is not None:
+        db.add(
+            Notification(
+                user_id=new_task.assignee_id,
+                title=f"Task Assigned: {new_task.title}",
+                message=(
+                    f"You have been assigned the task '{new_task.title}'."
+                ),
+                link="/employee/tasks",
+            )
+        )
+
     if data.prerequisite_ids:
-        for p_id in data.prerequisite_ids:
-            if would_create_cycle(db, new_task.id, p_id):
+        for prerequisite_id in data.prerequisite_ids:
+            if would_create_cycle(
+                db,
+                new_task.id,
+                prerequisite_id,
+            ):
                 db.rollback()
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Circular dependency detected: Task #{p_id} cannot be a prerequisite."
+                    detail=(
+                        "Circular dependency detected: "
+                        f"Task #{prerequisite_id} cannot be "
+                        "a prerequisite."
+                    ),
                 )
-            dep = TaskDependency(task_id=new_task.id, prerequisite_task_id=p_id)
-            db.add(dep)
 
-    # Audit event
+            dependency = TaskDependency(
+                task_id=new_task.id,
+                prerequisite_task_id=prerequisite_id,
+            )
+            db.add(dependency)
+
     audit = AuditEvent(
         project_id=project.id,
         actor_id=current_user.id,
         event_type="TASK_CREATED",
-        description=f"Task '{new_task.title}' created by {current_user.full_name}.",
-        metadata_json={"task_id": new_task.id, "due_date": str(new_task.due_date)}
+        description=(
+            f"Task '{new_task.title}' created by "
+            f"{current_user.full_name}."
+        ),
+        metadata_json={
+            "task_id": new_task.id,
+            "due_date": str(new_task.due_date),
+        },
     )
+
     db.add(audit)
     db.commit()
     db.refresh(new_task)
+
     return TaskOut.model_validate(new_task)
 
 
@@ -140,11 +229,20 @@ def create_task(
 def get_task(
     task_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    task = db.query(Task).filter(Task.id == task_id).first()
+    task = (
+        db.query(Task)
+        .filter(Task.id == task_id)
+        .first()
+    )
+
     if not task:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task not found",
+        )
+
     return TaskOut.model_validate(task)
 
 
@@ -153,45 +251,113 @@ def update_task(
     task_id: int,
     data: TaskUpdate,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    task = db.query(Task).filter(Task.id == task_id).first()
+    task = (
+        db.query(Task)
+        .filter(Task.id == task_id)
+        .first()
+    )
+
     if not task:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task not found",
+        )
+
+    previous_assignee_id = task.assignee_id
 
     if data.title is not None:
         task.title = data.title
+
     if data.description is not None:
         task.description = data.description
+
     if data.assignee_id is not None:
         task.assignee_id = data.assignee_id
+
     if data.priority is not None:
         task.priority = data.priority
+
     if data.status is not None:
         task.status = data.status
+
         if data.status == TaskStatus.COMPLETED.value:
             task.progress_pct = 100
             task.is_blocked = False
+            task.blocker_reason = None
+
+        elif data.status == TaskStatus.BLOCKED.value:
+            task.is_blocked = True
+
+        elif data.status == TaskStatus.IN_PROGRESS.value:
+            # Do not allow a status edit to silently clear a blocker.
+            if task.is_blocked:
+                task.status = TaskStatus.BLOCKED.value
+
     if data.estimated_hours is not None:
         task.estimated_hours = data.estimated_hours
+
     if data.actual_hours is not None:
         task.actual_hours = data.actual_hours
+
     if data.progress_pct is not None:
         task.progress_pct = data.progress_pct
-        if task.progress_pct == 100:
+
+        if data.progress_pct == 100:
             task.status = TaskStatus.COMPLETED.value
             task.is_blocked = False
+            task.blocker_reason = None
+
+        elif task.is_blocked:
+            task.status = TaskStatus.BLOCKED.value
+
+        elif data.progress_pct > 0:
+            task.status = TaskStatus.IN_PROGRESS.value
+
     if data.start_date is not None:
         task.start_date = data.start_date
+
     if data.due_date is not None:
         task.due_date = data.due_date
+
     if data.is_blocked is not None:
         task.is_blocked = data.is_blocked
+
+        if data.is_blocked:
+            task.status = TaskStatus.BLOCKED.value
+
+        else:
+            task.blocker_reason = None
+
+            if task.status == TaskStatus.BLOCKED.value:
+                task.status = (
+                    TaskStatus.IN_PROGRESS.value
+                    if task.progress_pct > 0
+                    else TaskStatus.TODO.value
+                )
+
     if data.blocker_reason is not None:
         task.blocker_reason = data.blocker_reason
 
+    if (
+        task.assignee_id is not None
+        and task.assignee_id != previous_assignee_id
+    ):
+        db.add(
+            Notification(
+                user_id=task.assignee_id,
+                title=f"Task Assigned: {task.title}",
+                message=(
+                    f"You have been assigned the task '{task.title}'."
+                ),
+                link="/employee/tasks",
+            )
+        )
+
     db.commit()
     db.refresh(task)
+
     return TaskOut.model_validate(task)
 
 
@@ -199,14 +365,23 @@ def update_task(
 def delete_task(
     task_id: int,
     current_user: User = Depends(require_manager),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    task = db.query(Task).filter(Task.id == task_id).first()
+    task = (
+        db.query(Task)
+        .filter(Task.id == task_id)
+        .first()
+    )
+
     if not task:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task not found",
+        )
 
     db.delete(task)
     db.commit()
+
     return {"message": "Task deleted successfully"}
 
 
@@ -215,21 +390,50 @@ def update_task_progress(
     task_id: int,
     data: TaskProgressUpdate,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    task = db.query(Task).filter(Task.id == task_id).first()
+    task = (
+        db.query(Task)
+        .filter(Task.id == task_id)
+        .first()
+    )
+
     if not task:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task not found",
+        )
 
     task.progress_pct = data.progress_pct
+
     if data.progress_pct == 100:
+        # Completing the task also resolves its blocker.
         task.status = TaskStatus.COMPLETED.value
         task.is_blocked = False
+        task.blocker_reason = None
+
+    elif task.is_blocked or task.status == TaskStatus.BLOCKED.value:
+        # A progress update must not silently resolve a blocker.
+        task.status = TaskStatus.BLOCKED.value
+
+    elif data.progress_pct > 0:
+        # Positive progress means the task has been started.
+        task.status = TaskStatus.IN_PROGRESS.value
+
     elif data.status:
         task.status = data.status
 
+        if task.status == TaskStatus.COMPLETED.value:
+            task.progress_pct = 100
+            task.is_blocked = False
+            task.blocker_reason = None
+
+        elif task.status == TaskStatus.BLOCKED.value:
+            task.is_blocked = True
+
     db.commit()
     db.refresh(task)
+
     return TaskOut.model_validate(task)
 
 
@@ -238,86 +442,160 @@ def report_or_resolve_blocker(
     task_id: int,
     data: TaskBlockerReport,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    task = db.query(Task).filter(Task.id == task_id).first()
+    task = (
+        db.query(Task)
+        .filter(Task.id == task_id)
+        .first()
+    )
+
     if not task:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task not found",
+        )
 
     task.is_blocked = data.is_blocked
+
     if data.is_blocked:
         task.status = TaskStatus.BLOCKED.value
-        task.blocker_reason = data.blocker_reason or "Unspecified blocker"
-        # Notify project manager
-        notif = Notification(
+        task.blocker_reason = (
+            data.blocker_reason or "Unspecified blocker"
+        )
+
+        notification = Notification(
             user_id=task.project.manager_id,
             title=f"Blocker Reported on '{task.title}'",
-            message=f"{current_user.full_name} reported blocker: {task.blocker_reason}",
-            link=f"/manager/tasks"
+            message=(
+                f"{current_user.full_name} reported blocker: "
+                f"{task.blocker_reason}"
+            ),
+            link="/manager/tasks",
         )
-        db.add(notif)
+
+        db.add(notification)
+
     else:
-        if task.status == TaskStatus.BLOCKED.value:
-            task.status = TaskStatus.IN_PROGRESS.value
         task.blocker_reason = None
 
-    # Audit event
-    event_type = "BLOCKER_REPORTED" if data.is_blocked else "BLOCKER_RESOLVED"
+        if task.status == TaskStatus.BLOCKED.value:
+            task.status = (
+                TaskStatus.IN_PROGRESS.value
+                if task.progress_pct > 0
+                else TaskStatus.TODO.value
+            )
+
+    event_type = (
+        "BLOCKER_REPORTED"
+        if data.is_blocked
+        else "BLOCKER_RESOLVED"
+    )
+
     audit = AuditEvent(
         project_id=task.project_id,
         actor_id=current_user.id,
         event_type=event_type,
-        description=f"{current_user.full_name} {'reported' if data.is_blocked else 'resolved'} blocker on task '{task.title}'.",
-        metadata_json={"task_id": task.id, "reason": task.blocker_reason}
+        description=(
+            f"{current_user.full_name} "
+            f"{'reported' if data.is_blocked else 'resolved'} "
+            f"blocker on task '{task.title}'."
+        ),
+        metadata_json={
+            "task_id": task.id,
+            "reason": task.blocker_reason,
+        },
     )
+
     db.add(audit)
     db.commit()
     db.refresh(task)
+
     return TaskOut.model_validate(task)
 
 
-@router.post("/{task_id}/dependencies", response_model=TaskDependencyOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/{task_id}/dependencies",
+    response_model=TaskDependencyOut,
+    status_code=status.HTTP_201_CREATED,
+)
 def add_task_dependency(
     task_id: int,
     data: TaskDependencyCreate,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    task = db.query(Task).filter(Task.id == task_id).first()
-    prereq = db.query(Task).filter(Task.id == data.prerequisite_task_id).first()
-    if not task or not prereq:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task or prerequisite task not found")
+    task = (
+        db.query(Task)
+        .filter(Task.id == task_id)
+        .first()
+    )
 
-    if task.project_id != prereq.project_id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Tasks must belong to the same project")
+    prerequisite = (
+        db.query(Task)
+        .filter(Task.id == data.prerequisite_task_id)
+        .first()
+    )
 
-    # Cycle check!
-    if would_create_cycle(db, task_id, data.prerequisite_task_id):
+    if not task or not prerequisite:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Circular dependency error: Task #{data.prerequisite_task_id} ('{prereq.title}') cannot depend on Task #{task_id} ('{task.title}')."
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task or prerequisite task not found",
         )
 
-    # Check duplicate
-    existing = db.query(TaskDependency).filter(
-        TaskDependency.task_id == task_id,
-        TaskDependency.prerequisite_task_id == data.prerequisite_task_id
-    ).first()
-    if existing:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Dependency link already exists")
+    if task.project_id != prerequisite.project_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Tasks must belong to the same project",
+        )
 
-    dep = TaskDependency(task_id=task_id, prerequisite_task_id=data.prerequisite_task_id)
-    db.add(dep)
+    if would_create_cycle(
+        db,
+        task_id,
+        data.prerequisite_task_id,
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "Circular dependency error: "
+                f"Task #{data.prerequisite_task_id} "
+                f"('{prerequisite.title}') cannot depend on "
+                f"Task #{task_id} ('{task.title}')."
+            ),
+        )
+
+    existing = (
+        db.query(TaskDependency)
+        .filter(
+            TaskDependency.task_id == task_id,
+            TaskDependency.prerequisite_task_id
+            == data.prerequisite_task_id,
+        )
+        .first()
+    )
+
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Dependency link already exists",
+        )
+
+    dependency = TaskDependency(
+        task_id=task_id,
+        prerequisite_task_id=data.prerequisite_task_id,
+    )
+
+    db.add(dependency)
     db.commit()
-    db.refresh(dep)
+    db.refresh(dependency)
 
     return TaskDependencyOut(
-        id=dep.id,
-        task_id=dep.task_id,
-        prerequisite_task_id=dep.prerequisite_task_id,
-        created_at=dep.created_at,
-        prerequisite_task_title=prereq.title,
-        prerequisite_task_status=prereq.status
+        id=dependency.id,
+        task_id=dependency.task_id,
+        prerequisite_task_id=dependency.prerequisite_task_id,
+        created_at=dependency.created_at,
+        prerequisite_task_title=prerequisite.title,
+        prerequisite_task_status=prerequisite.status,
     )
 
 
@@ -326,15 +604,24 @@ def remove_task_dependency(
     task_id: int,
     prerequisite_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    dep = db.query(TaskDependency).filter(
-        TaskDependency.task_id == task_id,
-        TaskDependency.prerequisite_task_id == prerequisite_id
-    ).first()
-    if not dep:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dependency link not found")
+    dependency = (
+        db.query(TaskDependency)
+        .filter(
+            TaskDependency.task_id == task_id,
+            TaskDependency.prerequisite_task_id == prerequisite_id,
+        )
+        .first()
+    )
 
-    db.delete(dep)
+    if not dependency:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Dependency link not found",
+        )
+
+    db.delete(dependency)
     db.commit()
+
     return {"message": "Dependency removed successfully"}

@@ -22,6 +22,7 @@ class RecoveryProposal(Base):
     title = Column(String(255), nullable=False)
     summary = Column(Text, nullable=False)
     proposed_actions = Column(JSON, default=list, nullable=False)  # list of action dicts
+    focus_contexts = Column(JSON, default=list, nullable=False)
     rationale = Column(Text, nullable=False)
     assumptions = Column(JSON, default=list, nullable=False)       # list of strings
     status = Column(String(50), default=ProposalStatus.PENDING_APPROVAL.value, nullable=False, index=True)

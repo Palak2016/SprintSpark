@@ -30,6 +30,7 @@ import { DailyUpdatesView } from './pages/employee/DailyUpdatesView';
 import { EmployeeLeaveView } from './pages/employee/EmployeeLeaveView';
 import { FocusGuardianView } from './pages/employee/FocusGuardianView';
 import { ProfileSettingsView } from './pages/employee/ProfileSettingsView';
+import { AccountSettingsView } from './pages/employee/AccountSettingsView';
 
 // Role Guard Component
 const ProtectedRoute: React.FC<{
@@ -110,7 +111,7 @@ export const App: React.FC = () => {
               <Route path="daily-updates" element={<DailyUpdatesView />} />
               <Route path="leave" element={<EmployeeLeaveView />} />
               <Route path="focus" element={<FocusGuardianView />} />
-              <Route path="settings" element={<ProfileSettingsView />} />
+              <Route path="settings" element={<AccountSettingsView />} />
             </Route>
 
             <Route

@@ -1,17 +1,29 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useProject } from '../../context/ProjectContext';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import {
-  Project, Task, RiskAnalysis, LeaveRequest, RecoveryProposal, AuditEvent
+  Task,
+  RiskAnalysis,
+  LeaveRequest,
+  RecoveryProposal,
+  AuditEvent,
 } from '../../types';
 import { StatCard } from '../../components/dashboard/StatCard';
 import { RiskBadge } from '../../components/common/RiskBadge';
 import { RecoveryReviewModal } from '../../components/risk/RecoveryReviewModal';
+import { formatIndianTime } from '../../utils/date';
 import {
-  FolderKanban, CheckSquare, AlertOctagon, CalendarDays,
-  Sparkles, History, ArrowRight, Clock, Users, ArrowUpRight
+  CheckSquare,
+  AlertOctagon,
+  CalendarDays,
+  Sparkles,
+  ArrowRight,
+  Clock,
+  ArrowUpRight,
+  RefreshCw,
 } from 'lucide-react';
 
 export const ManagerOverview: React.FC = () => {
@@ -20,238 +32,511 @@ export const ManagerOverview: React.FC = () => {
   const { activeProject, refreshProjects } = useProject();
 
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [riskAnalysis, setRiskAnalysis] = useState<RiskAnalysis | null>(null);
-  const [pendingLeaves, setPendingLeaves] = useState<LeaveRequest[]>([]);
-  const [pendingProposals, setPendingProposals] = useState<RecoveryProposal[]>([]);
-  const [recentAudits, setRecentAudits] = useState<AuditEvent[]>([]);
-  const [selectedProposal, setSelectedProposal] = useState<RecoveryProposal | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [riskAnalysis, setRiskAnalysis] =
+    useState<RiskAnalysis | null>(null);
+  const [pendingLeaves, setPendingLeaves] =
+    useState<LeaveRequest[]>([]);
+  const [pendingProposals, setPendingProposals] =
+    useState<RecoveryProposal[]>([]);
+  const [recentAudits, setRecentAudits] =
+    useState<AuditEvent[]>([]);
+  const [selectedProposal, setSelectedProposal] =
+    useState<RecoveryProposal | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
+  // Prevent overlapping refresh requests.
+  const isRefreshing = useRef(false);
+
+  // Track the project associated with the current request.
+  const activeProjectId = activeProject?.id;
+
+  const loadOverviewData = useCallback(
+    async (showLoader = false) => {
+      if (!activeProjectId || isRefreshing.current) {
+        if (!activeProjectId) {
+          setIsLoading(false);
+        }
+        return;
+      }
+
+      isRefreshing.current = true;
+
+      if (showLoader) {
+        setIsLoading(true);
+      }
+
+      try {
+        const [
+          tasksData,
+          riskData,
+          leavesData,
+          proposalsData,
+          auditsData,
+        ] = await Promise.all([
+          api.getTasks({ project_id: activeProjectId }),
+          api.getRiskAnalysis(activeProjectId),
+          api.getLeaveRequests({ status_filter: 'PENDING' }),
+          api.getRecoveryProposals(activeProjectId),
+          api.getAuditTrail(activeProjectId),
+        ]);
+
+        setTasks(tasksData);
+        setRiskAnalysis(riskData);
+        setPendingLeaves(leavesData);
+
+        setPendingProposals(
+          proposalsData.filter(
+            (proposal) =>
+              proposal.status === 'PENDING_APPROVAL'
+          )
+        );
+
+        setRecentAudits(auditsData.slice(0, 8));
+        setLastUpdated(new Date());
+      } catch (error) {
+        console.error(
+          'Failed to load manager overview:',
+          error
+        );
+      } finally {
+        isRefreshing.current = false;
+
+        if (showLoader) {
+          setIsLoading(false);
+        }
+      }
+    },
+    [activeProjectId]
+  );
+
+  // Load when the project changes and poll every five seconds.
   useEffect(() => {
-    if (activeProject) {
-      loadOverviewData();
-    }
-  }, [activeProject]);
-
-  const loadOverviewData = async () => {
-    if (!activeProject) return;
-    setIsLoading(true);
-    try {
-      const [tasksData, riskData, leavesData, proposalsData, auditsData] = await Promise.all([
-        api.getTasks({ project_id: activeProject.id }),
-        api.getRiskAnalysis(activeProject.id),
-        api.getLeaveRequests({ status_filter: 'PENDING' }),
-        api.getRecoveryProposals(activeProject.id),
-        api.getAuditTrail(activeProject.id)
-      ]);
-
-      setTasks(tasksData);
-      setRiskAnalysis(riskData);
-      setPendingLeaves(leavesData);
-      setPendingProposals(proposalsData.filter(p => p.status === 'PENDING_APPROVAL'));
-      setRecentAudits(auditsData.slice(0, 8));
-    } catch (err) {
-      console.error("Failed to load overview data:", err);
-    } finally {
+    if (!activeProjectId) {
+      setTasks([]);
+      setRiskAnalysis(null);
+      setPendingLeaves([]);
+      setPendingProposals([]);
+      setRecentAudits([]);
+      setLastUpdated(null);
       setIsLoading(false);
+      return;
     }
-  };
+
+    void loadOverviewData(true);
+
+    const intervalId = window.setInterval(() => {
+      void loadOverviewData(false);
+    }, 5000);
+
+    // Refresh immediately when the manager returns to this tab.
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void loadOverviewData(false);
+      }
+    };
+
+    document.addEventListener(
+      'visibilitychange',
+      handleVisibilityChange
+    );
+
+    return () => {
+      window.clearInterval(intervalId);
+
+      document.removeEventListener(
+        'visibilitychange',
+        handleVisibilityChange
+      );
+    };
+  }, [activeProjectId, loadOverviewData]);
 
   const totalTasks = tasks.length;
-  const completedTasks = tasks.filter(t => t.status === 'COMPLETED').length;
-  const blockedTasks = tasks.filter(t => t.is_blocked || t.status === 'BLOCKED').length;
-  const overdueTasks = tasks.filter(t => t.status !== 'COMPLETED' && new Date(t.due_date) < new Date()).length;
-  const completionPct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+  const completedTasks = tasks.filter(
+    (task) => task.status === 'COMPLETED'
+  ).length;
+
+  const blockedTasks = tasks.filter(
+    (task) =>
+      task.is_blocked || task.status === 'BLOCKED'
+  ).length;
+
+  const overdueTasks = tasks.filter(
+    (task) =>
+      task.status !== 'COMPLETED' &&
+      task.due_date &&
+      new Date(task.due_date) < new Date()
+  ).length;
+
+  const completionPct =
+    totalTasks > 0
+      ? Math.round((completedTasks / totalTasks) * 100)
+      : 0;
 
   return (
-    <div className="space-y-8">
-      {/* Welcome & Project Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-8 text-[#FAF8FF]">
+      {/* Project header */}
+      <section className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <span className="text-xs font-semibold text-charcoal-400 uppercase tracking-wider">
+          <span className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-300">
             Manager Control Center
           </span>
-          <h1 className="text-2xl font-bold text-charcoal-900 mt-0.5">
-            {activeProject ? activeProject.name : 'Project Overview'}
+
+          <h1 className="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">
+            {activeProject
+              ? activeProject.name
+              : 'Project Overview'}
           </h1>
-          <p className="text-xs text-charcoal-500 mt-0.5">
-            Welcome back, {user?.full_name}. Here is the current delivery status and risk posture.
+
+          <p className="mt-2 text-sm leading-6 text-[#B7ADC9]">
+            Welcome back
+            {user?.full_name ? `, ${user.full_name}` : ''}.
+            Here is the current delivery status and risk posture.
+          </p>
+
+          <p className="mt-2 flex items-center gap-2 text-xs text-[#A99DBD]">
+            <RefreshCw
+              className={`h-3 w-3 ${
+                isLoading ? 'animate-spin' : ''
+              }`}
+            />
+
+            {lastUpdated
+              ? `Last updated at ${lastUpdated.toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit',
+                })} · Auto-refresh every 5 seconds`
+              : 'Loading latest project data...'}
           </p>
         </div>
 
         {riskAnalysis && (
           <div className="flex items-center gap-3">
-            <RiskBadge level={riskAnalysis.risk_level} score={riskAnalysis.score} size="lg" />
+            <RiskBadge
+              level={riskAnalysis.risk_level}
+              score={riskAnalysis.score}
+              size="lg"
+            />
+
             <Link
               to="/manager/risk"
-              className="p-2 rounded-lg border border-charcoal-200 text-charcoal-600 hover:text-charcoal-900 hover:bg-white text-xs font-medium"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-violet-400/30 bg-violet-500/10 px-3 py-2 text-sm font-semibold text-violet-200 transition-colors hover:bg-violet-500/20 hover:text-white"
               title="Inspect Risk Details"
             >
               Details
+              <ArrowUpRight className="h-4 w-4" />
             </Link>
           </div>
         )}
-      </div>
+      </section>
 
-      {/* High Risk Callout Banner (if risk is high or pending proposals exist) */}
+      {/* AI recovery proposals */}
       {pendingProposals.length > 0 && (
-        <div className="p-5 rounded-2xl bg-gradient-to-r from-forest-900 to-charcoal-900 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 animate-in fade-in">
-          <div className="flex items-start gap-3.5">
-            <div className="p-2.5 rounded-xl bg-forest-700 text-emerald-300 mt-0.5">
-              <Sparkles className="w-6 h-6" />
+        <section className="manager-recovery-proposal flex flex-col justify-between gap-5 rounded-2xl border border-violet-400/20 bg-gradient-to-r from-[#291849] via-[#211638] to-[#19112B] p-5 shadow-xl md:flex-row md:items-center">
+          <div className="flex items-start gap-4">
+            <div className="mt-0.5 rounded-xl border border-violet-300/20 bg-violet-500/15 p-3">
+              <Sparkles className="h-6 w-6 text-violet-300" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-base font-bold text-white">
+
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-base font-bold text-white">
                   Action Required: {pendingProposals[0].title}
-                </h3>
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-forest-800 text-emerald-300 border border-forest-600">
+                </h2>
+
+                <span className="rounded-md border border-violet-300/25 bg-violet-500/15 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-violet-200">
                   AI Proposal Ready
                 </span>
               </div>
-              <p className="text-xs text-forest-100 mt-1 max-w-2xl leading-relaxed">
-                {pendingProposals[0].summary} Contains {pendingProposals[0].proposed_actions.length} validated actions (reassignments, blocker escalation, schedule buffer).
+
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-[#C4B6DB]">
+                {pendingProposals[0].summary} Contains{' '}
+                {pendingProposals[0].proposed_actions.length}{' '}
+                validated actions (reassignments, blocker escalation,
+                schedule buffer).
               </p>
             </div>
           </div>
+
           <button
-            onClick={() => setSelectedProposal(pendingProposals[0])}
-            className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl bg-emerald-500 text-charcoal-900 text-xs font-bold hover:bg-emerald-400 shadow-md transition-all whitespace-nowrap"
+            type="button"
+            onClick={() =>
+              setSelectedProposal(pendingProposals[0])
+            }
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-violet-300/30 bg-violet-500 px-5 py-3 text-sm font-bold text-white shadow-md transition-all hover:bg-violet-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300"
           >
-            <span>Review & Approve Proposal</span>
-            <ArrowRight className="w-4 h-4" />
+            Review & Approve
+            <ArrowRight className="h-4 w-4" />
           </button>
-        </div>
+        </section>
       )}
 
-      {/* KPI Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* KPI cards */}
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Overall Completion"
           value={`${completionPct}%`}
           subtitle={`${completedTasks} of ${totalTasks} tasks finished`}
           icon={CheckSquare}
           variant="forest"
-          action={{ label: "View Tasks", onClick: () => navigate('/manager/tasks') }}
+          action={{
+            label: 'View Tasks',
+            onClick: () => navigate('/manager/tasks'),
+          }}
         />
+
         <StatCard
           title="Active Blockers"
           value={blockedTasks}
-          subtitle={blockedTasks > 0 ? "Impediments halting progress" : "No active work blockers"}
+          subtitle={
+            blockedTasks > 0
+              ? 'Impediments halting progress'
+              : 'No active work blockers'
+          }
           icon={AlertOctagon}
-          variant={blockedTasks > 0 ? "danger" : "success"}
-          action={{ label: "Inspect", onClick: () => navigate('/manager/tasks') }}
+          variant={blockedTasks > 0 ? 'danger' : 'success'}
+          action={{
+            label: 'Inspect',
+            onClick: () => navigate('/manager/tasks'),
+          }}
         />
+
         <StatCard
           title="Pending Leave"
           value={pendingLeaves.length}
-          subtitle={pendingLeaves.length > 0 ? "Awaiting manager review" : "No pending time off"}
+          subtitle={
+            pendingLeaves.length > 0
+              ? 'Awaiting manager review'
+              : 'No pending time off'
+          }
           icon={CalendarDays}
-          variant={pendingLeaves.length > 0 ? "warning" : "default"}
-          action={{ label: "Review", onClick: () => navigate('/manager/leave') }}
+          variant={
+            pendingLeaves.length > 0 ? 'warning' : 'default'
+          }
+          action={{
+            label: 'Review',
+            onClick: () => navigate('/manager/leave'),
+          }}
         />
+
         <StatCard
           title="Overdue Tasks"
           value={overdueTasks}
-          subtitle={overdueTasks > 0 ? "Past scheduled due date" : "All tasks within schedule"}
+          subtitle={
+            overdueTasks > 0
+              ? 'Past scheduled due date'
+              : 'All tasks within schedule'
+          }
           icon={Clock}
-          variant={overdueTasks > 0 ? "danger" : "success"}
-          action={{ label: "Reschedule", onClick: () => navigate('/manager/tasks') }}
+          variant={overdueTasks > 0 ? 'danger' : 'success'}
+          action={{
+            label: 'Reschedule',
+            onClick: () => navigate('/manager/tasks'),
+          }}
         />
-      </div>
+      </section>
 
-      {/* Two Column Layout: Critical Path Tasks & Recent Decision Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left Column: Tasks Requiring Attention */}
-        <div className="lg:col-span-7 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-charcoal-900 uppercase tracking-wider">
-              Critical Path Tasks & Blockers
-            </h3>
-            <Link to="/manager/tasks" className="text-xs font-semibold text-forest-700 hover:underline">
-              View All Tasks →
+      {/* Task list and audit activity */}
+      <section className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12 lg:gap-8">
+        {/* Critical tasks */}
+        <div className="space-y-4 lg:col-span-7">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-bold uppercase tracking-[0.12em] text-white">
+                Critical Path Tasks & Blockers
+              </h2>
+
+              <p className="mt-1 text-xs text-[#A99DBD]">
+                Priority work across your project
+              </p>
+            </div>
+
+            <Link
+              to="/manager/tasks"
+              className="inline-flex items-center gap-2 rounded-lg border border-violet-400/30 bg-violet-500/10 px-3 py-2 text-sm font-bold text-violet-200 transition-all hover:border-violet-300/60 hover:bg-violet-500/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
+            >
+              View All Tasks
+              <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
 
-          <div className="bg-white rounded-xl border border-charcoal-100 shadow-card divide-y divide-charcoal-50 overflow-hidden">
-            {tasks.slice(0, 5).map((t) => (
-              <div
-                key={t.id}
-                onClick={() => navigate('/manager/tasks')}
-                className="p-4 hover:bg-charcoal-50/60 transition-colors cursor-pointer flex items-center justify-between gap-3"
-              >
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs text-charcoal-400">#{t.id}</span>
-                    <h4 className="text-sm font-semibold text-charcoal-900 truncate">{t.title}</h4>
-                    {t.is_blocked && (
-                      <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
-                        BLOCKED
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-3 text-xs text-charcoal-500 mt-1">
-                    <span>{t.assignee ? t.assignee.full_name : 'Unassigned'}</span>
-                    <span>•</span>
-                    <span>Due {t.due_date}</span>
-                    <span>•</span>
-                    <span>{t.estimated_hours}h estimated</span>
-                  </div>
-                </div>
+          <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#19112B] shadow-[0_10px_35px_rgba(0,0,0,0.15)]">
+            {isLoading ? (
+              <p className="p-8 text-center text-sm text-[#B7ADC9]">
+                Loading project tasks...
+              </p>
+            ) : tasks.length === 0 ? (
+              <div className="p-8 text-center">
+                <CheckSquare className="mx-auto h-8 w-8 text-violet-300" />
 
-                <div className="text-right flex-shrink-0">
-                  <span className="text-xs font-bold text-charcoal-700 block">{t.progress_pct}%</span>
-                  <div className="w-16 h-1.5 bg-charcoal-100 rounded-full overflow-hidden mt-1">
-                    <div
-                      className={`h-full ${t.is_blocked ? 'bg-rose-500' : 'bg-forest-600'}`}
-                      style={{ width: `${t.progress_pct}%` }}
-                    />
-                  </div>
-                </div>
+                <p className="mt-3 text-sm font-semibold text-white">
+                  No tasks found
+                </p>
+
+                <p className="mt-1 text-xs text-[#B7ADC9]">
+                  Tasks for the active project will appear here.
+                </p>
               </div>
-            ))}
+            ) : (
+              tasks.slice(0, 5).map((task) => (
+                <button
+                  type="button"
+                  key={task.id}
+                  onClick={() => navigate('/manager/tasks')}
+                  className="flex w-full items-center justify-between gap-4 border-b border-white/[0.07] p-4 text-left transition-colors last:border-b-0 hover:bg-violet-500/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-400"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-xs text-[#A99DBD]">
+                        #{task.id}
+                      </span>
+
+                      <h3 className="truncate text-sm font-semibold text-white">
+                        {task.title}
+                      </h3>
+
+                      {(task.is_blocked ||
+                        task.status === 'BLOCKED') && (
+                        <span className="rounded-md border border-rose-400/25 bg-rose-500/10 px-2 py-0.5 text-[10px] font-bold text-rose-300">
+                          BLOCKED
+                        </span>
+                      )}
+
+                      {task.status === 'IN_PROGRESS' && (
+                        <span className="rounded-md border border-violet-400/25 bg-violet-500/10 px-2 py-0.5 text-[10px] font-bold text-violet-200">
+                          IN PROGRESS
+                        </span>
+                      )}
+
+                      {task.status === 'COMPLETED' && (
+                        <span className="rounded-md border border-emerald-400/25 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-300">
+                          COMPLETED
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#B7ADC9]">
+                      <span>
+                        {task.assignee?.full_name || 'Unassigned'}
+                      </span>
+
+                      <span className="text-white/20">•</span>
+
+                      <span>
+                        Due {task.due_date || 'Not set'}
+                      </span>
+
+                      <span className="text-white/20">•</span>
+
+                      <span>
+                        {task.actual_hours ?? 0}h logged
+                      </span>
+
+                      <span className="text-white/20">•</span>
+
+                      <span>
+                        {task.estimated_hours ?? 0}h estimated
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="w-20 shrink-0 text-right">
+                    <span className="block text-xs font-bold text-white">
+                      {task.progress_pct ?? 0}%
+                    </span>
+
+                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+                      <div
+                        className={`h-full rounded-full ${
+                          task.is_blocked ||
+                          task.status === 'BLOCKED'
+                            ? 'bg-rose-400'
+                            : task.status === 'COMPLETED'
+                              ? 'bg-emerald-400'
+                              : 'manager-task-progress-fill bg-violet-400'
+                        }`}
+                        style={{
+                          width: `${Math.min(
+                            100,
+                            Math.max(0, task.progress_pct || 0)
+                          )}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                </button>
+              ))
+            )}
           </div>
         </div>
 
-        {/* Right Column: Recent Decision Audit Activity */}
-        <div className="lg:col-span-5 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-charcoal-900 uppercase tracking-wider">
-              Recent Activity & Decisions
-            </h3>
-            <Link to="/manager/audit" className="text-xs font-semibold text-forest-700 hover:underline">
-              Full Audit Trail →
+        {/* Recent audit activity */}
+        <div className="space-y-4 lg:col-span-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-bold uppercase tracking-[0.12em] text-white">
+                Recent Activity & Decisions
+              </h2>
+
+              <p className="mt-1 text-xs text-[#A99DBD]">
+                Latest project events
+              </p>
+            </div>
+
+            <Link
+              to="/manager/audit"
+              className="inline-flex items-center gap-2 rounded-lg border border-violet-400/30 bg-violet-500/10 px-3 py-2 text-sm font-bold text-violet-200 transition-all hover:border-violet-300/60 hover:bg-violet-500/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
+            >
+              Full Audit Trail
+              <ArrowUpRight className="h-4 w-4" />
             </Link>
           </div>
 
-          <div className="bg-white rounded-xl border border-charcoal-100 shadow-card p-4 space-y-3">
-            {recentAudits.length === 0 ? (
-              <p className="text-xs text-charcoal-400 text-center py-6">No activity records logged yet.</p>
+          <div className="space-y-3 rounded-2xl border border-white/10 bg-[#19112B] p-4 shadow-[0_10px_35px_rgba(0,0,0,0.15)]">
+            {isLoading ? (
+              <p className="py-6 text-center text-sm text-[#B7ADC9]">
+                Loading audit activity...
+              </p>
+            ) : recentAudits.length === 0 ? (
+              <p className="py-6 text-center text-sm text-[#B7ADC9]">
+                No activity records logged yet.
+              </p>
             ) : (
-              recentAudits.map((a) => (
-                <div key={a.id} className="text-xs pb-3 border-b border-charcoal-50 last:border-0 last:pb-0">
-                  <div className="flex items-center justify-between text-charcoal-400 text-[10px] mb-0.5">
-                    <span className="font-semibold text-forest-800 uppercase tracking-wider">
-                      {a.event_type.replace(/_/g, ' ')}
+              recentAudits.map((audit) => (
+                <div
+                  key={audit.id}
+                  className="border-b border-white/[0.07] pb-3 text-xs last:border-0 last:pb-0"
+                >
+                  <div className="mb-1 flex items-center justify-between gap-3">
+                    <span className="font-bold uppercase tracking-wider text-violet-300">
+                      {audit.event_type.replace(/_/g, ' ')}
                     </span>
-                    <span>{new Date(a.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+
+                    <span className="shrink-0 text-[10px] text-[#A99DBD]">
+                      {formatIndianTime(audit.created_at)}
+                    </span>
                   </div>
-                  <p className="text-charcoal-800 font-medium leading-relaxed">{a.description}</p>
+
+                  <p className="text-sm leading-6 text-[#D8CFE7]">
+                    {audit.description}
+                  </p>
                 </div>
               ))
             )}
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Recovery Review Modal */}
+      {/* Recovery review modal */}
       {selectedProposal && (
         <RecoveryReviewModal
           isOpen={!!selectedProposal}
           onClose={() => setSelectedProposal(null)}
           proposal={selectedProposal}
           onDecided={async () => {
-            await loadOverviewData();
+            await loadOverviewData(false);
             await refreshProjects();
           }}
         />
@@ -259,3 +544,5 @@ export const ManagerOverview: React.FC = () => {
     </div>
   );
 };
+
+export default ManagerOverview;

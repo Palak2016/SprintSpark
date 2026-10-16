@@ -9,6 +9,8 @@ from app.models.task import Task, TaskStatus, TaskDependency
 from app.models.leave import LeaveRequest, LeaveStatus
 from app.models.risk import RiskAnalysis
 from app.models.recovery import RecoveryProposal, ProposalStatus
+from app.models.focus_context import FocusContext
+from app.models.user import User
 from app.services.risk_engine import analyze_project_risk
 
 
@@ -50,6 +52,27 @@ def context_collector_node(state: RecoveryWorkflowState, db: Session) -> Dict[st
             "prerequisites": prereqs
         })
 
+    focus_contexts = [
+        {
+            "id": focus_context.id,
+            "task_id": focus_context.task_id,
+            "task_title": task_title,
+            "user_id": focus_context.user_id,
+            "employee_name": employee_name,
+            "reason": focus_context.reason,
+            "context": focus_context.context,
+            "created_at": focus_context.created_at.isoformat(),
+        }
+        for focus_context, task_title, employee_name in (
+            db.query(FocusContext, Task.title, User.full_name)
+            .join(Task, Task.id == FocusContext.task_id)
+            .join(User, User.id == FocusContext.user_id)
+            .filter(Task.project_id == project.id)
+            .order_by(FocusContext.created_at.asc(), FocusContext.id.asc())
+            .all()
+        )
+    ]
+
     members_data = []
     for m in project.members:
         members_data.append({
@@ -74,7 +97,8 @@ def context_collector_node(state: RecoveryWorkflowState, db: Session) -> Dict[st
             "start_date": str(project.start_date),
             "target_end_date": str(project.target_end_date),
             "tasks": tasks_data,
-            "members": members_data
+            "members": members_data,
+            "focus_contexts": focus_contexts,
         }
     }
 
@@ -113,16 +137,47 @@ def recovery_planner_node(state: RecoveryWorkflowState) -> Dict[str, Any]:
     context = state["project_context"]
     tasks = context["tasks"]
     members = context["members"]
+    focus_contexts = context.get("focus_contexts", [])
     leaves = state["leave_impact"]["approved_leaves"]
+
+    def context_for_task(task_id: int) -> List[Dict[str, Any]]:
+        return [item for item in focus_contexts if item["task_id"] == task_id]
+
+    def context_details(task_id: int) -> str:
+        return " ".join(
+            f"Employee {item['employee_name']} reported under "
+            f"'{item['reason']}': {item['context']}"
+            for item in context_for_task(task_id)
+        )
+
+    context_count = len(focus_contexts)
+    context_summary = (
+        f" Incorporated {context_count} employee-submitted Focus Guardian "
+        f"context note(s) into this proposal."
+        if context_count
+        else ""
+    )
 
     # If risk is low or insufficient data, state why
     if risk_analysis["risk_level"] == "LOW":
         return {
             "raw_proposal": {
                 "title": "On-Track Maintenance Plan",
-                "summary": "Project is currently performing within normal delivery parameters. No immediate schedule intervention required.",
+                "summary": (
+                    "Project is currently performing within normal delivery parameters. "
+                    "No immediate schedule intervention required." + context_summary
+                ),
                 "proposed_actions": [],
-                "rationale": "All tasks are progressing within estimated velocity thresholds and no critical blockers or leave conflicts exist.",
+                "rationale": (
+                    "All tasks are progressing within estimated velocity thresholds and no critical "
+                    "blockers or leave conflicts exist."
+                    + (
+                        " Review the attached employee context notes for task-specific concerns "
+                        "before deciding whether further action is needed."
+                        if context_count
+                        else ""
+                    )
+                ),
                 "assumptions": ["Current team velocity remains steady", "No unannounced dependencies or leave occur"]
             }
         }
@@ -130,9 +185,20 @@ def recovery_planner_node(state: RecoveryWorkflowState) -> Dict[str, Any]:
         return {
             "raw_proposal": {
                 "title": "Data Completion Plan",
-                "summary": "Delivery risk cannot be accurately computed because essential estimates or assignees are missing.",
+                "summary": (
+                    "Delivery risk cannot be accurately computed because essential estimates or "
+                    "assignees are missing." + context_summary
+                ),
                 "proposed_actions": [],
-                "rationale": "Before altering project schedule, team should complete missing task estimates and assign unassigned tasks.",
+                "rationale": (
+                    "Before altering project schedule, team should complete missing task estimates "
+                    "and assign unassigned tasks."
+                    + (
+                        " Review the attached employee context notes alongside the missing project data."
+                        if context_count
+                        else ""
+                    )
+                ),
                 "assumptions": ["Team members can provide effort estimates within 24 hours"]
             }
         }
@@ -142,7 +208,7 @@ def recovery_planner_node(state: RecoveryWorkflowState) -> Dict[str, Any]:
     assumptions = [
         "Reassigned members possess necessary architectural and domain context",
         "Team members maintain dedicated focus during sprint recovery window",
-        "Blocker resolution unblocks downstream dependent tasks immediately"
+        "Critical-path blockers must be resolved before dependent work resumes"
     ]
 
     # Action 1: Handle blocked tasks
@@ -151,9 +217,17 @@ def recovery_planner_node(state: RecoveryWorkflowState) -> Dict[str, Any]:
             for t_id in rule["affected_task_ids"]:
                 task = next((t for t in tasks if t["id"] == t_id), None)
                 if task:
+                    task_contexts = context_for_task(task["id"])
+                    has_employee_context = bool(task_contexts)
+                    latest_context = task_contexts[-1] if has_employee_context else None
+                    context_note = context_details(task["id"])
                     proposed_actions.append({
                         "action_id": str(uuid.uuid4())[:8],
-                        "action_type": "RESOLVE_DEPENDENCY",
+                        "action_type": (
+                            "ESCALATE_BLOCKER"
+                            if has_employee_context
+                            else "RESOLVE_DEPENDENCY"
+                        ),
                         "task_id": task["id"],
                         "task_title": task["title"],
                         "original_values": {
@@ -161,15 +235,40 @@ def recovery_planner_node(state: RecoveryWorkflowState) -> Dict[str, Any]:
                             "blocker_reason": task["blocker_reason"],
                             "status": task["status"]
                         },
-                        "proposed_values": {
-                            "is_blocked": False,
-                            "blocker_reason": "Escalated for immediate priority resolution via WorkPilot Recovery Plan",
-                            "status": "IN_PROGRESS"
-                        },
-                        "reason": f"Active blocker on '{task['title']}' halts critical-path downstream tasks. Prioritizing credential/API provisioning clears the delivery bottleneck.",
-                        "expected_impact": "Unblocks 1 downstream dependent task and recovers 15% estimated milestone slippage."
+                        "proposed_values": (
+                            {
+                                "is_blocked": True,
+                                "blocker_reason": (
+                                    f"Employee-reported issue ({latest_context['reason']}): "
+                                    f"{latest_context['context']}"
+                                )
+                            }
+                            if latest_context
+                            else {
+                                "is_blocked": False,
+                                "blocker_reason": "Escalated for immediate priority resolution via WorkPilot Recovery Plan",
+                                "status": "IN_PROGRESS"
+                            }
+                        ),
+                        "reason": (
+                            f"Keep '{task['title']}' blocked and escalate the specific technical issue "
+                            f"described by the employee before resuming work. {context_note}"
+                            if has_employee_context
+                            else f"Active blocker on '{task['title']}' halts critical-path downstream tasks. Prioritizing credential/API provisioning clears the delivery bottleneck."
+                        ),
+                        "expected_impact": (
+                            "Gives the manager and team a concrete issue to resolve without marking "
+                            "the task unblocked before the employee-reported dependency is addressed."
+                            if has_employee_context
+                            else "Unblocks 1 downstream dependent task and recovers 15% estimated milestone slippage."
+                        )
                     })
-                    rationale_points.append(f"Clear critical path blocker on Task #{task['id']} ({task['title']}).")
+                    rationale_points.append(
+                        f"Escalate the employee-reported blocker on Task #{task['id']} ({task['title']}) "
+                        f"without prematurely clearing it."
+                        if has_employee_context
+                        else f"Clear critical path blocker on Task #{task['id']} ({task['title']})."
+                    )
 
     # Action 2: Handle leave conflicts by reassigning to available team member
     for rule in risk_analysis["triggered_rules"]:
@@ -190,6 +289,12 @@ def recovery_planner_node(state: RecoveryWorkflowState) -> Dict[str, Any]:
                 # Pick the member with least remaining workload
                 new_assignee = candidate_members[0] if candidate_members else None
                 if new_assignee:
+                    context_note = context_details(task["id"])
+                    context_suffix = (
+                        f" Employee context: {context_note}"
+                        if context_note
+                        else ""
+                    )
                     proposed_actions.append({
                         "action_id": str(uuid.uuid4())[:8],
                         "action_type": "REASSIGN",
@@ -203,8 +308,17 @@ def recovery_planner_node(state: RecoveryWorkflowState) -> Dict[str, Any]:
                             "assignee_id": new_assignee["user_id"],
                             "assignee_name": new_assignee["name"]
                         },
-                        "reason": f"Original assignee {task['assignee_name']} has approved leave from {conf['leave_start']} to {conf['leave_end']}. Reassigning to {new_assignee['name']} avoids work stoppage.",
-                        "expected_impact": f"Eliminates schedule collision; protects delivery date of Task #{task['id']}."
+                        "reason": (
+                            f"Original assignee {task['assignee_name']} has approved leave from "
+                            f"{conf['leave_start']} to {conf['leave_end']}. Reassigning to "
+                            f"{new_assignee['name']} avoids work stoppage.{context_suffix}"
+                        ),
+                        "expected_impact": (
+                            f"Eliminates schedule collision while preserving the employee-reported "
+                            f"technical context for Task #{task['id']}.{context_suffix}"
+                            if context_note
+                            else f"Eliminates schedule collision; protects delivery date of Task #{task['id']}."
+                        )
                     })
                     rationale_points.append(f"Reassign Task #{task['id']} from {task['assignee_name']} to {new_assignee['name']} due to planned absence.")
 
@@ -217,6 +331,12 @@ def recovery_planner_node(state: RecoveryWorkflowState) -> Dict[str, Any]:
                     continue
                 task = next((t for t in tasks if t["id"] == t_id), None)
                 if task:
+                    context_note = context_details(task["id"])
+                    context_suffix = (
+                        f" Employee context: {context_note}"
+                        if context_note
+                        else ""
+                    )
                     cur_due = date.fromisoformat(task["due_date"])
                     new_due = cur_due + timedelta(days=4)
                     proposed_actions.append({
@@ -230,13 +350,24 @@ def recovery_planner_node(state: RecoveryWorkflowState) -> Dict[str, Any]:
                         "proposed_values": {
                             "due_date": str(new_due)
                         },
-                        "reason": f"Adjust scheduled due date by +4 calendar days to absorb current velocity deficit and ensure rigorous testing.",
-                        "expected_impact": "Stabilizes velocity requirement to realistic 5h/day, preventing burnout and defect leakage."
+                        "reason": (
+                            "Adjust scheduled due date by +4 calendar days to absorb current "
+                            f"velocity deficit and ensure rigorous testing.{context_suffix}"
+                        ),
+                        "expected_impact": (
+                            "Stabilizes velocity with a realistic delivery buffer informed by the "
+                            f"employee's technical context.{context_suffix}"
+                            if context_note
+                            else "Stabilizes velocity requirement to realistic 5h/day, preventing burnout and defect leakage."
+                        )
                     })
                     rationale_points.append(f"Extend Task #{task['id']} deadline by 4 days to realistic delivery buffer.")
 
     title = "Sprint Recovery & Critical Path Realignment Plan"
-    summary = f"Identified {len(proposed_actions)} targeted interventions addressing blocker clearance, leave coverage, and schedule buffering to protect project delivery."
+    summary = (
+        f"Identified {len(proposed_actions)} targeted interventions addressing blocker clearance, "
+        f"leave coverage, and schedule buffering to protect project delivery.{context_summary}"
+    )
     rationale = " ".join(rationale_points) if rationale_points else "Mitigates high risk alerts through proactive resource reallocation and deadline adjustments."
 
     return {
@@ -266,7 +397,13 @@ def output_validator_node(state: RecoveryWorkflowState) -> Dict[str, Any]:
             continue
 
         a_type = action.get("action_type")
-        if a_type not in ["REASSIGN", "EXTEND_DEADLINE", "RESOLVE_DEPENDENCY", "SPLIT_EFFORT"]:
+        if a_type not in [
+            "REASSIGN",
+            "EXTEND_DEADLINE",
+            "RESOLVE_DEPENDENCY",
+            "ESCALATE_BLOCKER",
+            "SPLIT_EFFORT",
+        ]:
             errors.append(f"Unknown action type {a_type}")
             continue
 
@@ -318,6 +455,7 @@ def approval_queue_node(state: RecoveryWorkflowState, db: Session) -> Dict[str, 
         title=proposal_data["title"],
         summary=proposal_data["summary"],
         proposed_actions=proposal_data["proposed_actions"],
+        focus_contexts=state["project_context"].get("focus_contexts", []),
         rationale=proposal_data["rationale"],
         assumptions=proposal_data["assumptions"],
         status=ProposalStatus.PENDING_APPROVAL.value

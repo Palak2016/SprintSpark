@@ -1,14 +1,33 @@
-import React, { useState, useEffect } from 'react';
+
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+} from 'react';
+
 import { useProject } from '../../context/ProjectContext';
 import { api } from '../../services/api';
 import { Task, TaskStatus, UserSimple } from '../../types';
+
 import { TaskKanban } from '../../components/tasks/TaskKanban';
 import { TaskList } from '../../components/tasks/TaskList';
 import { TaskModal } from '../../components/tasks/TaskModal';
 import { BlockerModal } from '../../components/tasks/BlockerModal';
+
 import {
-  Kanban, List, Plus, Filter, Search, CheckSquare,
-  AlertOctagon, RefreshCw
+  Kanban,
+  List,
+  Plus,
+  Search,
+  CheckSquare,
+  AlertCircle,
+  RefreshCw,
+  FolderKanban,
+  X,
+  ClipboardList,
+  LayoutDashboard,
+  CheckCircle2,
 } from 'lucide-react';
 
 export const TasksView: React.FC = () => {
@@ -18,52 +37,214 @@ export const TasksView: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [allUsers, setAllUsers] = useState<UserSimple[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [search, setSearch] = useState('');
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [resolvingTaskId, setResolvingTaskId] = useState<number | null>(null);
 
-  // Modals state
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+
   const [isBlockerModalOpen, setIsBlockerModalOpen] = useState(false);
   const [taskForBlocker, setTaskForBlocker] = useState<Task | null>(null);
 
+  const activeProjectId = activeProject?.id;
+  const requestIdRef = useRef(0);
+  const isRefreshingRef = useRef(false);
+
+  // Load tasks belonging to the active project.
+  const loadTasks = useCallback(
+    async (showLoader = false) => {
+      if (!activeProjectId) {
+        setTasks([]);
+        setIsLoading(false);
+        return;
+      }
+
+      if (!showLoader && isRefreshingRef.current) {
+        return;
+      }
+
+      const requestId = ++requestIdRef.current;
+      isRefreshingRef.current = true;
+
+      if (showLoader) {
+        setIsLoading(true);
+      }
+
+      try {
+        const data = await api.getTasks({
+          project_id: activeProjectId,
+        });
+
+        if (requestId === requestIdRef.current) {
+          setTasks(data);
+          setErrorMsg(null);
+        }
+      } catch (error) {
+        if (requestId === requestIdRef.current) {
+          console.error('Failed to load tasks:', error);
+
+          setErrorMsg(
+            error instanceof Error
+              ? error.message
+              : 'Unable to load project tasks.'
+          );
+        }
+      } finally {
+        if (requestId === requestIdRef.current) {
+          isRefreshingRef.current = false;
+          setIsLoading(false);
+        }
+      }
+    },
+    [activeProjectId]
+  );
+
+  // Initial load and automatic refresh.
   useEffect(() => {
-    if (activeProject) {
-      loadTasks();
-      loadUsers();
-    }
-  }, [activeProject]);
-
-  const loadTasks = async () => {
-    if (!activeProject) return;
-    setIsLoading(true);
-    try {
-      const data = await api.getTasks({ project_id: activeProject.id });
-      setTasks(data);
-    } catch (err) {
-      console.error("Failed to load tasks:", err);
-    } finally {
+    if (!activeProjectId) {
+      requestIdRef.current += 1;
+      isRefreshingRef.current = false;
+      setTasks([]);
       setIsLoading(false);
+      return;
     }
-  };
 
-  const loadUsers = async () => {
-    try {
-      const usersData = await api.getAllUsers();
-      setAllUsers(usersData);
-    } catch (err) {
-      console.error("Failed to load users:", err);
-    }
-  };
+    void loadTasks(true);
 
-  const handleStatusChange = async (task: Task, newStatus: TaskStatus) => {
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        void loadTasks(false);
+      }
+    }, 3000);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void loadTasks(false);
+      }
+    };
+
+    document.addEventListener(
+      'visibilitychange',
+      handleVisibilityChange
+    );
+
+    return () => {
+      window.clearInterval(intervalId);
+
+      document.removeEventListener(
+        'visibilitychange',
+        handleVisibilityChange
+      );
+
+      requestIdRef.current += 1;
+      isRefreshingRef.current = false;
+    };
+  }, [activeProjectId, loadTasks]);
+
+  // Load available team members.
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadUsers = async () => {
+      setIsLoadingUsers(true);
+
+      try {
+        const users = await api.getAllUsers();
+
+        if (!cancelled) {
+          setAllUsers(users);
+        }
+      } catch (error) {
+        console.error('Failed to load users:', error);
+      } finally {
+        if (!cancelled) {
+          setIsLoadingUsers(false);
+        }
+      }
+    };
+
+    void loadUsers();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Update task status.
+  const handleStatusChange = async (
+    task: Task,
+    newStatus: TaskStatus
+  ) => {
+    setErrorMsg(null);
+
     try {
       const updated = await api.updateTask(task.id, {
         status: newStatus,
-        progress_pct: newStatus === 'COMPLETED' ? 100 : task.progress_pct
+        progress_pct:
+          newStatus === 'COMPLETED'
+            ? 100
+            : task.progress_pct,
       });
-      setTasks(prev => prev.map(t => t.id === updated.id ? updated : t));
-    } catch (err: any) {
-      alert("Failed to update status: " + err.message);
+
+      setTasks((previous) =>
+        previous.map((item) =>
+          item.id === updated.id ? updated : item
+        )
+      );
+
+      await loadTasks(true);
+    } catch (error) {
+      setErrorMsg(
+        error instanceof Error
+          ? error.message
+          : 'Unable to update task status.'
+      );
     }
+  };
+
+  /**
+   * Manager resolves an employee-reported blocker.
+   *
+   * First clear the blocker using the blocker endpoint.
+   * If the task status is BLOCKED, move it back to IN_PROGRESS.
+   * Finally refresh the list from the backend.
+   */
+  const handleResolveBlocker = async (task: Task) => {
+    if (resolvingTaskId !== null) {
+      return;
+    }
+
+    setResolvingTaskId(task.id);
+    setErrorMsg(null);
+
+    try {
+      await api.resolveBlocker(task.id);
+
+      if (task.status === 'BLOCKED') {
+        await api.updateTask(task.id, {
+          status: 'IN_PROGRESS',
+        });
+      }
+
+      await loadTasks(true);
+    } catch (error) {
+      console.error('Failed to resolve blocker:', error);
+
+      setErrorMsg(
+        error instanceof Error
+          ? error.message
+          : 'Unable to resolve this blocker. Check the backend API.'
+      );
+    } finally {
+      setResolvingTaskId(null);
+    }
+  };
+
+  const handleOpenCreate = () => {
+    setSelectedTask(null);
+    setIsTaskModalOpen(true);
   };
 
   const handleOpenEdit = (task: Task) => {
@@ -76,93 +257,444 @@ export const TasksView: React.FC = () => {
     setIsBlockerModalOpen(true);
   };
 
+  const query = search.trim().toLowerCase();
+
+  const filteredTasks = tasks.filter((task) => {
+    const searchableTask = task as Task & {
+      title?: string;
+      name?: string;
+      description?: string;
+    };
+
+    return (
+      (searchableTask.title ?? '').toLowerCase().includes(query) ||
+      (searchableTask.name ?? '').toLowerCase().includes(query) ||
+      (searchableTask.description ?? '').toLowerCase().includes(query) ||
+      String(task.id).includes(query)
+    );
+  });
+
+  const completedTasks = tasks.filter(
+    (task) => task.status === 'COMPLETED'
+  ).length;
+
+  const blockedTasks = tasks.filter(
+    (task) => task.is_blocked || task.status === 'BLOCKED'
+  );
+
+  const progress =
+    tasks.length > 0
+      ? Math.round((completedTasks / tasks.length) * 100)
+      : 0;
+
+  const inputClass =
+    'w-full rounded-xl border border-white/10 bg-[#130D21] px-3 py-3 text-sm text-white outline-none placeholder:text-[#807493] transition focus:border-violet-400/60 focus:ring-2 focus:ring-violet-500/20';
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-[#FAF8FF]">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-charcoal-900">Task Management</h1>
-          <p className="text-xs text-charcoal-500 mt-0.5">
-            {activeProject ? activeProject.name : 'All Project Tasks'} • {tasks.length} tasks scheduled
+          <div className="mb-2 flex items-center gap-2 text-sm text-[#B7ADC9]">
+            <FolderKanban className="h-4 w-4 text-[#A78BFA]" />
+            <span>Workspace</span>
+            <span>/</span>
+            <span className="text-[#E5D9FF]">Task Management</span>
+          </div>
+
+          <h1 className="text-2xl font-bold tracking-tight">
+            Task Management
+          </h1>
+
+          <p className="mt-1 text-sm text-[#B7ADC9]">
+            {activeProject
+              ? `Manage tasks, track progress, and resolve blockers for ${activeProject.name}.`
+              : 'Select a project workspace to manage its tasks and track progress.'}
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          {/* View switcher */}
-          <div className="flex items-center bg-white border border-charcoal-200 rounded-xl p-1 shadow-sm">
-            <button
-              onClick={() => setViewMode('kanban')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                viewMode === 'kanban' ? 'bg-forest-700 text-white shadow-sm' : 'text-charcoal-600 hover:text-charcoal-900'
-              }`}
-            >
-              <Kanban className="w-3.5 h-3.5" />
-              <span>Kanban</span>
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                viewMode === 'list' ? 'bg-forest-700 text-white shadow-sm' : 'text-charcoal-600 hover:text-charcoal-900'
-              }`}
-            >
-              <List className="w-3.5 h-3.5" />
-              <span>List</span>
-            </button>
-          </div>
-
-          {/* New Task Button */}
+        <div className="flex flex-wrap items-center gap-3">
           <button
-            onClick={() => {
-              setSelectedTask(null);
-              setIsTaskModalOpen(true);
-            }}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-forest-700 text-white text-xs font-semibold hover:bg-forest-800 shadow-sm transition-all"
+            type="button"
+            onClick={() => void loadTasks(true)}
+            disabled={!activeProject || isLoading}
+            className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-[#19112B] px-3 py-2.5 text-sm font-medium text-[#D8CDEF] transition hover:bg-[#211638] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <Plus className="w-4 h-4" />
-            <span>New Task</span>
+            <RefreshCw
+              className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`}
+            />
+            Refresh
+          </button>
+
+          <button
+            type="button"
+            onClick={handleOpenCreate}
+            disabled={!activeProject}
+            className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Plus className="h-4 w-4" />
+            New Task
           </button>
         </div>
       </div>
 
-      {/* Main Board or List */}
-      {viewMode === 'kanban' ? (
-        <TaskKanban
-          tasks={tasks}
-          onTaskClick={handleOpenEdit}
-          onStatusChange={handleStatusChange}
-          onBlockerClick={handleOpenBlocker}
-        />
-      ) : (
-        <TaskList
-          tasks={tasks}
-          onTaskClick={handleOpenEdit}
-          onBlockerClick={handleOpenBlocker}
-          onEditClick={handleOpenEdit}
-        />
+      {/* Error message */}
+      {errorMsg && (
+        <div
+          role="alert"
+          className="flex items-start gap-3 rounded-xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-200"
+        >
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+
+          <span className="flex-1">{errorMsg}</span>
+
+          <button
+            type="button"
+            aria-label="Dismiss error"
+            onClick={() => setErrorMsg(null)}
+            className="text-rose-200 transition hover:text-white"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
       )}
 
-      {/* Task Create / Edit Modal */}
-      {isTaskModalOpen && (
+      {!activeProject ? (
+        <div className="rounded-2xl border border-dashed border-white/15 bg-[#19112B]/70 px-6 py-16 text-center">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-violet-400/20 bg-violet-500/10">
+            <FolderKanban className="h-7 w-7 text-violet-300" />
+          </div>
+
+          <h2 className="mt-4 text-lg font-semibold text-white">
+            No Workspace Selected
+          </h2>
+
+          <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#B7ADC9]">
+            Choose a project from the Projects page to view, create,
+            and manage its tasks.
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* Summary cards */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-2xl border border-white/[0.08] bg-[#19112B] p-4">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-[#B7ADC9]">Total Tasks</p>
+                <ClipboardList className="h-5 w-5 text-violet-300" />
+              </div>
+              <p className="mt-3 text-2xl font-bold">{tasks.length}</p>
+              <p className="mt-1 text-xs text-[#A99DBD]">
+                Tasks in this workspace
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-white/[0.08] bg-[#19112B] p-4">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-[#B7ADC9]">Completed</p>
+                <CheckSquare className="h-5 w-5 text-emerald-300" />
+              </div>
+              <p className="mt-3 text-2xl font-bold">{completedTasks}</p>
+              <p className="mt-1 text-xs text-[#A99DBD]">
+                Successfully completed tasks
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-white/[0.08] bg-[#19112B] p-4">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-[#B7ADC9]">Remaining Tasks</p>
+                <LayoutDashboard className="h-5 w-5 text-sky-300" />
+              </div>
+              <p className="mt-3 text-2xl font-bold">
+                {tasks.length - completedTasks}
+              </p>
+              <p className="mt-1 text-xs text-[#A99DBD]">
+                Not yet completed
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-white/[0.08] bg-[#19112B] p-4">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-[#B7ADC9]">Completion Rate</p>
+                <CheckSquare className="h-5 w-5 text-violet-300" />
+              </div>
+              <p className="mt-3 text-2xl font-bold">{progress}%</p>
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/[0.08]">
+                <div
+                  className="manager-progress-fill h-full rounded-full bg-gradient-to-r from-violet-600 to-violet-400 transition-all duration-500"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Manager blocker resolution panel */}
+          {blockedTasks.length > 0 && (
+            <section className="rounded-2xl border border-amber-400/20 bg-[#19112B] p-5">
+              <div className="mb-4 flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-400/10">
+                  <AlertCircle className="h-5 w-5 text-amber-300" />
+                </div>
+
+                <div>
+                  <h2 className="font-semibold text-white">
+                    Blocked Tasks
+                  </h2>
+                  <p className="text-sm text-[#B7ADC9]">
+                    Review and resolve blockers reported by employees.
+                  </p>
+                </div>
+
+                <span className="ml-auto rounded-full bg-amber-400/10 px-3 py-1 text-sm font-semibold text-amber-200">
+                  {blockedTasks.length}
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                {blockedTasks.map((task) => {
+                  const taskDetails = task as Task & {
+                    title?: string;
+                    name?: string;
+                    blocker_reason?: string | null;
+                  };
+
+                  const isResolving = resolvingTaskId === task.id;
+
+                  return (
+                    <div
+                      key={task.id}
+                      className="flex flex-col gap-3 rounded-xl border border-white/[0.08] bg-[#130D21] p-4 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div className="min-w-0">
+                        <h3 className="font-medium text-white">
+                          {taskDetails.title ??
+                            taskDetails.name ??
+                            `Task #${task.id}`}
+                        </h3>
+
+                        <p className="mt-1 text-sm text-amber-200/90">
+                          {taskDetails.blocker_reason ||
+                            'No blocker reason provided.'}
+                        </p>
+                      </div>
+
+                      <div className="flex shrink-0 flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenBlocker(task)}
+                          className="rounded-lg border border-white/10 px-3 py-2 text-sm font-medium text-[#D8CDEF] transition hover:bg-white/5"
+                        >
+                          View blocker
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => void handleResolveBlocker(task)}
+                          disabled={resolvingTaskId !== null}
+                          className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {isResolving ? (
+                            <RefreshCw className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <CheckCircle2 className="h-4 w-4" />
+                          )}
+
+                          {isResolving
+                            ? 'Resolving...'
+                            : 'Resolve blocker'}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
+          {/* Workspace information and view controls */}
+          <div className="flex flex-col gap-4 rounded-2xl border border-white/[0.08] bg-[#19112B] p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-500/15 text-violet-200">
+                <FolderKanban className="h-5 w-5" />
+              </div>
+
+              <div className="min-w-0">
+                <p className="text-xs text-[#A99DBD]">
+                  Current Workspace
+                </p>
+
+                <h2 className="truncate text-sm font-semibold text-white">
+                  {activeProject.name}
+                </h2>
+
+                <p className="mt-0.5 text-xs text-[#A99DBD]">
+                  {filteredTasks.length} of {tasks.length} tasks shown
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#A99DBD]" />
+
+                <input
+                  type="search"
+                  aria-label="Search tasks"
+                  placeholder="Search tasks..."
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  className={`${inputClass} py-2.5 pl-9 pr-9`}
+                />
+
+                {search && (
+                  <button
+                    type="button"
+                    aria-label="Clear task search"
+                    onClick={() => setSearch('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A99DBD] transition hover:text-white"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center rounded-xl border border-white/10 bg-[#130D21] p-1">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('kanban')}
+                  aria-pressed={viewMode === 'kanban'}
+                  className={`inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition ${
+                    viewMode === 'kanban'
+                      ? 'bg-violet-600 text-white shadow-sm'
+                      : 'text-[#B7ADC9] hover:bg-white/5 hover:text-white'
+                  }`}
+                >
+                  <Kanban className="h-4 w-4" />
+                  Kanban
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setViewMode('list')}
+                  aria-pressed={viewMode === 'list'}
+                  className={`inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition ${
+                    viewMode === 'list'
+                      ? 'bg-violet-600 text-white shadow-sm'
+                      : 'text-[#B7ADC9] hover:bg-white/5 hover:text-white'
+                  }`}
+                >
+                  <List className="h-4 w-4" />
+                  List
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Task board */}
+          {isLoading ? (
+            <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-white/[0.08] bg-[#19112B] px-6 py-12">
+              <RefreshCw className="h-8 w-8 animate-spin text-violet-300" />
+              <p className="mt-4 text-sm font-medium text-white">
+                Loading tasks...
+              </p>
+              <p className="mt-1 text-xs text-[#A99DBD]">
+                Fetching tasks for {activeProject.name}
+              </p>
+            </div>
+          ) : filteredTasks.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-white/15 bg-[#19112B]/70 px-6 py-16 text-center">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-violet-400/20 bg-violet-500/10">
+                {search ? (
+                  <Search className="h-7 w-7 text-violet-300" />
+                ) : (
+                  <ClipboardList className="h-7 w-7 text-violet-300" />
+                )}
+              </div>
+
+              <h2 className="mt-4 text-lg font-semibold text-white">
+                {search ? 'No Matching Tasks' : 'No Tasks Yet'}
+              </h2>
+
+              <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#B7ADC9]">
+                {search
+                  ? 'Try another search term or clear your search to see all tasks.'
+                  : 'Create your first task to start organizing work in this project.'}
+              </p>
+
+              {search ? (
+                <button
+                  type="button"
+                  onClick={() => setSearch('')}
+                  className="mt-5 rounded-xl border border-white/10 px-4 py-2.5 text-sm font-medium text-[#E5D9FF] transition hover:bg-white/5"
+                >
+                  Clear Search
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleOpenCreate}
+                  className="mt-5 inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-500"
+                >
+                  <Plus className="h-4 w-4" />
+                  Create First Task
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="min-w-0">
+              {viewMode === 'kanban' ? (
+                <TaskKanban
+                  tasks={filteredTasks}
+                  onTaskClick={handleOpenEdit}
+                  onStatusChange={handleStatusChange}
+                  onBlockerClick={handleOpenBlocker}
+                />
+              ) : (
+                <TaskList
+                  tasks={filteredTasks}
+                  onTaskClick={handleOpenEdit}
+                  onBlockerClick={handleOpenBlocker}
+                  onEditClick={handleOpenEdit}
+                />
+              )}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Create / Edit Task Modal */}
+      {isTaskModalOpen && activeProject && (
         <TaskModal
           isOpen={isTaskModalOpen}
           onClose={() => setIsTaskModalOpen(false)}
           task={selectedTask}
-          projectId={activeProject?.id || 1}
+          projectId={activeProject.id}
           availableTasks={tasks}
           availableUsers={allUsers}
-          onSaved={loadTasks}
+          onSaved={async () => {
+            await loadTasks(true);
+            setIsTaskModalOpen(false);
+          }}
         />
       )}
 
-      {/* Blocker Modal */}
+      {/* Blocker Details Modal */}
       {isBlockerModalOpen && (
         <BlockerModal
           isOpen={isBlockerModalOpen}
           onClose={() => setIsBlockerModalOpen(false)}
           task={taskForBlocker}
-          onResolvedOrReported={loadTasks}
+          onResolvedOrReported={() => loadTasks(true)}
         />
+      )}
+
+      {isLoadingUsers && (
+        <span className="sr-only">
+          Loading available team members...
+        </span>
       )}
     </div>
   );
 };
+
+export default TasksView;

@@ -1,44 +1,62 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Project } from '../types';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+} from 'react';
+import type { Project } from '../types';
 import { api } from '../services/api';
 import { useAuth } from './AuthContext';
 
 interface ProjectContextType {
   projects: Project[];
   activeProject: Project | null;
+  activeProjects: Project[];
   isLoading: boolean;
   setActiveProject: (project: Project | null) => void;
   refreshProjects: () => Promise<void>;
   refreshActiveProject: () => Promise<void>;
 }
 
-const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
+const ProjectContext = createContext<ProjectContextType | undefined>(
+  undefined
+);
 
-export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const ProjectProvider: React.FC<{
+  children: React.ReactNode;
+}> = ({ children }) => {
   const { user } = useAuth();
+
   const [projects, setProjects] = useState<Project[]>([]);
-  const [activeProject, setActiveProject] = useState<Project | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [activeProject, setActiveProject] =
+    useState<Project | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Multiple projects can have ACTIVE status simultaneously.
+  const activeProjects = projects.filter(
+    (project) => project.status === 'ACTIVE'
+  );
 
   const refreshProjects = async () => {
     if (!user) return;
+
     setIsLoading(true);
+
     try {
-      const list = await api.getProjects();
+      const list: Project[] = await api.getProjects();
       setProjects(list);
-      if (list.length > 0) {
-        // If no active project or active project was deleted/not in list, pick the first
-        if (!activeProject || !list.some(p => p.id === activeProject.id)) {
-          setActiveProject(list[0]);
-        } else {
-          const updated = list.find(p => p.id === activeProject.id);
-          if (updated) setActiveProject(updated);
-        }
-      } else {
-        setActiveProject(null);
-      }
-    } catch (err) {
-      console.error("Failed to load projects:", err);
+
+      setActiveProject((current) => {
+        if (!list.length) return null;
+
+        if (!current) return list[0];
+
+        return list.find((project) => project.id === current.id)
+          ?? list[0];
+      });
+    } catch (error) {
+      console.error('Failed to load projects:', error);
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -46,18 +64,28 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const refreshActiveProject = async () => {
     if (!activeProject) return;
+
     try {
       const updated = await api.getProject(activeProject.id);
+
+      setProjects((previous) =>
+        previous.map((project) =>
+          project.id === updated.id ? updated : project
+        )
+      );
+
       setActiveProject(updated);
-      setProjects(prev => prev.map(p => p.id === updated.id ? updated : p));
-    } catch (err) {
-      console.error("Failed to refresh active project:", err);
+    } catch (error) {
+      console.error('Failed to refresh active project:', error);
+      throw error;
     }
   };
 
   useEffect(() => {
     if (user) {
-      refreshProjects();
+      void refreshProjects().catch((error) =>
+        console.error('Initial project load failed:', error)
+      );
     } else {
       setProjects([]);
       setActiveProject(null);
@@ -65,14 +93,17 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, [user]);
 
   return (
-    <ProjectContext.Provider value={{
-      projects,
-      activeProject,
-      isLoading,
-      setActiveProject,
-      refreshProjects,
-      refreshActiveProject
-    }}>
+    <ProjectContext.Provider
+      value={{
+        projects,
+        activeProject,
+        activeProjects,
+        isLoading,
+        setActiveProject,
+        refreshProjects,
+        refreshActiveProject,
+      }}
+    >
       {children}
     </ProjectContext.Provider>
   );
@@ -80,8 +111,12 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
 export const useProject = () => {
   const context = useContext(ProjectContext);
+
   if (!context) {
-    throw new Error('useProject must be used within a ProjectProvider');
+    throw new Error(
+      'useProject must be used within a ProjectProvider'
+    );
   }
+
   return context;
 };

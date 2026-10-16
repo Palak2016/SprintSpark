@@ -14,6 +14,62 @@ def test_recovery_proposal_generation(client, manager_token):
     assert "Sprint Recovery" in data["title"]
 
 
+def test_focus_context_informs_recovery_proposal(
+    client,
+    employee_token,
+    manager_token,
+):
+    context_response = client.post(
+        "/api/v1/focus-guardian/context",
+        headers={"Authorization": f"Bearer {employee_token}"},
+        json={
+            "task_id": 3,
+            "reason": "Third-Party API & Library Incompatibilities",
+            "context": (
+                "The identity provider sandbox returns an unsupported signing "
+                "algorithm, so the SSO integration cannot be validated yet."
+            ),
+        },
+    )
+    assert context_response.status_code == 201
+
+    contexts_response = client.get(
+        "/api/v1/focus-guardian/projects/1/contexts",
+        headers={"Authorization": f"Bearer {manager_token}"},
+    )
+    assert contexts_response.status_code == 200
+    contexts = contexts_response.json()
+    assert len(contexts) == 1
+    assert contexts[0]["task_title"] == "Auth & Enterprise SSO Microservice"
+    assert contexts[0]["employee_name"] == "Elena Rostova"
+
+    employee_contexts_response = client.get(
+        "/api/v1/focus-guardian/projects/1/contexts",
+        headers={"Authorization": f"Bearer {employee_token}"},
+    )
+    assert employee_contexts_response.status_code == 403
+
+    proposal_response = client.post(
+        "/api/v1/projects/1/recovery-proposals/generate",
+        headers={"Authorization": f"Bearer {manager_token}"},
+    )
+    assert proposal_response.status_code == 200
+    proposal = proposal_response.json()
+
+    assert len(proposal["focus_contexts"]) == 1
+    assert proposal["focus_contexts"][0]["task_title"] == "Auth & Enterprise SSO Microservice"
+    assert proposal["focus_contexts"][0]["employee_name"] == "Elena Rostova"
+
+    blocker_action = next(
+        action
+        for action in proposal["proposed_actions"]
+        if action["task_id"] == 3
+    )
+    assert blocker_action["action_type"] == "ESCALATE_BLOCKER"
+    assert blocker_action["proposed_values"]["is_blocked"] is True
+    assert "unsupported signing algorithm" in blocker_action["reason"]
+
+
 def test_manager_approves_recovery_proposal(client, manager_token, db_session):
     # Find the seeded pending proposal
     proposal = db_session.query(RecoveryProposal).filter(
