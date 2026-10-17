@@ -14,8 +14,26 @@ test_engine = create_engine(TEST_DB_URL, connect_args={"check_same_thread": Fals
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
 
 
+@pytest.fixture(autouse=True)
+def no_real_llm(monkeypatch):
+    """Tests never call a hosted model, even if backend/.env has a key.
+
+    Tests that exercise the AI path inject a fake model explicitly.
+    """
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "OPENAI_API_KEY", None)
+    monkeypatch.setattr(settings, "GEMINI_API_KEY", None)
+    monkeypatch.setattr(settings, "RECOVERY_REQUIRE_LLM", False)
+
+
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_db():
+    from app.core.config import settings
+
+    # The seed runs the recovery workflow; keep it on the rule-based path.
+    settings.OPENAI_API_KEY = None
+    settings.GEMINI_API_KEY = None
     Base.metadata.drop_all(bind=test_engine)
     Base.metadata.create_all(bind=test_engine)
     db = TestingSessionLocal()

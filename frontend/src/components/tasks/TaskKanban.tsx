@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Task, TaskStatus } from '../../types';
+import { formatIndianDate } from '../../utils/date';
 import {
   AlertOctagon,
   Clock,
@@ -112,15 +113,8 @@ export const TaskKanban: React.FC<TaskKanbanProps> = ({
   const formatDate = (dateString: string) => {
     if (!dateString) return 'Not set';
 
-    const date = new Date(`${dateString.slice(0, 10)}T00:00:00`);
-
-    if (Number.isNaN(date.getTime())) return dateString;
-
-    return date.toLocaleDateString('en-IN', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
+    const formattedDate = formatIndianDate(dateString.slice(0, 10));
+    return formattedDate === '—' ? dateString : formattedDate;
   };
 
   return (

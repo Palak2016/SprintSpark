@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { Task } from '../../types';
+import { formatIndianDate } from '../../utils/date';
 import {
   Search,
   AlertOctagon,
@@ -90,17 +91,8 @@ export const TaskList: React.FC<TaskListProps> = ({
   const formatDate = (date?: string | null) => {
     if (!date) return 'No due date';
 
-    const parsedDate = new Date(date);
-
-    if (Number.isNaN(parsedDate.getTime())) {
-      return date;
-    }
-
-    return parsedDate.toLocaleDateString('en-IN', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
+    const formattedDate = formatIndianDate(date);
+    return formattedDate === '—' ? date : formattedDate;
   };
 
   const isOverdue = (date?: string | null, status?: string) => {

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useProject } from '../../context/ProjectContext';
 import { api } from '../../services/api';
-import type { FocusGuardianContext, RecoveryProposal } from '../../types';
+import type { FocusGuardianContext, RecoveryPlannerStatus, RecoveryProposal } from '../../types';
+import { ProvenanceBadge } from '../../components/risk/RecoveryInsights';
 import { RecoveryReviewModal } from '../../components/risk/RecoveryReviewModal';
 import { formatIndianDateTime } from '../../utils/date';
 
@@ -171,6 +172,22 @@ export const RecoveryPlansView: React.FC = () => {
   const [isContextPanelOpen, setIsContextPanelOpen] = useState(false);
   const [isLoadingContexts, setIsLoadingContexts] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [plannerStatus, setPlannerStatus] = useState<RecoveryPlannerStatus | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .getRecoveryPlannerStatus()
+      .then((status) => {
+        if (!cancelled) setPlannerStatus(status);
+      })
+      .catch(() => {
+        /* status is informational only */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleViewEmployeeContexts = async () => {
     if (!activeProject) return;
@@ -331,7 +348,7 @@ export const RecoveryPlansView: React.FC = () => {
 
             <div>
               <h1 className="text-xl font-bold tracking-tight text-[#FAF8FF] sm:text-2xl">
-                AI-Assisted Recovery Plans
+                Recovery Plans
               </h1>
 
               <p className="mt-1 text-xs leading-5 text-[#A99DBD]">
@@ -346,6 +363,14 @@ export const RecoveryPlansView: React.FC = () => {
               <span className="h-1.5 w-1.5 rounded-full bg-violet-400" />
               Project: {activeProject.name}
             </div>
+          )}
+
+          {plannerStatus && (
+            <p className="mt-2 text-[11px] leading-5 text-[#A99DBD]">
+              {plannerStatus.llm_configured
+                ? `AI planner: ${plannerStatus.provider} model ${plannerStatus.model}. Its suggestions are validated against project data and need your approval.`
+                : 'AI planner not configured (no OPENAI_API_KEY or GEMINI_API_KEY). New plans use the rule-based planner and are labelled that way.'}
+            </p>
           )}
         </div>
 
@@ -652,6 +677,8 @@ export const RecoveryPlansView: React.FC = () => {
                         <span className="rounded-md border border-amber-400/20 bg-amber-500/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-amber-300">
                           Pending approval
                         </span>
+
+                        <ProvenanceBadge trace={proposal.generation_trace} compact />
                       </div>
 
                       <h3 className="mt-2 break-words text-base font-bold leading-6 text-[#FAF8FF]">
@@ -807,6 +834,8 @@ export const RecoveryPlansView: React.FC = () => {
                           >
                             {proposal.status.replace(/_/g, ' ')}
                           </span>
+
+                          <ProvenanceBadge trace={proposal.generation_trace} compact />
                         </div>
 
                         <p className="mt-1 line-clamp-2 text-xs leading-5 text-[#A99DBD]">

@@ -26,7 +26,7 @@ class FocusContext(Base):
     context = Column(Text, nullable=False)
 
     created_at = Column(
-        DateTime(timezone=True),
+        DateTime(timezone=False),
         nullable=False,
         server_default=func.now(),
     )

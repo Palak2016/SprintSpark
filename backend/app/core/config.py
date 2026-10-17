@@ -15,9 +15,20 @@ class Settings(BaseSettings):
     # Defaults to SQLite for zero-friction out-of-the-box local operation; configurable to PostgreSQL
     DATABASE_URL: str = f"sqlite:///{(BACKEND_DIR / 'workpilot.db').as_posix()}"
     
-    # LLM Settings (optional - fallback to deterministic heuristic planner when absent)
+    # LLM settings used by the recovery planner (app/services/llm_client.py).
+    # With no key set, recovery proposals fall back to the rule-based planner
+    # and are labelled as rule-based (generation_trace.llm.invoked = false).
     OPENAI_API_KEY: Optional[str] = None
     GEMINI_API_KEY: Optional[str] = None
+    # "openai" or "gemini"; when empty the first provider with a key is used.
+    LLM_PROVIDER: Optional[str] = None
+    OPENAI_MODEL: str = "gpt-4o-mini"
+    OPENAI_BASE_URL: str = "https://api.openai.com/v1"
+    GEMINI_MODEL: str = "gemini-2.0-flash"
+    LLM_TIMEOUT_SECONDS: float = 45.0
+    # When true, generation fails (HTTP 503) instead of falling back to rules
+    # if the model cannot be called.
+    RECOVERY_REQUIRE_LLM: bool = False
 
     # SMTP email verification
     SMTP_HOST: Optional[str] = None

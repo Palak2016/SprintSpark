@@ -1,6 +1,6 @@
 import enum
-from datetime import datetime, timezone, date
-from sqlalchemy import Column, Integer, String, Text, DateTime, Date, ForeignKey, UniqueConstraint
+from datetime import date
+from sqlalchemy import Column, Integer, String, Text, DateTime, Date, ForeignKey, UniqueConstraint, func
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
@@ -23,8 +23,8 @@ class Project(Base):
     status = Column(String(50), default=ProjectStatus.ACTIVE.value, nullable=False)
     start_date = Column(Date, nullable=False)
     target_end_date = Column(Date, nullable=False)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
 
     # Relationships
     manager = relationship("User", back_populates="managed_projects", foreign_keys=[manager_id])
@@ -42,7 +42,7 @@ class ProjectMember(Base):
     project_id = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     role_in_project = Column(String(100), default="Contributor", nullable=False)
-    joined_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    joined_at = Column(DateTime, default=func.now(), nullable=False)
 
     project = relationship("Project", back_populates="members")
     user = relationship("User", back_populates="project_memberships")

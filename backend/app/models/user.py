@@ -1,6 +1,5 @@
 import enum
-from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, DateTime, Enum
+from sqlalchemy import Column, Integer, String, DateTime, Enum, func
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
@@ -36,8 +35,8 @@ class User(Base):
     approval_reviewed_at = Column(DateTime, nullable=True)
     approval_notes = Column(String(1000), nullable=True)
     avatar_url = Column(String(500), nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
 
     # Relationships
     managed_projects = relationship("Project", back_populates="manager", foreign_keys="Project.manager_id")

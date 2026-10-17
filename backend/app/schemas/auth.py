@@ -1,6 +1,6 @@
-from datetime import datetime
 from typing import Literal, Optional
 from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator, model_validator
+from app.schemas.timestamps import UTCDateTime
 
 
 class ManagerSignupDetails(BaseModel):
@@ -49,10 +49,10 @@ class UserOut(BaseModel):
     company_name: Optional[str] = None
     designation: Optional[str] = None
     approval_status: str
-    approval_reviewed_at: Optional[datetime] = None
+    approval_reviewed_at: Optional[UTCDateTime] = None
     approval_notes: Optional[str] = None
     avatar_url: Optional[str] = None
-    created_at: datetime
+    created_at: UTCDateTime
 
 
 class UserSimple(BaseModel):

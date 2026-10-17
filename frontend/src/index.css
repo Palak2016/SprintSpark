@@ -875,3 +875,76 @@
   background-image: none !important;
   background-color: #000000 !important;
 }
+
+:root[data-theme='light'] .dashboard-layout.dashboard-layout main .task-calendar [data-calendar-today='true'] {
+  background-color: #f5f3ff !important;
+}
+
+:root[data-theme='light'] .dashboard-layout.dashboard-layout main .task-calendar [data-calendar-day-number='today'] {
+  background-color: #7c3aed !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme='light'] .dashboard-layout.dashboard-layout main .task-calendar button[data-task-status='todo'],
+:root[data-theme='light'] .dashboard-layout.dashboard-layout main .task-calendar button[data-task-status='todo'] *,
+:root[data-theme='light'] .dashboard-layout.dashboard-layout main .task-calendar button[data-task-status='starting'],
+:root[data-theme='light'] .dashboard-layout.dashboard-layout main .task-calendar button[data-task-status='starting'] * {
+  background-color: #f1f5f9 !important;
+  border-left-color: #64748b !important;
+  color: #334155 !important;
+}
+
+:root[data-theme='light'] .dashboard-layout.dashboard-layout main .task-calendar button[data-task-status='in-progress'],
+:root[data-theme='light'] .dashboard-layout.dashboard-layout main .task-calendar button[data-task-status='in-progress'] * {
+  background-color: #eff6ff !important;
+  border-left-color: #2563eb !important;
+  color: #1e40af !important;
+}
+
+:root[data-theme='light'] .dashboard-layout.dashboard-layout main .task-calendar button[data-task-status='blocked'],
+:root[data-theme='light'] .dashboard-layout.dashboard-layout main .task-calendar button[data-task-status='blocked'] * {
+  background-color: #fff1f2 !important;
+  border-left-color: #e11d48 !important;
+  color: #9f1239 !important;
+}
+
+:root[data-theme='light'] .dashboard-layout.dashboard-layout main .task-calendar button[data-task-status='overdue'],
+:root[data-theme='light'] .dashboard-layout.dashboard-layout main .task-calendar button[data-task-status='overdue'] * {
+  background-color: #fff7ed !important;
+  border-left-color: #ea580c !important;
+  color: #9a3412 !important;
+}
+
+:root[data-theme='light'] .dashboard-layout.dashboard-layout main .task-calendar button[data-task-status='completed'],
+:root[data-theme='light'] .dashboard-layout.dashboard-layout main .task-calendar button[data-task-status='completed'] * {
+  background-color: #ecfdf5 !important;
+  border-left-color: #16a34a !important;
+  color: #166534 !important;
+}
+
+:root[data-theme='light'] .dashboard-layout.dashboard-layout main .task-calendar button[data-task-status]:hover,
+:root[data-theme='light'] .dashboard-layout.dashboard-layout main .task-calendar button[data-task-status]:hover * {
+  filter: brightness(0.96);
+}
+
+:root[data-theme='light'] .auth-form :is(label, legend) {
+  color: #1f2937 !important;
+}
+
+:root[data-theme='light'] .auth-form input::placeholder {
+  color: #64748b !important;
+  opacity: 1;
+}
+
+:root[data-theme='light'] .auth-form .auth-role-options label {
+  color: #475569 !important;
+}
+
+:root[data-theme='light'] .auth-form .auth-role-options label[data-selected='true'] {
+  background-color: #ede9fe !important;
+  color: #5b21b6 !important;
+}
+
+:root[data-theme='light'] .auth-form .auth-role-description {
+  color: #475569 !important;
+}

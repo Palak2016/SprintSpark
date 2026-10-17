@@ -1,6 +1,5 @@
 import enum
-from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON, func
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
@@ -26,7 +25,11 @@ class RecoveryProposal(Base):
     rationale = Column(Text, nullable=False)
     assumptions = Column(JSON, default=list, nullable=False)       # list of strings
     status = Column(String(50), default=ProposalStatus.PENDING_APPROVAL.value, nullable=False, index=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    # Observability for the AI workflow: run id, whether an LLM was invoked,
+    # provider/model, deterministic findings, validation and schedule
+    # comparison. See app/services/recovery_graph.py.
+    generation_trace = Column(JSON, default=dict, nullable=False)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
 
     project = relationship("Project", back_populates="recovery_proposals")
     risk_analysis = relationship("RiskAnalysis", back_populates="recovery_proposals")
@@ -42,7 +45,9 @@ class ProposalDecision(Base):
     decision = Column(String(50), nullable=False)  # APPROVED, REJECTED, DEFERRED
     decision_notes = Column(Text, nullable=True)
     applied_changes = Column(JSON, default=list, nullable=False)  # snapshot of what was mutated
-    decided_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    # Re-validation and execution outcome recorded at decision time.
+    execution_report = Column(JSON, default=dict, nullable=False)
+    decided_at = Column(DateTime, default=func.now(), nullable=False)
 
     proposal = relationship("RecoveryProposal", back_populates="decisions")
     decider = relationship("User")

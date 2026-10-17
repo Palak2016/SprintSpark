@@ -1,6 +1,4 @@
-from datetime import datetime, timezone
-
-from sqlalchemy import Column, DateTime, Integer, String
+from sqlalchemy import Column, DateTime, Integer, String, func
 
 from app.core.database import Base
 
@@ -16,6 +14,6 @@ class EmailVerification(Base):
     last_sent_at = Column(DateTime, nullable=False)
     created_at = Column(
         DateTime,
-        default=lambda: datetime.now(timezone.utc),
+        default=func.now(),
         nullable=False,
     )

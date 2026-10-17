@@ -5,14 +5,34 @@ const DATE_TIME_ZONE = 'Asia/Kolkata';
 export const parseIndianDateTime = (
   value?: string | null
 ): Date | null => {
-  if (!value) return null;
+  if (typeof value !== 'string' || !value.trim()) return null;
 
-  // Date-only values should not shift to the previous day.
-  const date = /^\d{4}-\d{2}-\d{2}$/.test(value)
-    ? new Date(`${value}T12:00:00+05:30`)
-    : /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?$/.test(value)
-      ? new Date(`${value.replace(' ', 'T')}Z`)
-      : new Date(value);
+  const normalizedValue = value.trim();
+  const dateOnlyPattern = /^\d{4}-\d{2}-\d{2}$/;
+  const dateTimePattern =
+    /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?$/i;
+
+  let date: Date;
+  if (dateOnlyPattern.test(normalizedValue)) {
+    const utcDate = new Date(`${normalizedValue}T00:00:00.000Z`);
+    if (
+      Number.isNaN(utcDate.getTime()) ||
+      utcDate.toISOString().slice(0, 10) !== normalizedValue
+    ) {
+      return null;
+    }
+
+    date = new Date(`${normalizedValue}T12:00:00+05:30`);
+  } else if (dateTimePattern.test(normalizedValue)) {
+    const normalizedDateTime = normalizedValue.replace(' ', 'T');
+    const hasTimezone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(normalizedDateTime);
+    // Legacy naive API timestamps are UTC values from UTC-session database columns.
+    date = new Date(
+      hasTimezone ? normalizedDateTime : `${normalizedDateTime}Z`
+    );
+  } else {
+    return null;
+  }
 
   if (Number.isNaN(date.getTime())) {
     return null;
@@ -55,7 +75,8 @@ export const formatIndianDateTime = (
 };
 
 export const formatIndianTime = (
-  value?: string | null
+  value?: string | null,
+  includeSeconds = false
 ): string => {
   const date = parseIndianDateTime(value);
 
@@ -64,6 +85,7 @@ export const formatIndianTime = (
   return date.toLocaleTimeString(DATE_LOCALE, {
     hour: '2-digit',
     minute: '2-digit',
+    ...(includeSeconds ? { second: '2-digit' } : {}),
     hour12: true,
     timeZone: DATE_TIME_ZONE,
   });

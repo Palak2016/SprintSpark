@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, require_manager
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.models.project import Project
 from app.models.task import Task, TaskDependency, TaskStatus
 from app.models.audit import AuditEvent
@@ -246,6 +246,66 @@ def get_task(
     return TaskOut.model_validate(task)
 
 
+def _validate_schedule_change(task: Task, data: TaskUpdate, user: User, db: Session) -> None:
+    """Checks a start/due date change before it is saved.
+
+    Used by the task editor and the timeline. Only managers and admins may
+    move dates. The new dates must be ordered, and the change must keep
+    dependency order (a prerequisite may not be due after a task that
+    depends on it); conflicting tasks are listed in the error.
+    """
+    new_start = data.start_date or task.start_date
+    new_due = data.due_date or task.due_date
+    if new_start == task.start_date and new_due == task.due_date:
+        return
+
+    if user.role not in (UserRole.MANAGER.value, UserRole.ADMIN.value):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only managers can change task dates.",
+        )
+    if new_due < new_start:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Due date cannot be before the start date.",
+        )
+
+    conflicts = []
+    for dependency in task.dependencies:
+        prerequisite = dependency.prerequisite_task
+        if prerequisite and prerequisite.due_date > new_due:
+            conflicts.append({
+                "task_id": prerequisite.id,
+                "title": prerequisite.title,
+                "relation": "prerequisite",
+                "due_date": prerequisite.due_date.isoformat(),
+            })
+    for dependency in task.dependents:
+        dependent = dependency.task
+        if (
+            dependent
+            and dependent.status != TaskStatus.COMPLETED.value
+            and dependent.due_date < new_due
+        ):
+            conflicts.append({
+                "task_id": dependent.id,
+                "title": dependent.title,
+                "relation": "dependent",
+                "due_date": dependent.due_date.isoformat(),
+            })
+    if conflicts:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "message": (
+                    "This date change breaks dependency order. A prerequisite "
+                    "must be due on or before the tasks that depend on it."
+                ),
+                "conflicts": conflicts,
+            },
+        )
+
+
 @router.put("/{task_id}", response_model=TaskOut)
 def update_task(
     task_id: int,
@@ -266,6 +326,9 @@ def update_task(
         )
 
     previous_assignee_id = task.assignee_id
+
+    if data.start_date is not None or data.due_date is not None:
+        _validate_schedule_change(task, data, current_user, db)
 
     if data.title is not None:
         task.title = data.title

@@ -1,7 +1,8 @@
-from datetime import datetime, date
+from datetime import date
 from typing import Optional
 from pydantic import BaseModel, Field, ConfigDict
 from app.schemas.auth import UserSimple
+from app.schemas.timestamps import UTCDateTime
 
 
 class WorkLogCreate(BaseModel):
@@ -20,7 +21,7 @@ class WorkLogOut(BaseModel):
     hours_spent: float
     notes: Optional[str] = None
     log_date: date
-    created_at: datetime
+    created_at: UTCDateTime
     user: Optional[UserSimple] = None
 
 
@@ -44,5 +45,5 @@ class DailyUpdateOut(BaseModel):
     blocker_notes: Optional[str] = None
     update_notes: Optional[str] = None
     date: date
-    created_at: datetime
+    created_at: UTCDateTime
     user: Optional[UserSimple] = None

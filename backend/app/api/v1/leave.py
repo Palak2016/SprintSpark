@@ -1,7 +1,8 @@
-from datetime import datetime, timezone, date
+from datetime import date
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, require_manager
 from app.core.demo_data import DEMO_USER_EMAILS
@@ -84,7 +85,7 @@ def review_leave_request(
 
     leave.status = data.status
     leave.reviewed_by = current_user.id
-    leave.reviewed_at = datetime.now(timezone.utc)
+    leave.reviewed_at = func.now()
     leave.decision_notes = data.decision_notes
 
     # Find affected active tasks for this user

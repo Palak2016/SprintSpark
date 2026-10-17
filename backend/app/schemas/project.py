@@ -1,7 +1,8 @@
-from datetime import datetime, date
+from datetime import date
 from typing import Optional, List
 from pydantic import BaseModel, Field, ConfigDict
 from app.schemas.auth import UserSimple
+from app.schemas.timestamps import UTCDateTime
 
 
 class ProjectMemberOut(BaseModel):
@@ -10,7 +11,7 @@ class ProjectMemberOut(BaseModel):
     id: int
     user_id: int
     role_in_project: str
-    joined_at: datetime
+    joined_at: UTCDateTime
     user: UserSimple
 
 
@@ -45,8 +46,8 @@ class ProjectOut(BaseModel):
     status: str
     start_date: date
     target_end_date: date
-    created_at: datetime
-    updated_at: datetime
+    created_at: UTCDateTime
+    updated_at: UTCDateTime
     manager: Optional[UserSimple] = None
     members: List[ProjectMemberOut] = []
     

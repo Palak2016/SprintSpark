@@ -1,7 +1,8 @@
-from datetime import datetime, date
+from datetime import date
 from typing import Optional, List
 from pydantic import BaseModel, Field, ConfigDict
 from app.schemas.auth import UserSimple
+from app.schemas.timestamps import UTCDateTime
 
 
 class TaskDependencyOut(BaseModel):
@@ -10,7 +11,7 @@ class TaskDependencyOut(BaseModel):
     id: int
     task_id: int
     prerequisite_task_id: int
-    created_at: datetime
+    created_at: UTCDateTime
     prerequisite_task_title: Optional[str] = None
     prerequisite_task_status: Optional[str] = None
 
@@ -75,8 +76,8 @@ class TaskOut(BaseModel):
     due_date: date
     is_blocked: bool
     blocker_reason: Optional[str] = None
-    created_at: datetime
-    updated_at: datetime
+    created_at: UTCDateTime
+    updated_at: UTCDateTime
     assignee: Optional[UserSimple] = None
     dependencies: List[TaskDependencyOut] = []
     dependents: List[TaskDependencyOut] = []

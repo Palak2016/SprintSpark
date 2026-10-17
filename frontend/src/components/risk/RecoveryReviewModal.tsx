@@ -2,7 +2,16 @@
 import React, { useState } from 'react';
 import { Modal } from '../common/Modal';
 import { RecoveryProposal } from '../../types';
-import { api } from '../../services/api';
+import { api, ApiError } from '../../services/api';
+import {
+  ActionBadges,
+  ProvenanceBadge,
+  ScheduleComparisonView,
+  StrategiesPanel,
+  TraceDetails,
+  ValidationPanel,
+  describeProvenance,
+} from './RecoveryInsights';
 import { formatIndianDateTime } from '../../utils/date';
 import {
   Sparkles,
@@ -37,6 +46,7 @@ export const RecoveryReviewModal: React.FC<RecoveryReviewModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmApprove, setConfirmApprove] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [staleDetails, setStaleDetails] = useState<string[]>([]);
 
   if (!proposal) return null;
 
@@ -57,6 +67,7 @@ export const RecoveryReviewModal: React.FC<RecoveryReviewModalProps> = ({
 
     setIsSubmitting(true);
     setError(null);
+    setStaleDetails([]);
 
     try {
       await api.decideRecoveryProposal(
@@ -76,7 +87,22 @@ export const RecoveryReviewModal: React.FC<RecoveryReviewModalProps> = ({
           ? err.message
           : 'An unexpected error occurred.';
 
-      setError(`Decision execution failed: ${message}`);
+      if (err instanceof ApiError && err.status === 409 && err.detail && typeof err.detail === 'object') {
+        const detail = err.detail as {
+          stale_actions?: { task_title?: string; task_id: number; changed_fields: string[] }[];
+          invalid_actions?: { task_id: number; action_type: string; errors: string[] }[];
+        };
+        setStaleDetails([
+          ...(detail.stale_actions ?? []).map(
+            (a) => `${a.task_title ?? `Task #${a.task_id}`} changed since this proposal was generated (${a.changed_fields.join(', ').replace(/_/g, ' ')}).`
+          ),
+          ...(detail.invalid_actions ?? []).map(
+            (a) => `${a.action_type.replace(/_/g, ' ').toLowerCase()} on task #${a.task_id} is no longer valid: ${a.errors.join(' ')}`
+          ),
+        ]);
+        setConfirmApprove(false);
+      }
+      setError(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -87,6 +113,11 @@ export const RecoveryReviewModal: React.FC<RecoveryReviewModalProps> = ({
 
   const decisionDate =
     proposal.decisions?.[0]?.decided_at || proposal.created_at;
+  const trace = proposal.generation_trace;
+  const provenance = describeProvenance(trace);
+  const applyable = proposal.proposed_actions.filter((a) => !a.is_advisory);
+  const advisory = proposal.proposed_actions.length - applyable.length;
+  const execution = proposal.decisions?.[0]?.execution_report;
 
   return (
     <Modal
@@ -126,7 +157,7 @@ export const RecoveryReviewModal: React.FC<RecoveryReviewModalProps> = ({
             }`}
           >
             <span className="h-1.5 w-1.5 rounded-full bg-current" />
-            {formatLabel(proposal.status)}
+            {isPending ? 'Proposed, not applied' : formatLabel(proposal.status)}
           </span>
         </div>
 
@@ -138,8 +169,11 @@ export const RecoveryReviewModal: React.FC<RecoveryReviewModalProps> = ({
             </div>
 
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-violet-300">
-                AI-Generated Proposal
+              <div className="flex flex-wrap items-center gap-2">
+                <ProvenanceBadge trace={trace} />
+              </div>
+              <p className="mt-1.5 text-[11px] leading-5 text-[#A99DBD]">
+                {provenance.detail}
               </p>
 
               <h3 className="mt-1 text-base font-bold text-[#FAF8FF]">
@@ -168,8 +202,10 @@ export const RecoveryReviewModal: React.FC<RecoveryReviewModalProps> = ({
                   Proposed Actions
                 </p>
                 <p className="mt-0.5 text-sm font-semibold text-[#FAF8FF]">
-                  {proposal.proposed_actions.length} task
-                  {proposal.proposed_actions.length === 1 ? '' : 's'}
+                  {applyable.length} change{applyable.length === 1 ? '' : 's'}
+                  {advisory > 0 && (
+                    <span className="font-normal text-[#A99DBD]"> + {advisory} advisory</span>
+                  )}
                 </p>
               </div>
             </div>
@@ -189,6 +225,35 @@ export const RecoveryReviewModal: React.FC<RecoveryReviewModalProps> = ({
             </div>
           </div>
         </section>
+
+        {/* Schedule impact (projection) */}
+        {trace?.schedule_comparison?.before && (
+          <section className="rounded-2xl border border-white/[0.08] bg-[#19112B] p-4 sm:p-5">
+            <h3 className="text-base font-bold text-[#FAF8FF]">Current schedule versus proposed schedule</h3>
+            <p className="mb-4 mt-1 text-xs leading-5 text-[#A99DBD]">
+              Each task shows today's plan above and the plan with this proposal below. Values are proposals, not applied changes.
+            </p>
+            <ScheduleComparisonView comparison={trace.schedule_comparison} />
+          </section>
+        )}
+
+        {/* Alternatives and validation */}
+        {trace?.strategies?.length ? (
+          <section className="rounded-2xl border border-white/[0.08] bg-[#19112B] p-4 sm:p-5">
+            <h3 className="text-base font-bold text-[#FAF8FF]">Strategies considered</h3>
+            <p className="mb-4 mt-1 text-xs leading-5 text-[#A99DBD]">
+              Every strategy was validated against project data and re-simulated by WorkPilot before one was proposed.
+            </p>
+            <StrategiesPanel trace={trace} />
+          </section>
+        ) : null}
+
+        {trace?.validation?.status && (
+          <section className="rounded-2xl border border-white/[0.08] bg-[#19112B] p-4 sm:p-5">
+            <h3 className="mb-3 text-base font-bold text-[#FAF8FF]">Validation</h3>
+            <ValidationPanel trace={trace} />
+          </section>
+        )}
 
         {/* Proposed Actions */}
         <section>
@@ -242,10 +307,22 @@ export const RecoveryReviewModal: React.FC<RecoveryReviewModalProps> = ({
                       </div>
                     </div>
 
-                    <span className="w-fit shrink-0 rounded-lg border border-violet-400/20 bg-violet-500/10 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wide text-violet-300">
-                      {formatLabel(action.action_type)}
-                    </span>
+                    <div className="flex shrink-0 flex-col items-start gap-1.5 sm:items-end">
+                      <span className="w-fit rounded-lg border border-violet-400/20 bg-violet-500/10 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wide text-violet-300">
+                        {formatLabel(action.action_type)}
+                      </span>
+                      <ActionBadges action={action} />
+                    </div>
                   </div>
+                  {(action.validation?.warnings?.length ?? 0) > 0 && (
+                    <ul className="space-y-1 border-b border-white/[0.06] bg-amber-500/[0.04] px-4 py-2.5">
+                      {action.validation!.warnings.map((w) => (
+                        <li key={w} className="flex items-start gap-1.5 text-[11px] leading-5 text-amber-100/90">
+                          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-300" /> {w}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
 
                   {/* Current vs Proposed */}
                   <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-2">
@@ -354,7 +431,7 @@ export const RecoveryReviewModal: React.FC<RecoveryReviewModalProps> = ({
                       </div>
                       <div className="min-w-0">
                         <p className="text-xs font-semibold text-emerald-300">
-                          Expected Impact
+                          {action.source === 'AI' ? 'Expected impact (AI estimate, not verified)' : 'Expected impact'}
                         </p>
                         <p className="mt-1 text-xs leading-5 text-[#B7ADC9]">
                           {action.expected_impact || 'No expected impact specified.'}
@@ -415,6 +492,11 @@ export const RecoveryReviewModal: React.FC<RecoveryReviewModalProps> = ({
               <p className="mt-1 break-words text-xs leading-5 text-rose-200/80">
                 {error}
               </p>
+              {staleDetails.length > 0 && (
+                <ul className="mt-2 list-disc space-y-0.5 pl-4 text-xs leading-5 text-rose-100/90">
+                  {staleDetails.map((d) => <li key={d}>{d}</li>)}
+                </ul>
+              )}
             </div>
           </div>
         )}
@@ -461,13 +543,14 @@ export const RecoveryReviewModal: React.FC<RecoveryReviewModalProps> = ({
                       Confirm Schedule Changes
                     </h4>
                     <p className="mt-1 text-xs leading-5 text-[#B7ADC9]">
-                      You are about to approve a proposal containing{' '}
+                      Approving applies{' '}
                       <span className="font-semibold text-[#FAF8FF]">
-                        {proposal.proposed_actions.length} proposed action
-                        {proposal.proposed_actions.length === 1 ? '' : 's'}
-                      </span>
-                      . Confirm that you have reviewed the affected tasks,
-                      proposed values, rationale, and operational assumptions.
+                        {applyable.length} validated change
+                        {applyable.length === 1 ? '' : 's'}
+                      </span>{' '}
+                      to tasks{advisory > 0 ? ` (${advisory} advisory item${advisory === 1 ? ' is' : 's are'} recorded but not applied)` : ''}.
+                      WorkPilot re-checks every change against current project data first; if anything changed since this
+                      proposal was generated, nothing is applied.
                     </p>
                   </div>
                 </div>
@@ -569,6 +652,19 @@ export const RecoveryReviewModal: React.FC<RecoveryReviewModalProps> = ({
                   Decision date:{' '}
                   {formatIndianDateTime(decisionDate)}
                 </p>
+                {proposal.status === 'APPROVED' && execution?.status === 'SUCCEEDED' && (
+                  <p className="mt-1 text-xs leading-5 text-[#8be39b]">
+                    Applied {execution.applied_count ?? 0} change{execution.applied_count === 1 ? '' : 's'} after re-validation
+                    {execution.revalidated_at ? ` on ${formatIndianDateTime(execution.revalidated_at)}` : ''}.
+                    {(execution.advisory_not_applied?.length ?? 0) > 0 &&
+                      ` ${execution.advisory_not_applied!.length} advisory item(s) were not applied.`}
+                  </p>
+                )}
+                {proposal.status === 'SUPERSEDED' && (
+                  <p className="mt-1 text-xs leading-5 text-[#A99DBD]">
+                    A newer proposal replaced this one before it was decided. No changes were applied.
+                  </p>
+                )}
               </div>
 
               <span className="rounded-lg border border-white/[0.08] bg-[#130D21] px-2.5 py-1.5 text-[10px] font-bold uppercase text-[#D5CBE5]">
@@ -577,6 +673,7 @@ export const RecoveryReviewModal: React.FC<RecoveryReviewModalProps> = ({
             </div>
           </section>
         )}
+        <TraceDetails proposal={proposal} />
       </div>
     </Modal>
   );

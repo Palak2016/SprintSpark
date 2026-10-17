@@ -174,7 +174,7 @@ export const RiskDetailCard: React.FC<RiskDetailCardProps> = ({
               <span>
                 {isGenerating
                   ? 'Generating Recovery Plan...'
-                  : 'Generate AI Recovery Proposal'}
+                  : 'Generate recovery proposal'}
               </span>
             </button>
           )}

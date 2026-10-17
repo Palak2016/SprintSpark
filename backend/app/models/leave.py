@@ -1,6 +1,5 @@
 import enum
-from datetime import datetime, timezone, date
-from sqlalchemy import Column, Integer, String, Text, DateTime, Date, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, DateTime, Date, ForeignKey, func
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
@@ -23,7 +22,7 @@ class LeaveRequest(Base):
     reviewed_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     reviewed_at = Column(DateTime, nullable=True)
     decision_notes = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
 
     user = relationship("User", foreign_keys=[user_id], back_populates="leave_requests")
     reviewer = relationship("User", foreign_keys=[reviewed_by])

@@ -1,7 +1,7 @@
-from datetime import datetime
 from typing import Optional, Dict, Any
 from pydantic import BaseModel, ConfigDict
 from app.schemas.auth import UserSimple
+from app.schemas.timestamps import UTCDateTime
 
 
 class AuditEventOut(BaseModel):
@@ -13,7 +13,7 @@ class AuditEventOut(BaseModel):
     event_type: str
     description: str
     metadata_json: Dict[str, Any] = {}
-    created_at: datetime
+    created_at: UTCDateTime
     actor: Optional[UserSimple] = None
 
 
@@ -26,4 +26,4 @@ class NotificationOut(BaseModel):
     message: str
     link: Optional[str] = None
     is_read: bool
-    created_at: datetime
+    created_at: UTCDateTime

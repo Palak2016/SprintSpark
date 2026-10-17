@@ -1,6 +1,6 @@
 import enum
-from datetime import datetime, timezone, date
-from sqlalchemy import Column, Integer, String, Text, Float, Boolean, DateTime, Date, ForeignKey, UniqueConstraint
+from datetime import date
+from sqlalchemy import Column, Integer, String, Text, Float, Boolean, DateTime, Date, ForeignKey, UniqueConstraint, func
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
@@ -36,8 +36,8 @@ class Task(Base):
     due_date = Column(Date, nullable=False, index=True)
     is_blocked = Column(Boolean, default=False, nullable=False)
     blocker_reason = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
 
     # Relationships
     project = relationship("Project", back_populates="tasks")
@@ -67,7 +67,7 @@ class TaskDependency(Base):
     id = Column(Integer, primary_key=True, index=True)
     task_id = Column(Integer, ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False, index=True)
     prerequisite_task_id = Column(Integer, ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False, index=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
 
     task = relationship("Task", foreign_keys=[task_id], back_populates="dependencies")
     prerequisite_task = relationship("Task", foreign_keys=[prerequisite_task_id], back_populates="dependents")

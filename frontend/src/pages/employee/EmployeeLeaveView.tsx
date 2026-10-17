@@ -9,6 +9,7 @@ import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import type { LeaveRequest } from '../../types';
 import { LeaveRequestModal } from '../../components/leave/LeaveRequestModal';
+import { formatIndianDate } from '../../utils/date';
 
 import {
   CalendarDays,
@@ -127,17 +128,8 @@ export const EmployeeLeaveView: React.FC = () => {
   const formatDate = (date?: string | null): string => {
     if (!date) return '—';
 
-    const parsed = new Date(date);
-
-    if (Number.isNaN(parsed.getTime())) {
-      return date;
-    }
-
-    return parsed.toLocaleDateString('en-IN', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
+    const formattedDate = formatIndianDate(date);
+    return formattedDate === '—' ? date : formattedDate;
   };
 
   const getStatus = (status?: string | null): string => {

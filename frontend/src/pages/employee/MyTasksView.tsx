@@ -1,10 +1,12 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useProject } from '../../context/ProjectContext';
 import { api } from '../../services/api';
 import type { Task } from '../../types';
 import { BlockerModal } from '../../components/tasks/BlockerModal';
 import { Modal } from '../../components/common/Modal';
+import { formatIndianDate } from '../../utils/date';
 import {
   CheckSquare,
   Clock,
@@ -42,6 +44,8 @@ const hasActiveBlocker = (task: TaskWithBlockerStatus): boolean =>
 
 export const MyTasksView: React.FC = () => {
   const { user } = useAuth();
+  const { activeProject } = useProject();
+  const activeProjectId = activeProject?.id;
 
   const [tasks, setTasks] = useState<TaskWithBlockerStatus[]>([]);
   const [selectedTask, setSelectedTask] =
@@ -68,9 +72,13 @@ export const MyTasksView: React.FC = () => {
 
   const isMountedRef = useRef(false);
   const isFetchingRef = useRef(false);
+  // Incremented whenever the selected project changes so that responses
+  // for a previously selected project are ignored.
+  const requestIdRef = useRef(0);
 
+  // Only load tasks assigned to the user within the selected project.
   const loadMyTasks = useCallback(async () => {
-    if (!user) {
+    if (!user || !activeProjectId) {
       if (isMountedRef.current) {
         setTasks([]);
         setIsLoading(false);
@@ -81,11 +89,16 @@ export const MyTasksView: React.FC = () => {
     if (isFetchingRef.current) return;
 
     isFetchingRef.current = true;
+    const requestId = requestIdRef.current;
 
     try {
-      const data = await api.getTasks({ assignee_id: user.id });
+      const data = await api.getTasks({
+        assignee_id: user.id,
+        project_id: activeProjectId,
+      });
 
       if (!isMountedRef.current) return;
+      if (requestId !== requestIdRef.current) return;
 
       const latestTasks = data as TaskWithBlockerStatus[];
 
@@ -101,6 +114,7 @@ export const MyTasksView: React.FC = () => {
       });
     } catch (err: unknown) {
       if (!isMountedRef.current) return;
+      if (requestId !== requestIdRef.current) return;
 
       const message =
         err instanceof Error
@@ -110,17 +124,30 @@ export const MyTasksView: React.FC = () => {
       setPageError(`Unable to load your tasks: ${message}`);
       console.error('Failed to load tasks:', err);
     } finally {
-      isFetchingRef.current = false;
+      if (requestId === requestIdRef.current) {
+        isFetchingRef.current = false;
 
-      if (isMountedRef.current) {
-        setIsLoading(false);
+        if (isMountedRef.current) {
+          setIsLoading(false);
+        }
       }
     }
-  }, [user]);
+  }, [user, activeProjectId]);
 
   // Initial load and automatic refresh every 3 seconds.
+  // Re-runs whenever the selected project changes.
   useEffect(() => {
     isMountedRef.current = true;
+
+    // Drop tasks from the previously selected project and invalidate
+    // any request that is still in flight for it.
+    requestIdRef.current += 1;
+    isFetchingRef.current = false;
+    setTasks([]);
+    setSelectedTask(null);
+    setPageError('');
+    setIsLoading(true);
+
     void loadMyTasks();
 
     const intervalId = window.setInterval(() => {
@@ -279,15 +306,8 @@ export const MyTasksView: React.FC = () => {
   const formatDate = (date?: string | null) => {
     if (!date) return 'No due date';
 
-    const parsed = new Date(date);
-
-    if (Number.isNaN(parsed.getTime())) return date;
-
-    return parsed.toLocaleDateString('en-IN', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
+    const formattedDate = formatIndianDate(date);
+    return formattedDate === '—' ? date : formattedDate;
   };
 
   const isOverdue = (task: TaskWithBlockerStatus) => {
@@ -376,8 +396,9 @@ export const MyTasksView: React.FC = () => {
           </h1>
 
           <p className="mt-1 max-w-2xl text-xs leading-5 text-[#A99DBD] sm:text-sm">
-            Manage your assignments, track progress, log focus hours, and
-            resolve work impediments.
+            {activeProject
+              ? `Your assignments in ${activeProject.name}. Track progress, log focus hours, and resolve work impediments.`
+              : 'Select a project from the top bar to see your assignments in it.'}
           </p>
         </div>
 
@@ -542,11 +563,12 @@ export const MyTasksView: React.FC = () => {
                 <CheckSquare className="h-7 w-7 text-violet-300" />
               </div>
               <h3 className="mt-5 text-base font-semibold text-[#FAF8FF]">
-                No Tasks Assigned
+                {activeProject ? 'No Tasks Assigned' : 'No Project Selected'}
               </h3>
               <p className="mx-auto mt-2 max-w-sm text-xs leading-5 text-[#A99DBD]">
-                You do not currently have any assignments. Tasks assigned to
-                you will appear here.
+                {activeProject
+                  ? `You do not have any assignments in ${activeProject.name}. Tasks assigned to you in this project will appear here.`
+                  : 'Choose a project from the selector in the top bar to see the tasks assigned to you in it.'}
               </p>
               <button
                 type="button"

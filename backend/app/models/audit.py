@@ -1,5 +1,4 @@
-from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON, func
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
@@ -13,7 +12,7 @@ class AuditEvent(Base):
     event_type = Column(String(100), nullable=False, index=True)
     description = Column(Text, nullable=False)
     metadata_json = Column(JSON, default=dict, nullable=False)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
 
     project = relationship("Project", back_populates="audit_events")
     actor = relationship("User")

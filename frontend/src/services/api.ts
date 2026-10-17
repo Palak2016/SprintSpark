@@ -14,9 +14,26 @@ import {
   TeamMemberAvailability,
   UserSimple,
   FocusGuardianContext,
+  ProjectAnalytics,
+  PortfolioHealth,
+  RecoveryPlannerStatus,
 } from '../types';
 
 const API_BASE = '/api/v1';
+
+/** Error thrown for non-2xx responses; keeps the HTTP status and any
+ * structured `detail` the backend returned (e.g. 409 conflict lists). */
+export class ApiError extends Error {
+  status: number;
+  detail: unknown;
+
+  constructor(message: string, status: number, detail: unknown) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.detail = detail;
+  }
+}
 
 class ApiService {
   private getAuthHeader(): Record<string, string> {
@@ -59,19 +76,33 @@ class ApiService {
     // Handle unsuccessful responses.
     if (!res.ok) {
       let errorMsg = 'An error occurred';
+      let detail: unknown = null;
 
       try {
         const errorData = await res.json();
+        detail = errorData.detail ?? null;
 
-        errorMsg =
-          errorData.detail ||
-          errorData.message ||
-          errorMsg;
+        if (typeof errorData.detail === 'string') {
+          errorMsg = errorData.detail;
+        } else if (
+          errorData.detail &&
+          typeof errorData.detail === 'object' &&
+          typeof errorData.detail.message === 'string'
+        ) {
+          errorMsg = errorData.detail.message;
+        } else if (Array.isArray(errorData.detail)) {
+          errorMsg = errorData.detail
+            .map((item: { msg?: string }) => item?.msg)
+            .filter(Boolean)
+            .join('; ') || errorMsg;
+        } else if (typeof errorData.message === 'string') {
+          errorMsg = errorData.message;
+        }
       } catch {
         errorMsg = res.statusText || errorMsg;
       }
 
-      throw new Error(errorMsg);
+      throw new ApiError(errorMsg, res.status, detail);
     }
 
     // HTTP 204 has no response body.
@@ -557,6 +588,21 @@ class ApiService {
         }),
       }
     );
+  }
+
+  async getRecoveryPlannerStatus(): Promise<RecoveryPlannerStatus> {
+    return this.request('/recovery-planner/status');
+  }
+
+  // --- Analytics (computed from stored project data) ---
+  async getProjectAnalytics(
+    projectId: number
+  ): Promise<ProjectAnalytics> {
+    return this.request(`/analytics/projects/${projectId}`);
+  }
+
+  async getPortfolioHealth(): Promise<PortfolioHealth> {
+    return this.request('/analytics/portfolio');
   }
 
   // --- Audit Trail ---

@@ -7,6 +7,7 @@ import React, {
 } from 'react';
 
 import { useProject } from '../../context/ProjectContext';
+import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import { Task, TaskStatus, UserSimple } from '../../types';
 
@@ -14,6 +15,14 @@ import { TaskKanban } from '../../components/tasks/TaskKanban';
 import { TaskList } from '../../components/tasks/TaskList';
 import { TaskModal } from '../../components/tasks/TaskModal';
 import { BlockerModal } from '../../components/tasks/BlockerModal';
+import { TaskTimeline } from '../../components/tasks/TaskTimeline';
+import { TaskCalendar } from '../../components/tasks/TaskCalendar';
+import {
+  DEFAULT_FILTERS,
+  activeFilterCount,
+  filterTasks,
+  type TaskFilters,
+} from '../../utils/planning';
 
 import {
   Kanban,
@@ -28,17 +37,45 @@ import {
   ClipboardList,
   LayoutDashboard,
   CheckCircle2,
+  CalendarDays,
+  GanttChartSquare,
 } from 'lucide-react';
+
+type ViewMode = 'list' | 'kanban' | 'calendar' | 'timeline';
+const VIEW_STORAGE_KEY = 'workpilot_task_view';
+
+const readStoredView = (): ViewMode => {
+  try {
+    const saved = localStorage.getItem(VIEW_STORAGE_KEY);
+    return saved === 'list' || saved === 'kanban' || saved === 'calendar' || saved === 'timeline'
+      ? saved
+      : 'kanban';
+  } catch {
+    return 'kanban';
+  }
+};
 
 export const TasksView: React.FC = () => {
   const { activeProject } = useProject();
+  const { isManager } = useAuth();
 
-  const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
+  const [viewMode, setViewModeState] = useState<ViewMode>(readStoredView);
+  const setViewMode = (mode: ViewMode) => {
+    setViewModeState(mode);
+    try {
+      localStorage.setItem(VIEW_STORAGE_KEY, mode);
+    } catch {
+      /* storage unavailable */
+    }
+  };
+  // Filters are shared by every view, so switching views keeps them.
+  const [filters, setFilters] = useState<TaskFilters>(DEFAULT_FILTERS);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [allUsers, setAllUsers] = useState<UserSimple[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
-  const [search, setSearch] = useState('');
+  const search = filters.search;
+  const setSearch = (value: string) => setFilters((f) => ({ ...f, search: value }));
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [resolvingTaskId, setResolvingTaskId] = useState<number | null>(null);
 
@@ -111,6 +148,7 @@ export const TasksView: React.FC = () => {
       return;
     }
 
+    setFilters(DEFAULT_FILTERS);
     void loadTasks(true);
 
     const intervalId = window.setInterval(() => {
@@ -257,22 +295,29 @@ export const TasksView: React.FC = () => {
     setIsBlockerModalOpen(true);
   };
 
-  const query = search.trim().toLowerCase();
+  const filteredTasks = filterTasks(tasks, filters);
+  const filterCount = activeFilterCount(filters);
 
-  const filteredTasks = tasks.filter((task) => {
-    const searchableTask = task as Task & {
-      title?: string;
-      name?: string;
-      description?: string;
-    };
+  // Assignee options come from the loaded tasks so the list matches the project.
+  const assigneeOptions = Array.from(
+    new Map(
+      tasks
+        .filter((task) => task.assignee)
+        .map((task) => [task.assignee!.id, task.assignee!.full_name])
+    ).entries()
+  ).sort((a, b) => a[1].localeCompare(b[1]));
 
-    return (
-      (searchableTask.title ?? '').toLowerCase().includes(query) ||
-      (searchableTask.name ?? '').toLowerCase().includes(query) ||
-      (searchableTask.description ?? '').toLowerCase().includes(query) ||
-      String(task.id).includes(query)
+  // Timeline date edits go through the real task API (validated server-side).
+  const handleTimelineDates = async (
+    task: Task,
+    dates: { start_date: string; due_date: string }
+  ) => {
+    const updated = await api.updateTask(task.id, dates);
+    setTasks((previous) =>
+      previous.map((item) => (item.id === updated.id ? updated : item))
     );
-  });
+    void loadTasks(false);
+  };
 
   const completedTasks = tasks.filter(
     (task) => task.status === 'COMPLETED'
@@ -558,36 +603,86 @@ export const TasksView: React.FC = () => {
                 )}
               </div>
 
-              <div className="flex items-center rounded-xl border border-white/10 bg-[#130D21] p-1">
-                <button
-                  type="button"
-                  onClick={() => setViewMode('kanban')}
-                  aria-pressed={viewMode === 'kanban'}
-                  className={`inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition ${
-                    viewMode === 'kanban'
-                      ? 'bg-violet-600 text-white shadow-sm'
-                      : 'text-[#B7ADC9] hover:bg-white/5 hover:text-white'
-                  }`}
-                >
-                  <Kanban className="h-4 w-4" />
-                  Kanban
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setViewMode('list')}
-                  aria-pressed={viewMode === 'list'}
-                  className={`inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition ${
-                    viewMode === 'list'
-                      ? 'bg-violet-600 text-white shadow-sm'
-                      : 'text-[#B7ADC9] hover:bg-white/5 hover:text-white'
-                  }`}
-                >
-                  <List className="h-4 w-4" />
-                  List
-                </button>
+              <div className="flex items-center rounded-xl border border-white/10 bg-[#130D21] p-1" role="group" aria-label="Task view">
+                {([
+                  ['list', 'List', List],
+                  ['kanban', 'Kanban', Kanban],
+                  ['calendar', 'Calendar', CalendarDays],
+                  ['timeline', 'Timeline', GanttChartSquare],
+                ] as const).map(([mode, label, Icon]) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => setViewMode(mode)}
+                    aria-pressed={viewMode === mode}
+                    className={`inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition ${
+                      viewMode === mode
+                        ? 'bg-violet-600 text-white shadow-sm'
+                        : 'text-[#B7ADC9] hover:bg-white/5 hover:text-white'
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span className="hidden sm:inline">{label}</span>
+                  </button>
+                ))}
               </div>
             </div>
+          </div>
+
+          {/* Shared filters (apply to every view) */}
+          <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Task filters">
+            <select
+              aria-label="Filter by assignee"
+              value={String(filters.assignee)}
+              onChange={(event) => {
+                const value = event.target.value;
+                setFilters((f) => ({
+                  ...f,
+                  assignee: value === 'ALL' || value === 'UNASSIGNED' ? value : Number(value),
+                }));
+              }}
+              className="rounded-xl border border-white/10 bg-[#130D21] px-3 py-2 text-xs text-[#E5D9FF] outline-none focus:border-violet-400/60"
+            >
+              <option value="ALL">All assignees</option>
+              <option value="UNASSIGNED">Unassigned</option>
+              {assigneeOptions.map(([id, name]) => (
+                <option key={id} value={id}>{name}</option>
+              ))}
+            </select>
+            <select
+              aria-label="Filter by status"
+              value={filters.status}
+              onChange={(event) => setFilters((f) => ({ ...f, status: event.target.value as TaskFilters['status'] }))}
+              className="rounded-xl border border-white/10 bg-[#130D21] px-3 py-2 text-xs text-[#E5D9FF] outline-none focus:border-violet-400/60"
+            >
+              <option value="ALL">All statuses</option>
+              <option value="TODO">To do</option>
+              <option value="IN_PROGRESS">In progress</option>
+              <option value="BLOCKED">Blocked</option>
+              <option value="COMPLETED">Completed</option>
+            </select>
+            <select
+              aria-label="Filter by priority"
+              value={filters.priority}
+              onChange={(event) => setFilters((f) => ({ ...f, priority: event.target.value as TaskFilters['priority'] }))}
+              className="rounded-xl border border-white/10 bg-[#130D21] px-3 py-2 text-xs text-[#E5D9FF] outline-none focus:border-violet-400/60"
+            >
+              <option value="ALL">All priorities</option>
+              <option value="CRITICAL">Critical</option>
+              <option value="HIGH">High</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="LOW">Low</option>
+            </select>
+            {filterCount > 0 && (
+              <button
+                type="button"
+                onClick={() => setFilters(DEFAULT_FILTERS)}
+                className="inline-flex items-center gap-1 rounded-xl px-2 py-2 text-xs font-medium text-violet-300 hover:text-violet-200"
+              >
+                <X className="h-3.5 w-3.5" />
+                Clear {filterCount} filter{filterCount === 1 ? '' : 's'}
+              </button>
+            )}
           </div>
 
           {/* Task board */}
@@ -601,7 +696,7 @@ export const TasksView: React.FC = () => {
                 Fetching tasks for {activeProject.name}
               </p>
             </div>
-          ) : filteredTasks.length === 0 ? (
+          ) : filteredTasks.length === 0 && viewMode !== 'timeline' && viewMode !== 'calendar' ? (
             <div className="rounded-2xl border border-dashed border-white/15 bg-[#19112B]/70 px-6 py-16 text-center">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-violet-400/20 bg-violet-500/10">
                 {search ? (
@@ -612,22 +707,22 @@ export const TasksView: React.FC = () => {
               </div>
 
               <h2 className="mt-4 text-lg font-semibold text-white">
-                {search ? 'No Matching Tasks' : 'No Tasks Yet'}
+                {filterCount ? 'No Matching Tasks' : 'No Tasks Yet'}
               </h2>
 
               <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#B7ADC9]">
-                {search
-                  ? 'Try another search term or clear your search to see all tasks.'
+                {filterCount
+                  ? 'Try other filters or clear them to see all tasks.'
                   : 'Create your first task to start organizing work in this project.'}
               </p>
 
-              {search ? (
+              {filterCount ? (
                 <button
                   type="button"
-                  onClick={() => setSearch('')}
+                  onClick={() => setFilters(DEFAULT_FILTERS)}
                   className="mt-5 rounded-xl border border-white/10 px-4 py-2.5 text-sm font-medium text-[#E5D9FF] transition hover:bg-white/5"
                 >
-                  Clear Search
+                  Clear Filters
                 </button>
               ) : (
                 <button
@@ -642,7 +737,18 @@ export const TasksView: React.FC = () => {
             </div>
           ) : (
             <div className="min-w-0">
-              {viewMode === 'kanban' ? (
+              {viewMode === 'timeline' ? (
+                <TaskTimeline
+                  tasks={filteredTasks}
+                  allTasks={tasks}
+                  onTaskClick={handleOpenEdit}
+                  canEdit={isManager}
+                  onDatesChange={handleTimelineDates}
+                  targetDate={activeProject.target_end_date}
+                />
+              ) : viewMode === 'calendar' ? (
+                <TaskCalendar tasks={filteredTasks} onTaskClick={handleOpenEdit} />
+              ) : viewMode === 'kanban' ? (
                 <TaskKanban
                   tasks={filteredTasks}
                   onTaskClick={handleOpenEdit}

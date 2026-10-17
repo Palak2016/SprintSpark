@@ -1,7 +1,8 @@
-from datetime import datetime, date
+from datetime import date
 from typing import Optional
 from pydantic import BaseModel, Field, ConfigDict
 from app.schemas.auth import UserSimple
+from app.schemas.timestamps import UTCDateTime
 
 
 class LeaveRequestCreate(BaseModel):
@@ -25,8 +26,8 @@ class LeaveRequestOut(BaseModel):
     reason: Optional[str] = None
     status: str
     reviewed_by: Optional[int] = None
-    reviewed_at: Optional[datetime] = None
+    reviewed_at: Optional[UTCDateTime] = None
     decision_notes: Optional[str] = None
-    created_at: datetime
+    created_at: UTCDateTime
     user: Optional[UserSimple] = None
     reviewer: Optional[UserSimple] = None

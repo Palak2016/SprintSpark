@@ -14,6 +14,8 @@ import {
 import { StatCard } from '../../components/dashboard/StatCard';
 import { RiskBadge } from '../../components/common/RiskBadge';
 import { RecoveryReviewModal } from '../../components/risk/RecoveryReviewModal';
+import { ProjectAnalyticsPanel } from '../../components/analytics/ProjectAnalyticsPanel';
+import { ProvenanceBadge } from '../../components/risk/RecoveryInsights';
 import { formatIndianTime } from '../../utils/date';
 import {
   CheckSquare,
@@ -203,11 +205,7 @@ export const ManagerOverview: React.FC = () => {
             />
 
             {lastUpdated
-              ? `Last updated at ${lastUpdated.toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  second: '2-digit',
-                })} · Auto-refresh every 5 seconds`
+              ? `Last updated at ${formatIndianTime(lastUpdated.toISOString(), true)} · Auto-refresh every 5 seconds`
               : 'Loading latest project data...'}
           </p>
         </div>
@@ -232,7 +230,7 @@ export const ManagerOverview: React.FC = () => {
         )}
       </section>
 
-      {/* AI recovery proposals */}
+      {/* Pending recovery proposals */}
       {pendingProposals.length > 0 && (
         <section className="manager-recovery-proposal flex flex-col justify-between gap-5 rounded-2xl border border-violet-400/20 bg-gradient-to-r from-[#291849] via-[#211638] to-[#19112B] p-5 shadow-xl md:flex-row md:items-center">
           <div className="flex items-start gap-4">
@@ -246,16 +244,14 @@ export const ManagerOverview: React.FC = () => {
                   Action Required: {pendingProposals[0].title}
                 </h2>
 
-                <span className="rounded-md border border-violet-300/25 bg-violet-500/15 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-violet-200">
-                  AI Proposal Ready
-                </span>
+                <ProvenanceBadge trace={pendingProposals[0].generation_trace} />
               </div>
 
               <p className="mt-2 max-w-2xl text-sm leading-6 text-[#C4B6DB]">
                 {pendingProposals[0].summary} Contains{' '}
-                {pendingProposals[0].proposed_actions.length}{' '}
-                validated actions (reassignments, blocker escalation,
-                schedule buffer).
+                {pendingProposals[0].proposed_actions.length} proposed
+                action{pendingProposals[0].proposed_actions.length === 1 ? '' : 's'}.
+                Nothing changes until you approve it.
               </p>
             </div>
           </div>
@@ -267,7 +263,7 @@ export const ManagerOverview: React.FC = () => {
             }
             className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-violet-300/30 bg-violet-500 px-5 py-3 text-sm font-bold text-white shadow-md transition-all hover:bg-violet-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300"
           >
-            Review & Approve
+            Review proposal
             <ArrowRight className="h-4 w-4" />
           </button>
         </section>
@@ -337,6 +333,9 @@ export const ManagerOverview: React.FC = () => {
           }}
         />
       </section>
+
+      {/* Charts computed from this project's stored data */}
+      {activeProjectId && <ProjectAnalyticsPanel projectId={activeProjectId} />}
 
       {/* Task list and audit activity */}
       <section className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12 lg:gap-8">

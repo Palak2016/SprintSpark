@@ -1,6 +1,5 @@
 import enum
-from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Text, Float, DateTime, ForeignKey, JSON
+from sqlalchemy import Column, Integer, String, Text, Float, DateTime, ForeignKey, JSON, func
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
@@ -22,7 +21,7 @@ class RiskAnalysis(Base):
     triggered_rules = Column(JSON, default=list, nullable=False)  # list of triggered rule objects
     evidence_json = Column(JSON, default=dict, nullable=False)    # metrics, slack, blockers, leave overlap
     missing_data_flags = Column(JSON, default=list, nullable=False) # list of missing fields/unassigned tasks
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
 
     project = relationship("Project", back_populates="risk_analyses")
     recovery_proposals = relationship("RecoveryProposal", back_populates="risk_analysis", cascade="all, delete-orphan")

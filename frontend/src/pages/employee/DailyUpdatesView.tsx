@@ -21,6 +21,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import type { DailyUpdate, Task } from '../../types';
+import { formatIndianDate } from '../../utils/date';
 
 const C = {
   bg: 'var(--ui-canvas)',
@@ -248,15 +249,8 @@ export const DailyUpdatesView: React.FC = () => {
   const formatDate = (date: string) => {
     if (!date) return 'Date unavailable';
 
-    const parsed = new Date(date);
-
-    if (Number.isNaN(parsed.getTime())) return date;
-
-    return parsed.toLocaleDateString(undefined, {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
+    const formattedDate = formatIndianDate(date);
+    return formattedDate === '—' ? date : formattedDate;
   };
 
   return (

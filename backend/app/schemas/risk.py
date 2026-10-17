@@ -1,6 +1,6 @@
-from datetime import datetime
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, ConfigDict
+from app.schemas.timestamps import UTCDateTime
 
 
 class TriggeredRule(BaseModel):
@@ -28,4 +28,4 @@ class RiskAnalysisOut(BaseModel):
     triggered_rules: List[TriggeredRule] = []
     evidence_json: Dict[str, Any] = {}
     missing_data_flags: List[MissingDataFlag] = []
-    created_at: datetime
+    created_at: UTCDateTime

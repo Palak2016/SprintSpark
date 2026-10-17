@@ -1,6 +1,4 @@
 
-from datetime import datetime, timezone
-
 from sqlalchemy import (
     Column,
     Integer,
@@ -9,6 +7,7 @@ from sqlalchemy import (
     Boolean,
     DateTime,
     ForeignKey,
+    func,
 )
 from sqlalchemy.orm import relationship
 
@@ -41,7 +40,7 @@ class Notification(Base):
 
     created_at = Column(
         DateTime,
-        default=lambda: datetime.now(timezone.utc),
+        default=func.now(),
         nullable=False,
     )
 

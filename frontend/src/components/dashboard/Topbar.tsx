@@ -366,6 +366,7 @@ export const Topbar: React.FC<TopbarProps> = ({
                           </p>
 
                           <span className="mt-2 block text-[10px] text-[#827594]">
+                            
                             {formatIndianDateTime(notification.created_at)}
                           </span>
                         </div>
