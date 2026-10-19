@@ -467,6 +467,12 @@ def update_task_progress(
             detail="Task not found",
         )
 
+    if task.assignee_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only update progress for tasks assigned to you.",
+        )
+
     task.progress_pct = data.progress_pct
 
     if data.progress_pct == 100:
@@ -493,6 +499,25 @@ def update_task_progress(
 
         elif task.status == TaskStatus.BLOCKED.value:
             task.is_blocked = True
+
+    manager_id = task.project.manager_id
+    if manager_id != current_user.id:
+        progress_message = (
+            f"{current_user.full_name} updated progress for '{task.title}' "
+            f"to {task.progress_pct}%."
+        )
+        if data.notes and data.notes.strip():
+            progress_message += f" Update: {data.notes.strip()[:300]}"
+
+        db.add(
+            Notification(
+                user_id=manager_id,
+                type="DAILY_UPDATE_SUBMITTED",
+                title=f"Daily Update: {task.title}",
+                message=progress_message,
+                link="/manager/daily-updates",
+            )
+        )
 
     db.commit()
     db.refresh(task)

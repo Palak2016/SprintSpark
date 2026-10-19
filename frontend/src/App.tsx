@@ -88,6 +88,9 @@ export const App: React.FC = () => {
               <Route index element={<ManagerOverview />} />
               <Route path="projects" element={<ProjectsView />} />
               <Route path="tasks" element={<TasksView />} />
+              <Route path="my-tasks" element={<MyTasksView />} />
+              <Route path="daily-updates" element={<DailyUpdatesView />} />
+              <Route path="work-logs" element={<WorkLogsView />} />
               <Route path="team" element={<TeamAvailabilityView />} />
               <Route path="leave" element={<LeaveManagementView />} />
               <Route path="risk" element={<RiskIntelligenceView />} />

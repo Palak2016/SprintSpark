@@ -2,6 +2,7 @@
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
@@ -12,8 +13,10 @@ from app.core.demo_data import DEMO_USER_EMAILS
 from app.models.user import User
 from app.models.project import Project, ProjectMember
 from app.models.task import Task, TaskStatus
+from app.models.focus_context import FocusContext
 from app.models.risk import RiskAnalysis
 from app.models.audit import AuditEvent
+from app.models.notification import Notification
 
 from app.schemas.project import (
     ProjectCreate,
@@ -60,7 +63,10 @@ def list_projects(
         )
 
         percentage = (
-            int(completed_tasks / total_tasks * 100)
+            round(
+                sum(task.progress_pct or 0 for task in project.tasks)
+                / total_tasks
+            )
             if total_tasks > 0
             else 0
         )
@@ -197,7 +203,10 @@ def get_project(
     )
 
     percentage = (
-        int(completed_tasks / total_tasks * 100)
+        round(
+            sum(task.progress_pct or 0 for task in project.tasks)
+            / total_tasks
+        )
         if total_tasks > 0
         else 0
     )
@@ -326,6 +335,12 @@ def delete_project(
             AuditEvent.project_id == project_id
         ).delete(synchronize_session=False)
 
+        db.query(FocusContext).filter(
+            FocusContext.task_id.in_(
+                select(Task.id).where(Task.project_id == project_id)
+            )
+        ).delete(synchronize_session=False)
+
         db.query(Task).filter(
             Task.project_id == project_id
         ).delete(synchronize_session=False)
@@ -406,6 +421,12 @@ def add_project_member(
             detail="User is already a member of this project",
         )
 
+    assigned_user = (
+        db.query(User)
+        .filter(User.id == data.user_id)
+        .first()
+    )
+
     member = ProjectMember(
         project_id=project_id,
         user_id=data.user_id,
@@ -414,6 +435,19 @@ def add_project_member(
 
     try:
         db.add(member)
+        if assigned_user and assigned_user.role == "EMPLOYEE":
+            db.add(
+                Notification(
+                    user_id=assigned_user.id,
+                    type="PROJECT_ASSIGNED",
+                    title=f"Project Assigned: {project.name}",
+                    message=(
+                        f"{current_user.full_name} added you to the project "
+                        f"'{project.name}'."
+                    ),
+                    link="/employee",
+                )
+            )
         db.commit()
     except SQLAlchemyError:
         db.rollback()

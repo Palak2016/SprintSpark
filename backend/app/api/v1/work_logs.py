@@ -10,12 +10,17 @@ from app.core.dependencies import get_current_user
 from app.models.user import User
 from app.models.task import Task, TaskStatus
 from app.models.work_log import WorkLog, DailyUpdate
+from app.models.notification import Notification
+from app.services.llm_client import LLMError
+from app.services.progress_estimator import estimate_task_progress
 from app.models.audit import AuditEvent
 from app.schemas.work_log import (
     WorkLogCreate,
     WorkLogOut,
     DailyUpdateCreate,
     DailyUpdateOut,
+    DailyUpdateProgressAnalysisRequest,
+    DailyUpdateProgressAnalysisOut,
 )
 
 router = APIRouter(tags=["Work Logs & Daily Updates"])
@@ -76,6 +81,18 @@ def create_work_log(
             detail="Task not found",
         )
 
+    if (
+        task.assignee_id != current_user.id
+        and not (
+            current_user.role in ("MANAGER", "ADMIN")
+            and task.project.manager_id == current_user.id
+        )
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only log work for your assigned tasks or projects you manage.",
+        )
+
     log = WorkLog(
         task_id=data.task_id,
         user_id=current_user.id,
@@ -99,6 +116,26 @@ def create_work_log(
         and task.status == TaskStatus.TODO.value
     ):
         task.status = TaskStatus.IN_PROGRESS.value
+
+    manager_id = task.project.manager_id
+    if manager_id != current_user.id:
+        db.add(
+            Notification(
+                user_id=manager_id,
+                type="WORK_LOG_SUBMITTED",
+                title=f"Work Log Submitted: {task.title}",
+                message=(
+                    f"{current_user.full_name} logged {data.hours_spent:g} "
+                    f"hours for '{task.title}'."
+                    + (
+                        f" Notes: {data.notes.strip()[:300]}"
+                        if data.notes and data.notes.strip()
+                        else ""
+                    )
+                ),
+                link="/manager/work-logs",
+            )
+        )
 
     db.commit()
     db.refresh(log)
@@ -143,6 +180,55 @@ def list_daily_updates(
 
 
 @router.post(
+    "/daily-updates/analyze-progress",
+    response_model=DailyUpdateProgressAnalysisOut,
+)
+def analyze_daily_update_progress(
+    data: DailyUpdateProgressAnalysisRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    task = (
+        db.query(Task)
+        .filter(Task.id == data.task_id)
+        .first()
+    )
+
+    if not task:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task not found",
+        )
+
+    if task.assignee_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only analyze progress for tasks assigned to you.",
+        )
+
+    try:
+        progress_pct, explanation = estimate_task_progress(
+            task,
+            data.update_notes,
+        )
+    except LLMError as error:
+        response_status = (
+            status.HTTP_503_SERVICE_UNAVAILABLE
+            if error.category != "INVALID_RESPONSE"
+            else status.HTTP_502_BAD_GATEWAY
+        )
+        raise HTTPException(
+            status_code=response_status,
+            detail=error.message,
+        ) from error
+
+    return DailyUpdateProgressAnalysisOut(
+        progress_pct=progress_pct,
+        explanation=explanation,
+    )
+
+
+@router.post(
     "/daily-updates",
     response_model=DailyUpdateOut,
     status_code=status.HTTP_201_CREATED,
@@ -164,10 +250,18 @@ def submit_daily_update(
             detail="Task not found",
         )
 
+    if task.assignee_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only submit daily updates for tasks assigned to you.",
+        )
+
+    progress_pct = max(task.progress_pct or 0, data.progress_pct)
+
     update = DailyUpdate(
         task_id=data.task_id,
         user_id=current_user.id,
-        progress_pct=data.progress_pct,
+        progress_pct=progress_pct,
         is_blocked=data.is_blocked,
         blocker_notes=data.blocker_notes,
         update_notes=data.update_notes,
@@ -177,9 +271,9 @@ def submit_daily_update(
     db.add(update)
 
     # Synchronize the task's progress with the daily update.
-    task.progress_pct = data.progress_pct
+    task.progress_pct = progress_pct
 
-    if data.progress_pct == 100:
+    if progress_pct == 100:
         # Completing the task clears any existing blocker.
         task.status = TaskStatus.COMPLETED.value
         task.is_blocked = False
@@ -200,11 +294,11 @@ def submit_daily_update(
 
         task.status = (
             TaskStatus.IN_PROGRESS.value
-            if data.progress_pct > 0
+            if progress_pct > 0
             else TaskStatus.TODO.value
         )
 
-    elif data.progress_pct > 0:
+    elif progress_pct > 0:
         # Positive progress automatically starts the task.
         task.is_blocked = False
         task.status = TaskStatus.IN_PROGRESS.value
@@ -217,7 +311,7 @@ def submit_daily_update(
         description=(
             f"{current_user.full_name} submitted a daily update "
             f"for '{task.title}' "
-            f"({data.progress_pct}% complete)."
+            f"({progress_pct}% complete)."
         ),
         metadata_json={
             "task_id": task.id,
@@ -226,6 +320,36 @@ def submit_daily_update(
     )
 
     db.add(audit)
+    manager_id = task.project.manager_id
+    if manager_id != current_user.id:
+        update_summary = (
+            f" Progress: {progress_pct}%."
+            + (
+                f" Update: {data.update_notes.strip()[:300]}"
+                if data.update_notes and data.update_notes.strip()
+                else ""
+            )
+            + (
+                f" Blocker: {data.blocker_notes.strip()[:300]}"
+                if data.is_blocked
+                and data.blocker_notes
+                and data.blocker_notes.strip()
+                else ""
+            )
+        )
+        db.add(
+            Notification(
+                user_id=manager_id,
+                type="DAILY_UPDATE_SUBMITTED",
+                title=f"Daily Update: {task.title}",
+                message=(
+                    f"{current_user.full_name} submitted a daily update "
+                    f"for '{task.title}'.{update_summary}"
+                ),
+                link="/manager/daily-updates",
+            )
+        )
+
     db.commit()
     db.refresh(update)
 

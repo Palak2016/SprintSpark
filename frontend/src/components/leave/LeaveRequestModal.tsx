@@ -58,7 +58,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
   };
 
   const dateInputClass =
-    'w-full rounded-xl border border-white/10 bg-[#19112B] px-3 py-2.5 text-sm text-[#FAF8FF] outline-none transition-colors [color-scheme:dark] focus:border-violet-400 focus:ring-2 focus:ring-violet-500/20 disabled:cursor-not-allowed disabled:opacity-50';
+    'leave-date-input w-full rounded-xl border border-white/10 bg-[#19112B] px-3 py-2.5 text-sm text-[#FAF8FF] outline-none transition-colors focus:border-violet-400 focus:ring-2 focus:ring-violet-500/20 disabled:cursor-not-allowed disabled:opacity-50';
 
   const labelClass =
     'mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-[#B7ADC9]';

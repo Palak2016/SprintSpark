@@ -514,6 +514,11 @@
   color: var(--ui-text) !important;
 }
 
+.landing-page .workpilot-logo-icon,
+.landing-page .workpilot-logo-icon svg {
+  color: #ffffff !important;
+}
+
 .landing-page a[class*="from-violet-"],
 .landing-page a[class*="from-violet-"] [class*="text-"],
 .landing-page a[class*="from-violet-"] svg {
@@ -559,18 +564,6 @@
   color: #ffffff !important;
 }
 
-.landing-page header.sticky a[aria-label="WorkPilot AI home"] > div > span {
-  color: var(--ui-text) !important;
-}
-
-.landing-page header.sticky a[aria-label="WorkPilot AI home"] > div > span span {
-  color: var(--ui-accent) !important;
-}
-
-:root[data-theme='dark'] .landing-page header.sticky a[aria-label="WorkPilot AI home"] [class~="text-white"] {
-  color: #ffffff !important;
-}
-
 .landing-page header.sticky button[aria-label="Open navigation menu"],
 .landing-page header.sticky button[aria-label="Close navigation menu"] {
   color: var(--ui-text) !important;
@@ -579,14 +572,6 @@
 .landing-page header.sticky button[aria-label="Open navigation menu"] svg,
 .landing-page header.sticky button[aria-label="Close navigation menu"] svg {
   color: var(--ui-text) !important;
-}
-
-:root[data-theme='light'] .landing-page header.sticky a[aria-label="WorkPilot AI home"] span {
-  color: #000000 !important;
-}
-
-:root[data-theme='light'] .landing-page header.sticky a[aria-label="WorkPilot AI home"] > div > span > span {
-  color: #000000 !important;
 }
 
 :root[data-theme='light'] .landing-page [class*="text-rose-"] {
@@ -779,15 +764,14 @@
   color: #ffffff !important;
 }
 
-:root[data-theme] .dashboard-layout .workpilot-logo-icon {
-  background-image: none !important;
-  background-color: transparent !important;
-  border-color: var(--ui-border) !important;
+:root[data-theme] .workpilot-logo-name,
+:root[data-theme] .workpilot-logo-ai {
   color: var(--ui-text) !important;
 }
 
-:root[data-theme] .dashboard-layout .workpilot-logo-icon > div {
-  background-image: none !important;
+:root[data-theme] .dashboard-layout aside:has(> nav[aria-label="Dashboard navigation"]) .workpilot-logo-name,
+:root[data-theme] .dashboard-layout aside:has(> nav[aria-label="Dashboard navigation"]) .workpilot-logo-ai {
+  color: #ffffff !important;
 }
 
 :root[data-theme='light'] .dashboard-layout.dashboard-layout button,
@@ -947,4 +931,351 @@
 
 :root[data-theme='light'] .auth-form .auth-role-description {
   color: #475569 !important;
+}
+
+.signup-page {
+  --signup-canvas: #14171a;
+  --signup-card: #1d2125;
+  --signup-input: #101317;
+  --signup-text: #f8f9fa;
+  --signup-muted: #b4bcc4;
+  --signup-subtle: #858f99;
+  --signup-border: #41484f;
+  --signup-soft: #2b3035;
+  --signup-action: #aeb4ba;
+  --signup-action-hover: #cbd5e1;
+  --signup-action-text: #14171a;
+  --signup-focus: #aeb4ba;
+  background-color: var(--signup-canvas) !important;
+  color: var(--signup-text);
+}
+
+:root[data-theme='light'] .signup-page {
+  --signup-canvas: #f1f3f5;
+  --signup-card: #ffffff;
+  --signup-input: #f8f9fa;
+  --signup-text: #1c2025;
+  --signup-muted: #50565d;
+  --signup-subtle: #686e75;
+  --signup-border: #d1d3d6;
+  --signup-soft: #e8e9eb;
+  --signup-action: #334155;
+  --signup-action-hover: #1e293b;
+  --signup-action-text: #ffffff;
+  --signup-focus: #475569;
+}
+
+.signup-page .signup-card {
+  background-color: var(--signup-card) !important;
+  border-color: var(--signup-border) !important;
+}
+
+.signup-page .signup-input {
+  background-color: var(--signup-input) !important;
+  border-color: var(--signup-border) !important;
+  color: var(--signup-text) !important;
+}
+
+.signup-page .signup-input::placeholder {
+  color: var(--signup-subtle) !important;
+}
+
+.signup-page .signup-label {
+  color: var(--signup-muted) !important;
+}
+
+.signup-page .signup-primary-action {
+  background-color: var(--signup-action) !important;
+  background-image: none !important;
+  color: var(--signup-action-text) !important;
+  box-shadow: 0 2px 5px rgb(0 0 0 / 16%) !important;
+}
+
+.signup-page .signup-primary-action:hover:not(:disabled) {
+  background-color: var(--signup-action-hover) !important;
+  transform: translateY(-1px);
+}
+
+.signup-page .signup-primary-action:focus-visible,
+.signup-page .signup-role-option:focus-visible,
+.signup-page .signup-secondary-action:focus-visible {
+  outline-color: var(--signup-focus) !important;
+}
+
+.signup-page .signup-role-option[aria-pressed='true'] {
+  border-color: var(--signup-focus) !important;
+  background-color: var(--signup-soft) !important;
+  box-shadow: inset 0 0 0 1px var(--signup-focus) !important;
+}
+
+.signup-page .signup-role-option[aria-pressed='false'] {
+  background-color: var(--signup-input) !important;
+  border-color: var(--signup-border) !important;
+}
+
+.signup-page .signup-role-option[aria-pressed='false']:hover {
+  background-color: var(--signup-soft) !important;
+  border-color: var(--signup-subtle) !important;
+}
+
+.signup-page .signup-secondary-action {
+  color: var(--signup-muted) !important;
+}
+
+.signup-page .signup-secondary-action:hover:not(:disabled) {
+  color: var(--signup-text) !important;
+}
+
+.signup-page .signup-grid {
+  background-image:
+    linear-gradient(rgb(255 255 255 / 35%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 35%) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+.signup-page [class*="bg-[#0B0C0E]"],
+.signup-page [class*="bg-[#0C0D0F]"] {
+  background-color: var(--signup-input) !important;
+}
+
+.signup-page [class*="bg-[#141619]"] {
+  background-color: var(--signup-card) !important;
+}
+
+.signup-page [class*="border-white/"] {
+  border-color: var(--signup-border) !important;
+}
+
+.signup-page [class*="text-[#92979D]"],
+.signup-page [class*="text-[#AEB4BA]"],
+.signup-page [class*="text-[#BFC3C7]"] {
+  color: var(--signup-muted) !important;
+}
+
+.signup-page [class*="text-[#666B72]"],
+.signup-page [class*="text-[#73777D]"] {
+  color: var(--signup-subtle) !important;
+}
+
+:root[data-theme='light'] .signup-page [class~="text-white"] {
+  color: var(--signup-text) !important;
+}
+
+:root[data-theme='light'] .signup-page [class*="text-[#E5E7E9]"],
+:root[data-theme='light'] .signup-page [class*="text-[#D1D3D6]"],
+:root[data-theme='light'] .signup-page [class*="text-[#C4C7CB]"] {
+  color: var(--signup-muted) !important;
+}
+
+:root[data-theme='light'] .signup-page [class*="bg-white/"] {
+  background-color: var(--signup-soft) !important;
+}
+
+:root[data-theme='light'] .signup-page [aria-pressed='true'] {
+  background-color: var(--signup-soft) !important;
+  border-color: #858a91 !important;
+}
+
+:root[data-theme='light'] .signup-page .signup-grid {
+  background-image:
+    linear-gradient(rgb(28 32 37 / 30%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(28 32 37 / 30%) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+.signin-page {
+  --signin-canvas: #14171a;
+  --signin-card: #1d2125;
+  --signin-input: #101317;
+  --signin-text: #f8f9fa;
+  --signin-muted: #b4bcc4;
+  --signin-subtle: #858f99;
+  --signin-border: #41484f;
+  --signin-soft: #2b3035;
+  --signin-action: #aeb4ba;
+  --signin-action-hover: #cbd5e1;
+  --signin-action-text: #14171a;
+  --signin-focus: #aeb4ba;
+  background-color: var(--signin-canvas) !important;
+  color: var(--signin-text);
+}
+
+:root[data-theme='light'] .signin-page {
+  --signin-canvas: #f1f3f5;
+  --signin-card: #ffffff;
+  --signin-input: #f8f9fa;
+  --signin-text: #1c2025;
+  --signin-muted: #50565d;
+  --signin-subtle: #686e75;
+  --signin-border: #d1d3d6;
+  --signin-soft: #e8e9eb;
+  --signin-action: #334155;
+  --signin-action-hover: #1e293b;
+  --signin-action-text: #ffffff;
+  --signin-focus: #475569;
+}
+
+.signin-page .signin-card {
+  background-color: var(--signin-card) !important;
+  border-color: var(--signin-border) !important;
+}
+
+.signin-page .signin-input {
+  background-color: var(--signin-input) !important;
+  border-color: var(--signin-border) !important;
+  color: var(--signin-text) !important;
+}
+
+.signin-page .signin-input::placeholder {
+  color: var(--signin-subtle) !important;
+}
+
+.signin-page .signin-label {
+  color: var(--signin-muted) !important;
+}
+
+.signin-page .signin-primary-action {
+  background-color: var(--signin-action) !important;
+  background-image: none !important;
+  color: var(--signin-action-text) !important;
+  box-shadow: 0 2px 5px rgb(0 0 0 / 16%) !important;
+}
+
+.signin-page .signin-primary-action:hover:not(:disabled) {
+  background-color: var(--signin-action-hover) !important;
+  transform: translateY(-1px);
+}
+
+.signin-page .signin-primary-action:focus-visible,
+.signin-page .signin-secondary-action:focus-visible {
+  outline-color: var(--signin-focus) !important;
+}
+
+.signin-page .signin-secondary-action {
+  color: var(--signin-muted) !important;
+}
+
+.signin-page .signin-secondary-action:hover:not(:disabled) {
+  color: var(--signin-text) !important;
+}
+
+.signin-page .signin-card-accent {
+  background: linear-gradient(90deg, #555b62, #d1d3d6, #73777d);
+}
+
+.signin-page .signin-icon-tile {
+  background-color: var(--signin-soft) !important;
+  border-color: var(--signin-border) !important;
+  color: var(--signin-muted) !important;
+}
+
+.signin-page .signin-grid {
+  background-image:
+    linear-gradient(rgb(255 255 255 / 35%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 35%) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+.signin-page [class*="bg-[#0B0C0E]"],
+.signin-page [class*="bg-[#0C0D0F]"] {
+  background-color: var(--signin-input) !important;
+}
+
+.signin-page [class*="border-white/"] {
+  border-color: var(--signin-border) !important;
+}
+
+.signin-page [class*="text-[#92979D]"],
+.signin-page [class*="text-[#AEB4BA]"],
+.signin-page [class*="text-[#BFC3C7]"],
+.signin-page [class*="text-[#C4C7CB]"],
+.signin-page [class*="text-[#D1D3D6]"] {
+  color: var(--signin-muted) !important;
+}
+
+.signin-page [class*="text-[#666B72]"],
+.signin-page [class*="text-[#73777D]"] {
+  color: var(--signin-subtle) !important;
+}
+
+:root[data-theme='light'] .signin-page [class~="text-white"] {
+  color: var(--signin-text) !important;
+}
+
+:is(.signin-page, .signup-page) .workpilot-logo-icon,
+:is(.signin-page, .signup-page) .workpilot-logo-icon svg {
+  color: #ffffff !important;
+}
+
+:root[data-theme='light'] .signin-page .signin-primary-action,
+:root[data-theme='light'] .signin-page .signin-primary-action [class~="text-white"] {
+  color: var(--signin-action-text) !important;
+}
+
+:root[data-theme='light'] .signin-page [class*="bg-white/"] {
+  background-color: var(--signin-soft) !important;
+}
+
+:root[data-theme='light'] .signin-page .signin-grid {
+  background-image:
+    linear-gradient(rgb(28 32 37 / 30%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(28 32 37 / 30%) 1px, transparent 1px);
+}
+
+:root[data-theme='light'] .dashboard-layout.dashboard-layout .notification-mark-read,
+:root[data-theme='light'] .dashboard-layout.dashboard-layout .notification-mark-read:hover,
+:root[data-theme='light'] .dashboard-layout.dashboard-layout .notification-mark-read:disabled {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+:root[data-theme='light'] .dashboard-layout.dashboard-layout .notification-mark-read *,
+:root[data-theme='light'] .dashboard-layout.dashboard-layout .notification-mark-read:hover *,
+:root[data-theme='light'] .dashboard-layout.dashboard-layout .notification-mark-read:disabled * {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+:root[data-theme='light'] .leave-date-input {
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] .leave-date-input {
+  color-scheme: dark;
+}
+
+.neutral-progress-range {
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.neutral-progress-range::-webkit-slider-thumb {
+  width: 18px;
+  height: 18px;
+  appearance: none;
+  -webkit-appearance: none;
+  border: 2px solid #ffffff;
+  border-radius: 9999px;
+  background: #334155;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 25%);
+}
+
+.neutral-progress-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #ffffff;
+  border-radius: 9999px;
+  background: #334155;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 25%);
+}
+
+:root[data-theme='dark'] .neutral-progress-range::-webkit-slider-thumb {
+  border-color: #1d2125;
+  background: #cbd5e1;
+}
+
+:root[data-theme='dark'] .neutral-progress-range::-moz-range-thumb {
+  border-color: #1d2125;
+  background: #cbd5e1;
 }

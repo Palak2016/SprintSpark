@@ -24,7 +24,11 @@ export const AuthShell: React.FC<AuthShellProps> = ({
   children,
   formWidthClass = 'max-w-[400px]',
 }) => (
-  <div className="min-h-screen bg-[#100B1D] text-[#FAF8FF] selection:bg-violet-400/30 lg:grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
+  <div className="relative isolate min-h-screen overflow-x-clip bg-[#100B1D] text-[#FAF8FF] selection:bg-violet-400/30 lg:grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute -right-40 -top-48 -z-10 h-[34rem] w-[34rem] rounded-full bg-violet-600/[0.12] blur-[130px]"
+    />
     {/* WorkPilot panel */}
     <aside className="relative hidden overflow-hidden border-r border-white/[0.06] bg-[#140E23] lg:flex lg:min-h-screen lg:flex-col lg:px-12 lg:py-10 xl:px-16">
       <div
@@ -45,7 +49,7 @@ export const AuthShell: React.FC<AuthShellProps> = ({
         aria-label="WorkPilot AI home"
         className="relative w-fit rounded-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet-300"
       >
-        <Logo size="md" />
+        <Logo size="md" onDarkBackground />
       </Link>
 
       <div className="relative flex flex-1 flex-col justify-center py-12">
@@ -58,14 +62,14 @@ export const AuthShell: React.FC<AuthShellProps> = ({
     </aside>
 
     {/* Form side */}
-    <main className="auth-form flex min-h-screen flex-col px-5 py-6 sm:px-8 lg:px-12 lg:py-10">
+    <main className="auth-form relative flex min-h-screen flex-col px-5 py-6 sm:px-8 lg:px-12 lg:py-10">
       <header className="flex items-center justify-between gap-4">
         <Link
           to="/"
           aria-label="WorkPilot AI home"
           className="rounded-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet-300 lg:invisible"
         >
-          <Logo size="sm" />
+          <Logo size="sm" onDarkBackground />
         </Link>
 
         <div className="text-right text-xs text-[#A99DBB]">
@@ -74,7 +78,11 @@ export const AuthShell: React.FC<AuthShellProps> = ({
       </header>
 
       <div className="flex flex-1 items-center justify-center py-10">
-        <div className={`w-full ${formWidthClass}`}>{children}</div>
+        <section
+          className={`w-full rounded-2xl border border-violet-200/[0.12] bg-gradient-to-br from-[#1B142B]/95 via-[#171124]/95 to-[#130E21]/95 p-5 shadow-[0_28px_90px_rgba(0,0,0,.28)] backdrop-blur-xl sm:p-7 ${formWidthClass}`}
+        >
+          {children}
+        </section>
       </div>
 
       <footer className="text-center">

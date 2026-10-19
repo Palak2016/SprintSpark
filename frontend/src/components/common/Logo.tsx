@@ -12,7 +12,6 @@ export const Logo: React.FC<LogoProps> = ({
   className = '',
   size = 'md',
   showText = true,
-  onDarkBackground = false,
 }) => {
   const sizeMap = {
     sm: 'h-7 w-7',
@@ -33,23 +32,15 @@ export const Logo: React.FC<LogoProps> = ({
         className={`
           workpilot-logo-icon
           relative flex shrink-0 items-center justify-center
-          overflow-hidden rounded-xl
-          border border-violet-300/20
-          bg-gradient-to-br from-violet-400 via-violet-500 to-indigo-600
+          overflow-hidden rounded-full
+          border border-[#B4BCC4]
+          bg-[#1C2025]
           text-white
-          shadow-[0_4px_18px_rgba(139,92,246,0.25)]
           transition-all duration-300
           group-hover:scale-105
-          group-hover:shadow-[0_6px_26px_rgba(139,92,246,0.4)]
           ${sizeMap[size]}
         `}
       >
-        {/* Subtle inner glow */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-black/10"
-        />
-
         {/* WorkPilot W + Forward Arrow */}
         <svg
           viewBox="0 0 24 24"
@@ -62,9 +53,9 @@ export const Logo: React.FC<LogoProps> = ({
           strokeLinejoin="round"
           aria-hidden="true"
         >
-          <path d="M3 6L7.5 18L11 11L14.5 18L19 6" />
-          <path d="M15 12L21 6" />
-          <path d="M16 6H21V11" />
+          <path d="M4 6L7.5 18L12 11L16.5 18L20 6" />
+          <path d="M13.5 12.5L20 6" />
+          <path d="M15.5 6H20V10.5" />
         </svg>
       </div>
 
@@ -72,13 +63,12 @@ export const Logo: React.FC<LogoProps> = ({
       {showText && (
         <span
           className={`
-            whitespace-nowrap font-semibold tracking-tight
+            workpilot-logo-name whitespace-nowrap font-semibold tracking-tight
             ${textMap[size]}
-            ${onDarkBackground ? 'text-white' : 'text-[#FAF8FF]'}
           `}
         >
           WorkPilot
-          <span className="ml-1 font-normal text-[#A78BFA]">
+          <span className="workpilot-logo-ai ml-1 font-normal">
             AI
           </span>
         </span>

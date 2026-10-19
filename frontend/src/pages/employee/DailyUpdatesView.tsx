@@ -22,6 +22,7 @@ import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import type { DailyUpdate, Task } from '../../types';
 import { formatIndianDate } from '../../utils/date';
+import { useVisibleInterval } from '../../hooks/useVisibleInterval';
 
 const C = {
   bg: 'var(--ui-canvas)',
@@ -45,9 +46,12 @@ export const DailyUpdatesView: React.FC = () => {
   const [blockerNotes, setBlockerNotes] = useState('');
   const [updateNotes, setUpdateNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAnalyzingProgress, setIsAnalyzingProgress] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [progressAnalysis, setProgressAnalysis] = useState<string | null>(null);
+  const [progressAnalysisError, setProgressAnalysisError] = useState(false);
 
   const loadUpdates = useCallback(async () => {
     if (!user) return;
@@ -56,20 +60,21 @@ export const DailyUpdatesView: React.FC = () => {
     setUpdates(data);
   }, [user]);
 
-  const loadTasks = useCallback(async () => {
+  const loadTasks = useCallback(async (syncForm = true) => {
     if (!user) return;
 
     const data = await api.getTasks({ assignee_id: user.id });
     setMyTasks(data);
 
-    setSelectedTaskId((currentId) => {
-      const selected = data.find((task) => task.id === currentId);
-      return selected?.id ?? data[0]?.id;
-    });
-
-    // Keep the form synchronized with the currently selected task.
     const selected = data.find((task) => task.id === selectedTaskId);
     const taskToUse = selected ?? data[0];
+
+    setSelectedTaskId((currentId) => {
+      const currentTask = data.find((task) => task.id === currentId);
+      return currentTask?.id ?? data[0]?.id;
+    });
+
+    if (!syncForm && selected) return;
 
     if (taskToUse) {
       setProgressPct(taskToUse.progress_pct);
@@ -85,6 +90,12 @@ export const DailyUpdatesView: React.FC = () => {
   const refreshData = useCallback(async () => {
     await Promise.all([loadUpdates(), loadTasks()]);
   }, [loadUpdates, loadTasks]);
+
+  useVisibleInterval(() => {
+    void loadTasks(false).catch((error) =>
+      console.error('Failed to refresh assigned tasks:', error),
+    );
+  }, 3000);
 
   useEffect(() => {
     let cancelled = false;
@@ -154,6 +165,7 @@ export const DailyUpdatesView: React.FC = () => {
     setSelectedTaskId(taskId);
     setSuccessMsg(null);
     setErrorMsg(null);
+    setProgressAnalysis(null);
 
     const task = myTasks.find((item) => item.id === taskId);
 
@@ -161,6 +173,36 @@ export const DailyUpdatesView: React.FC = () => {
       setProgressPct(task.progress_pct);
       setIsBlocked(task.is_blocked);
       setBlockerNotes(task.blocker_reason || '');
+    }
+  };
+
+  const handleAnalyzeProgress = async () => {
+    if (!selectedTaskId || !updateNotes.trim() || isAnalyzingProgress) return;
+
+    setIsAnalyzingProgress(true);
+    setProgressAnalysis(null);
+    setProgressAnalysisError(false);
+
+    try {
+      const estimate = await api.analyzeDailyUpdateProgress({
+        task_id: selectedTaskId,
+        update_notes: updateNotes.trim(),
+      });
+
+      setProgressPct(estimate.progress_pct);
+      setProgressAnalysis(
+        `Progress estimate set to ${estimate.progress_pct}%. ${estimate.explanation}`,
+      );
+    } catch (error: unknown) {
+      console.error('Failed to analyze daily update progress:', error);
+      setProgressAnalysisError(true);
+      setProgressAnalysis(
+        error instanceof Error
+          ? error.message
+          : 'Unable to analyze progress. Please try again.',
+      );
+    } finally {
+      setIsAnalyzingProgress(false);
     }
   };
 
@@ -240,11 +282,6 @@ export const DailyUpdatesView: React.FC = () => {
   ).length;
 
   const blockedTasks = myTasks.filter((task) => task.is_blocked).length;
-
-  const getProgressColor = (progress: number) => {
-    if (progress === 100) return 'var(--ui-success)';
-    return 'var(--ui-accent)';
-  };
 
   const formatDate = (date: string) => {
     if (!date) return 'Date unavailable';
@@ -610,8 +647,8 @@ export const DailyUpdatesView: React.FC = () => {
                     <span
                       className="rounded-lg px-3 py-1.5 text-sm font-bold tabular-nums"
                       style={{
-                        color: getProgressColor(progressPct),
-                        background: `color-mix(in srgb, ${getProgressColor(progressPct)} 12%, transparent)`,
+                        color: 'var(--ui-text)',
+                        background: 'var(--ui-surface-raised)',
                       }}
                     >
                       {progressPct}%
@@ -628,9 +665,9 @@ export const DailyUpdatesView: React.FC = () => {
                     onChange={(event) =>
                       setProgressPct(Number(event.target.value))
                     }
-                    className="h-2 w-full cursor-pointer appearance-none rounded-full accent-forest-600"
+                    className="neutral-progress-range h-2 w-full cursor-pointer appearance-none rounded-full"
                     style={{
-                      background: 'var(--ui-border)',
+                      background: `linear-gradient(to right, var(--ui-accent) ${progressPct}%, var(--ui-border) ${progressPct}%)`,
                     }}
                   />
 
@@ -727,7 +764,10 @@ export const DailyUpdatesView: React.FC = () => {
                     rows={4}
                     placeholder="What did you accomplish today? What will you work on next?"
                     value={updateNotes}
-                    onChange={(event) => setUpdateNotes(event.target.value)}
+                    onChange={(event) => {
+                      setUpdateNotes(event.target.value);
+                      setProgressAnalysis(null);
+                    }}
                     className="w-full resize-y rounded-xl border px-4 py-3 text-sm leading-6 outline-none transition focus:ring-2 focus:ring-forest-500"
                     style={{
                       borderColor: C.border,
@@ -741,6 +781,46 @@ export const DailyUpdatesView: React.FC = () => {
                   >
                     Include key progress, decisions, and next actions.
                   </p>
+                  <div className="mt-3 flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => void handleAnalyzeProgress()}
+                      disabled={
+                        isAnalyzingProgress ||
+                        isSubmitting ||
+                        !selectedTaskId ||
+                        updateNotes.trim().length < 5
+                      }
+                      className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition hover:bg-[var(--ui-accent-soft)] disabled:cursor-not-allowed disabled:opacity-50"
+                      style={{
+                        borderColor: C.border,
+                        background: 'var(--ui-surface)',
+                        color: 'var(--ui-text)',
+                      }}
+                    >
+                      {isAnalyzingProgress ? (
+                        <LoaderCircle size={14} className="animate-spin" />
+                      ) : (
+                        <Sparkles size={14} />
+                      )}
+                      {isAnalyzingProgress
+                        ? 'Analyzing update...'
+                        : 'Analyze update'}
+                    </button>
+                    {progressAnalysis && (
+                      <p
+                        role={progressAnalysisError ? 'alert' : 'status'}
+                        className="min-w-0 flex-1 text-xs leading-5"
+                        style={{
+                          color: progressAnalysisError
+                            ? 'var(--ui-danger)'
+                            : C.muted,
+                        }}
+                      >
+                        {progressAnalysis}
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 {/* Submit button */}
@@ -750,7 +830,9 @@ export const DailyUpdatesView: React.FC = () => {
                 >
                   <button
                     type="submit"
-                    disabled={isSubmitting || !selectedTaskId}
+                    disabled={
+                      isSubmitting || isAnalyzingProgress || !selectedTaskId
+                    }
                     className="flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3.5 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:min-w-52"
                     style={{
                       background: 'var(--ui-accent)',
@@ -811,7 +893,7 @@ export const DailyUpdatesView: React.FC = () => {
                     </span>
                     <span
                       className="text-xl font-bold"
-                      style={{ color: getProgressColor(progressPct) }}
+                      style={{ color: 'var(--ui-text)' }}
                     >
                       {progressPct}%
                     </span>
@@ -825,7 +907,7 @@ export const DailyUpdatesView: React.FC = () => {
                       className="h-full rounded-full transition-all duration-300"
                       style={{
                         width: `${progressPct}%`,
-                        background: getProgressColor(progressPct),
+                        background: 'var(--ui-accent)',
                       }}
                     />
                   </div>
@@ -954,8 +1036,7 @@ export const DailyUpdatesView: React.FC = () => {
                           className="h-full rounded-full"
                           style={{
                             width: `${Math.min(100, Math.max(0, update.progress_pct))}%`,
-                            background:
-                              'var(--ui-accent)',
+                            background: 'var(--ui-accent)',
                           }}
                         />
                       </div>

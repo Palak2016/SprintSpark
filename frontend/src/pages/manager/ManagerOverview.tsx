@@ -173,7 +173,12 @@ export const ManagerOverview: React.FC = () => {
 
   const completionPct =
     totalTasks > 0
-      ? Math.round((completedTasks / totalTasks) * 100)
+      ? Math.round(
+          tasks.reduce(
+            (total, task) => total + (task.progress_pct || 0),
+            0,
+          ) / totalTasks,
+        )
       : 0;
 
   return (
@@ -274,7 +279,7 @@ export const ManagerOverview: React.FC = () => {
         <StatCard
           title="Overall Completion"
           value={`${completionPct}%`}
-          subtitle={`${completedTasks} of ${totalTasks} tasks finished`}
+          subtitle="Average progress reported across tasks"
           icon={CheckSquare}
           variant="forest"
           action={{

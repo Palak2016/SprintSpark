@@ -109,7 +109,7 @@ export const MyTasksView: React.FC = () => {
         if (!current) return current;
 
         return (
-          latestTasks.find((task) => task.id === current.id) ?? current
+          latestTasks.find((task) => task.id === current.id) ?? null
         );
       });
     } catch (err: unknown) {
@@ -927,7 +927,7 @@ export const MyTasksView: React.FC = () => {
                   </p>
                 </div>
                 <div className="rounded-xl border border-violet-400/20 bg-violet-500/10 px-3 py-2">
-                  <span className="text-lg font-bold text-violet-200">
+                  <span className="text-lg font-bold text-[#E5D9FF]">
                     {progressPct}%
                   </span>
                 </div>
@@ -942,7 +942,10 @@ export const MyTasksView: React.FC = () => {
                 onChange={(e) => setProgressPct(Number(e.target.value))}
                 disabled={isSubmitting}
                 aria-label="Task completion percentage"
-                className="mt-5 h-2 w-full cursor-pointer appearance-none rounded-full bg-white/[0.08] accent-violet-500 disabled:cursor-not-allowed"
+                className="neutral-progress-range mt-5 h-2 w-full cursor-pointer appearance-none rounded-full disabled:cursor-not-allowed"
+                style={{
+                  background: `linear-gradient(to right, var(--ui-accent) ${progressPct}%, var(--ui-border) ${progressPct}%)`,
+                }}
               />
 
               <div className="mt-2 flex justify-between text-[10px] text-[#807493]">
@@ -957,7 +960,7 @@ export const MyTasksView: React.FC = () => {
                 {progressPct === 100 ? (
                   <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-300" />
                 ) : (
-                  <PlayCircle className="h-4 w-4 shrink-0 text-violet-300" />
+                  <PlayCircle className="h-4 w-4 shrink-0 text-[#64748B]" />
                 )}
                 <p className="text-xs text-[#B7ADC9]">
                   {progressPct === 100

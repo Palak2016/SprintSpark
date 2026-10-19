@@ -329,7 +329,12 @@ export const TasksView: React.FC = () => {
 
   const progress =
     tasks.length > 0
-      ? Math.round((completedTasks / tasks.length) * 100)
+      ? Math.round(
+          tasks.reduce(
+            (total, task) => total + (task.progress_pct || 0),
+            0,
+          ) / tasks.length,
+        )
       : 0;
 
   const inputClass =
@@ -441,7 +446,7 @@ export const TasksView: React.FC = () => {
               </div>
               <p className="mt-3 text-2xl font-bold">{completedTasks}</p>
               <p className="mt-1 text-xs text-[#A99DBD]">
-                Successfully completed tasks
+                Average progress from daily updates
               </p>
             </div>
 
@@ -460,7 +465,7 @@ export const TasksView: React.FC = () => {
 
             <div className="rounded-2xl border border-white/[0.08] bg-[#19112B] p-4">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-[#B7ADC9]">Completion Rate</p>
+                <p className="text-sm text-[#B7ADC9]">Reported Progress</p>
                 <CheckSquare className="h-5 w-5 text-violet-300" />
               </div>
               <p className="mt-3 text-2xl font-bold">{progress}%</p>

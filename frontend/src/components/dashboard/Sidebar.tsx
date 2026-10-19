@@ -102,6 +102,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { name: 'Overview', href: '/manager', icon: LayoutDashboard },
     { name: 'Projects', href: '/manager/projects', icon: FolderKanban },
     { name: 'Tasks Board', href: '/manager/tasks', icon: CheckSquare },
+    { name: 'My Tasks', href: '/manager/my-tasks', icon: CheckSquare },
+    { name: 'Daily Updates', href: '/manager/daily-updates', icon: Send },
+    { name: 'Work Logs', href: '/manager/work-logs', icon: Clock },
     { name: 'Team & Capacity', href: '/manager/team', icon: Users },
     { name: 'Leave Requests', href: '/manager/leave', icon: CalendarDays },
     {

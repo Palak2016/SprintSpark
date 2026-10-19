@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import type { Task } from '../../types';
+import { useVisibleInterval } from '../../hooks/useVisibleInterval';
 
 import {
   Eye,
@@ -46,7 +47,6 @@ export const FocusGuardianView: React.FC = () => {
       return;
     }
 
-    setIsLoadingTasks(true);
     setPageError('');
 
     try {
@@ -55,6 +55,11 @@ export const FocusGuardianView: React.FC = () => {
       });
 
       setTasks(Array.isArray(data) ? data : []);
+      setSelectedTaskId((currentId) =>
+        data.some((task) => String(task.id) === currentId)
+          ? currentId
+          : data[0]?.id.toString() ?? '',
+      );
     } catch (error: unknown) {
       setPageError(
         error instanceof Error
@@ -69,6 +74,10 @@ export const FocusGuardianView: React.FC = () => {
   useEffect(() => {
     void loadTasks();
   }, [loadTasks]);
+
+  useVisibleInterval(() => {
+    void loadTasks();
+  }, 3000);
 
   const handleSubmit = async (
     event: React.FormEvent<HTMLFormElement>,

@@ -19,9 +19,10 @@ import {
   formatIndianDate,
   formatIndianTime,
 } from '../../utils/date';
+import { useVisibleInterval } from '../../hooks/useVisibleInterval';
 
 export const WorkLogsView: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isManager } = useAuth();
 
   const [logs, setLogs] = useState<WorkLog[]>([]);
   const [myTasks, setMyTasks] = useState<Task[]>([]);
@@ -52,7 +53,11 @@ export const WorkLogsView: React.FC = () => {
       loadLogs();
       loadTasks();
     }
-  }, [user]);
+  }, [user, isManager]);
+
+  useVisibleInterval(() => {
+    void loadTasks();
+  }, 3000);
 
   const loadLogs = async () => {
     if (!user) return;
@@ -60,7 +65,9 @@ export const WorkLogsView: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const data = await api.getWorkLogs({ user_id: user.id });
+      const data = await api.getWorkLogs(
+        isManager ? undefined : { user_id: user.id },
+      );
       setLogs(data);
     } catch (err) {
       console.error('Failed to load work logs:', err);
@@ -76,9 +83,11 @@ export const WorkLogsView: React.FC = () => {
       const data = await api.getTasks({ assignee_id: user.id });
       setMyTasks(data);
 
-      if (data.length > 0) {
-        setSelectedTaskId((current) => current ?? data[0].id);
-      }
+      setSelectedTaskId((current) =>
+        data.some((task) => task.id === current)
+          ? current
+          : data[0]?.id,
+      );
     } catch (err) {
       console.error('Failed to load tasks:', err);
     }
@@ -133,16 +142,17 @@ export const WorkLogsView: React.FC = () => {
       <section className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <span className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-300">
-            Contributor Workspace
+            {isManager ? 'Manager Workspace' : 'Contributor Workspace'}
           </span>
 
           <h1 className="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">
-            Work Logs & Timesheet
+            {isManager ? 'Team Work Logs & Timesheet' : 'Work Logs & Timesheet'}
           </h1>
 
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[#B7ADC9]">
-            Track your work sessions, record completed activities, and monitor
-            the time spent on your assigned tasks.
+            {isManager
+              ? 'Review team work sessions and record time against your assigned tasks.'
+              : 'Track your work sessions, record completed activities, and monitor the time spent on your assigned tasks.'}
           </p>
         </div>
 
@@ -174,7 +184,7 @@ export const WorkLogsView: React.FC = () => {
               </p>
 
               <p className="mt-2 text-xs text-[#A99DBD]">
-                Across all your work sessions
+                {isManager ? 'Across team work sessions' : 'Across all your work sessions'}
               </p>
             </div>
 
@@ -210,7 +220,7 @@ export const WorkLogsView: React.FC = () => {
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-xs font-medium text-[#B7ADC9]">
-                Assigned Tasks
+                {isManager ? 'My Assigned Tasks' : 'Assigned Tasks'}
               </p>
 
               <p className="mt-2 text-3xl font-bold tracking-tight text-white">
@@ -218,7 +228,7 @@ export const WorkLogsView: React.FC = () => {
               </p>
 
               <p className="mt-2 text-xs text-[#A99DBD]">
-                Tasks available for logging
+                {isManager ? 'Your tasks available for logging' : 'Tasks available for logging'}
               </p>
             </div>
 
@@ -238,7 +248,9 @@ export const WorkLogsView: React.FC = () => {
             </h2>
 
             <p className="mt-1 text-xs text-[#A99DBD]">
-              Your recorded work and time entries
+              {isManager
+                ? 'Team work sessions and time entries'
+                : 'Your recorded work and time entries'}
             </p>
           </div>
 
@@ -289,6 +301,7 @@ export const WorkLogsView: React.FC = () => {
                   <thead className="border-b border-white/[0.08] bg-[#211638] text-[10px] font-semibold uppercase tracking-[0.12em] text-[#A99DBD]">
                     <tr>
                       <th className="px-5 py-4">Date</th>
+                      {isManager && <th className="px-5 py-4">Employee</th>}
                       <th className="px-5 py-4">Task</th>
                       <th className="px-5 py-4">Hours</th>
                       <th className="px-5 py-4">Session Notes</th>
@@ -313,6 +326,12 @@ export const WorkLogsView: React.FC = () => {
                             </span>
                           </div>
                         </td>
+
+                        {isManager && (
+                          <td className="whitespace-nowrap px-5 py-4 font-medium">
+                            {log.user?.full_name || 'Unknown employee'}
+                          </td>
+                        )}
 
                         <td className="whitespace-nowrap px-5 py-4">
                           <span className="rounded-lg border border-violet-400/20 bg-violet-500/10 px-2.5 py-1.5 font-mono font-semibold text-violet-200">
@@ -368,6 +387,12 @@ export const WorkLogsView: React.FC = () => {
                           <h3 className="text-sm font-bold text-white">
                             Task #{log.task_id}
                           </h3>
+
+                          {isManager && (
+                            <p className="mt-1 text-xs text-[#B7ADC9]">
+                              {log.user?.full_name || 'Unknown employee'}
+                            </p>
+                          )}
 
                           <p className="mt-1 text-xs text-[#A99DBD]">
                             {formatIndianDate(log.log_date)}

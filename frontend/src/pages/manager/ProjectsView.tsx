@@ -99,6 +99,7 @@ export const ProjectsView: React.FC = () => {
     activeProject,
     activeProjects,
     setActiveProject,
+    removeProject,
     refreshProjects,
   } = useProject();
 
@@ -509,10 +510,7 @@ export const ProjectsView: React.FC = () => {
 
     try {
       await api.deleteProject(project.id);
-
-      if (activeProject?.id === project.id) {
-        setActiveProject(null);
-      }
+      removeProject(project.id);
 
       setProjectToDelete(null);
       await refreshProjects();

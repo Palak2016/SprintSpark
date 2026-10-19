@@ -447,6 +447,16 @@ class ApiService {
     );
   }
 
+  async analyzeDailyUpdateProgress(data: {
+    task_id: number;
+    update_notes: string;
+  }): Promise<{ progress_pct: number; explanation: string }> {
+    return this.request('/daily-updates/analyze-progress', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   async submitDailyUpdate(data: {
     task_id: number;
     progress_pct: number;

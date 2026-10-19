@@ -71,7 +71,7 @@ export const LeaveApprovalCard: React.FC<LeaveApprovalCardProps> = ({
     )}`;
 
   return (
-    <div className="flex h-full flex-col justify-between rounded-2xl border border-white/10 bg-[#211832] p-5 shadow-lg shadow-black/10 transition-all duration-200 hover:border-violet-400/30">
+    <div className="flex h-full flex-col justify-between rounded-2xl border border-white/10 bg-[#19112B] p-5 shadow-lg shadow-black/10 transition-all duration-200 hover:border-violet-400/30">
       <div>
         {/* Employee and Status */}
         <div className="mb-4 flex items-start justify-between gap-3">

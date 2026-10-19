@@ -1,10 +1,12 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useProject } from '../../context/ProjectContext';
 import { api } from '../../services/api';
-import { Task, LeaveRequest, DailyUpdate, Project } from '../../types';
+import { Task, LeaveRequest, DailyUpdate } from '../../types';
 import { StatCard } from '../../components/dashboard/StatCard';
+import { useVisibleInterval } from '../../hooks/useVisibleInterval';
 import {
   CheckSquare,
   Clock,
@@ -17,13 +19,24 @@ import {
 
 export const EmployeeOverview: React.FC = () => {
   const { user } = useAuth();
+  const { projects: myProjects, isLoading: projectsLoading } = useProject();
   const navigate = useNavigate();
 
   const [myTasks, setMyTasks] = useState<Task[]>([]);
   const [myLeaves, setMyLeaves] = useState<LeaveRequest[]>([]);
   const [recentUpdates, setRecentUpdates] = useState<DailyUpdate[]>([]);
-  const [myProjects, setMyProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  const refreshMyTasks = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const tasks = await api.getTasks({ assignee_id: user.id });
+      setMyTasks(tasks);
+    } catch (error) {
+      console.error('Failed to refresh assigned tasks:', error);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (user) {
@@ -31,24 +44,26 @@ export const EmployeeOverview: React.FC = () => {
     }
   }, [user]);
 
+  useVisibleInterval(() => {
+    void refreshMyTasks();
+  }, 3000);
+
   const loadEmployeeData = async () => {
     if (!user) return;
 
     setIsLoading(true);
 
     try {
-      const [tasksData, leavesData, updatesData, projectsData] =
+      const [tasksData, leavesData, updatesData] =
         await Promise.all([
           api.getTasks({ assignee_id: user.id }),
           api.getLeaveRequests({ user_id: user.id }),
           api.getDailyUpdates({ user_id: user.id }),
-          api.getProjects(),
         ]);
 
       setMyTasks(tasksData);
       setMyLeaves(leavesData);
       setRecentUpdates(updatesData.slice(0, 5));
-      setMyProjects(projectsData);
     } catch (err) {
       console.error('Failed to load employee data:', err);
     } finally {
@@ -174,7 +189,7 @@ export const EmployeeOverview: React.FC = () => {
           </span>
         </div>
 
-        {isLoading ? (
+        {isLoading || projectsLoading ? (
           <div className="rounded-2xl border border-white/10 bg-[#19112B] p-8 text-center text-sm text-[#B7ADC9]">
             Loading your projects...
           </div>

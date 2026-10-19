@@ -34,6 +34,16 @@ class DailyUpdateCreate(BaseModel):
     date: Optional[date] = None
 
 
+class DailyUpdateProgressAnalysisRequest(BaseModel):
+    task_id: int
+    update_notes: str = Field(..., min_length=5, max_length=4000)
+
+
+class DailyUpdateProgressAnalysisOut(BaseModel):
+    progress_pct: int = Field(..., ge=0, le=100)
+    explanation: str = Field(..., min_length=1, max_length=500)
+
+
 class DailyUpdateOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

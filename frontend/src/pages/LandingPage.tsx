@@ -7,11 +7,12 @@ import {
   CalendarDays, CheckCircle2, ChevronDown, Clock3, Compass, Database,
   FolderKanban, Layers3, LockKeyhole, MoveUpRight, ShieldCheck,
   Sparkles, Users, Workflow, Zap, ChartNoAxesCombined, CircleHelp,
-  BrainCircuit, Command, Gauge, Menu, X
+  BrainCircuit, Gauge, Menu, X
 } from 'lucide-react';
 
 import { Navbar } from '../components/common/Navbar';
 import { Footer } from '../components/common/Footer';
+import { Logo } from '../components/common/Logo';
 import { useAuth } from '../context/AuthContext';
 
 type PreviewTab = 'overview' | 'tasks' | 'risk' | 'recovery' | 'leave';
@@ -274,12 +275,9 @@ function DashboardMockup() {
         <div className="overflow-hidden rounded-xl border border-white/[0.06] bg-[#130E21] sm:rounded-2xl">
           <div className="flex items-center justify-between border-b border-white/[0.08] px-4 py-4 sm:px-5">
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-400 to-indigo-500 shadow-lg shadow-violet-500/20">
-                <Command className="h-4 w-4 text-white" />
-              </div>
               <div>
-                <p className="text-sm font-semibold text-white">WorkPilot AI</p>
-                <p className="text-[10px] text-[#9287A8]">Project intelligence</p>
+                <Logo size="md" onDarkBackground />
+                <p className="mt-1 text-[10px] text-[#9287A8]">Project intelligence</p>
               </div>
             </div>
             <div className="flex items-center gap-2 rounded-full border border-rose-300/20 bg-rose-300/[0.08] px-2.5 py-1.5 text-[10px] font-bold text-rose-200">

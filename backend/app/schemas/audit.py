@@ -22,6 +22,7 @@ class NotificationOut(BaseModel):
 
     id: int
     user_id: int
+    type: str
     title: str
     message: str
     link: Optional[str] = None
