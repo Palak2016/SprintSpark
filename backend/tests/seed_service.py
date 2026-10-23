@@ -2,6 +2,7 @@ from datetime import date, datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 from app.core.security import get_password_hash
 from app.models.user import User, UserRole
+from app.models.company import Company
 from app.models.project import Project, ProjectMember, ProjectStatus
 from app.models.task import Task, TaskDependency, TaskPriority, TaskStatus
 from app.models.work_log import WorkLog, DailyUpdate
@@ -28,6 +29,7 @@ def seed_database(db: Session, force_reset: bool = True):
         db.query(ProjectMember).delete()
         db.query(Project).delete()
         db.query(User).delete()
+        db.query(Company).delete()
         db.commit()
 
     # Check if already seeded
@@ -38,12 +40,18 @@ def seed_database(db: Session, force_reset: bool = True):
     today = date.today()
     default_pw_hash = get_password_hash("Password123!")
 
-    # 1. Users
+    # 1. Company and users
+    company = Company(name="WorkPilot AI", join_code="WORKPILOT")
+    db.add(company)
+    db.flush()
+
     manager = User(
         email="manager@workpilot.ai",
         hashed_password=default_pw_hash,
         full_name="Alex Vance",
         role=UserRole.MANAGER.value,
+        company_name=company.name,
+        company_id=company.id,
         avatar_url="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150"
     )
     dev1 = User(
@@ -51,6 +59,8 @@ def seed_database(db: Session, force_reset: bool = True):
         hashed_password=default_pw_hash,
         full_name="Elena Rostova",
         role=UserRole.EMPLOYEE.value,
+        company_name=company.name,
+        company_id=company.id,
         avatar_url="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150"
     )
     dev2 = User(
@@ -58,6 +68,8 @@ def seed_database(db: Session, force_reset: bool = True):
         hashed_password=default_pw_hash,
         full_name="Marcus Chen",
         role=UserRole.EMPLOYEE.value,
+        company_name=company.name,
+        company_id=company.id,
         avatar_url="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150"
     )
     db.add_all([manager, dev1, dev2])
@@ -68,6 +80,7 @@ def seed_database(db: Session, force_reset: bool = True):
         name="WorkPilot Enterprise Cloud Migration",
         description="Migrating core legacy monolithic microservices to Kubernetes clusters with SOC2 compliance and zero downtime.",
         manager_id=manager.id,
+        company_id=company.id,
         status=ProjectStatus.ACTIVE.value,
         start_date=today - timedelta(days=14),
         target_end_date=today + timedelta(days=21)

@@ -19,6 +19,7 @@ def test_delete_project_removes_task_focus_contexts(
         name="Project deletion with focus context",
         description="Regression test for deleting linked task context.",
         manager_id=1,
+        company_id=1,
         status="ACTIVE",
         start_date=today,
         target_end_date=today + timedelta(days=7),

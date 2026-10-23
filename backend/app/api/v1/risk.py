@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
+from app.core.tenancy import require_project_access
 from app.models.user import User
 from app.models.project import Project
 from app.models.risk import RiskAnalysis
@@ -21,6 +22,7 @@ def get_latest_risk_analysis(
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+    require_project_access(current_user, project)
 
     analysis = db.query(RiskAnalysis).filter(
         RiskAnalysis.project_id == project_id
@@ -53,6 +55,7 @@ def run_project_risk_analysis(
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+    require_project_access(current_user, project)
 
     risk_result = analyze_project_risk(project, db)
     analysis = RiskAnalysis(

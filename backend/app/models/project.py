@@ -20,6 +20,7 @@ class Project(Base):
     name = Column(String(255), index=True, nullable=False)
     description = Column(Text, nullable=True)
     manager_id = Column(Integer, ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+    company_id = Column(Integer, ForeignKey("companies.id", ondelete="SET NULL"), nullable=True, index=True)
     status = Column(String(50), default=ProjectStatus.ACTIVE.value, nullable=False)
     start_date = Column(Date, nullable=False)
     target_end_date = Column(Date, nullable=False)
@@ -28,6 +29,7 @@ class Project(Base):
 
     # Relationships
     manager = relationship("User", back_populates="managed_projects", foreign_keys=[manager_id])
+    company = relationship("Company", back_populates="projects")
     members = relationship("ProjectMember", back_populates="project", cascade="all, delete-orphan")
     tasks = relationship("Task", back_populates="project", cascade="all, delete-orphan")
     risk_analyses = relationship("RiskAnalysis", back_populates="project", cascade="all, delete-orphan")

@@ -26,12 +26,15 @@ from app.models.project import Project
 from app.models.recovery import ProposalDecision, ProposalStatus, RecoveryProposal
 from app.models.task import Task
 from app.models.user import User, UserRole
+from app.core.tenancy import can_access_project
 from app.services.recovery_validation import stale_fields, validate_plan
 
 
 def can_manage_project(user: User, project: Project) -> bool:
     return user.role == UserRole.ADMIN.value or (
-        user.role == UserRole.MANAGER.value and project.manager_id == user.id
+        user.role == UserRole.MANAGER.value
+        and user.company_id is not None
+        and project.company_id == user.company_id
     )
 
 

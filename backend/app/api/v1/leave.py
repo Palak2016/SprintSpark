@@ -2,13 +2,15 @@ from datetime import date
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import false, func
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, require_manager
+from app.core.tenancy import require_company_manager
 from app.core.demo_data import DEMO_USER_EMAILS
 from app.models.user import User, UserRole
 from app.models.leave import LeaveRequest, LeaveStatus
 from app.models.task import Task, TaskStatus
+from app.models.project import Project
 from app.models.audit import AuditEvent
 from app.models.notification import Notification
 from app.schemas.leave import LeaveRequestCreate, LeaveReviewRequest, LeaveRequestOut
@@ -24,11 +26,18 @@ def list_leave_requests(
     db: Session = Depends(get_db)
 ):
     query = db.query(LeaveRequest)
-    # Non-managers only see their own leave requests
-    if current_user.role not in [UserRole.MANAGER.value, UserRole.ADMIN.value]:
+    if current_user.role == UserRole.ADMIN.value:
+        query = query.join(User, User.id == LeaveRequest.user_id)
+    elif current_user.role == UserRole.MANAGER.value:
+        query = query.join(User, User.id == LeaveRequest.user_id)
+        if current_user.company_id is None:
+            query = query.filter(false())
+        else:
+            query = query.filter(User.company_id == current_user.company_id)
+        if user_id:
+            query = query.filter(LeaveRequest.user_id == user_id)
+    else:
         query = query.filter(LeaveRequest.user_id == current_user.id)
-    elif user_id:
-        query = query.filter(LeaveRequest.user_id == user_id)
 
     if status_filter:
         query = query.filter(LeaveRequest.status == status_filter)
@@ -58,7 +67,10 @@ def submit_leave_request(
     db.refresh(leave)
 
     # Notify managers
-    managers = db.query(User).filter(User.role.in_([UserRole.MANAGER.value, UserRole.ADMIN.value])).all()
+    managers = db.query(User).filter(
+        User.company_id == current_user.company_id,
+        User.role.in_([UserRole.MANAGER.value, UserRole.ADMIN.value]),
+    ).all()
     for mgr in managers:
         notif = Notification(
             user_id=mgr.id,
@@ -82,6 +94,7 @@ def review_leave_request(
     leave = db.query(LeaveRequest).filter(LeaveRequest.id == leave_id).first()
     if not leave:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Leave request not found")
+    require_company_manager(current_user, leave.user.company_id)
 
     leave.status = data.status
     leave.reviewed_by = current_user.id
@@ -89,12 +102,17 @@ def review_leave_request(
     leave.decision_notes = data.decision_notes
 
     # Find affected active tasks for this user
-    affected_tasks = db.query(Task).filter(
+    affected_tasks_query = db.query(Task).join(Project, Project.id == Task.project_id).filter(
         Task.assignee_id == leave.user_id,
         Task.status != TaskStatus.COMPLETED.value,
         Task.due_date >= leave.start_date,
         Task.start_date <= leave.end_date
-    ).all()
+    )
+    if current_user.role != UserRole.ADMIN.value:
+        affected_tasks_query = affected_tasks_query.filter(
+            Project.company_id == current_user.company_id
+        )
+    affected_tasks = affected_tasks_query.all()
 
     # Notify requester
     notif = Notification(
@@ -129,20 +147,30 @@ def review_leave_request(
 
 @router.get("/team-availability")
 def get_team_availability(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_manager),
     db: Session = Depends(get_db)
 ):
     """Calculates team workload, active allocations, and approved absences."""
-    users = db.query(User).filter(~User.email.in_(DEMO_USER_EMAILS)).all()
+    users_query = db.query(User).filter(~User.email.in_(DEMO_USER_EMAILS))
+    if current_user.role != UserRole.ADMIN.value:
+        if current_user.company_id is None:
+            return []
+        users_query = users_query.filter(User.company_id == current_user.company_id)
+    users = users_query.all()
     today = date.today()
 
     availability_list = []
     for u in users:
         # Active tasks
-        active_tasks = db.query(Task).filter(
+        active_tasks_query = db.query(Task).join(Project, Project.id == Task.project_id).filter(
             Task.assignee_id == u.id,
             Task.status != TaskStatus.COMPLETED.value
-        ).all()
+        )
+        if current_user.role != UserRole.ADMIN.value:
+            active_tasks_query = active_tasks_query.filter(
+                Project.company_id == current_user.company_id
+            )
+        active_tasks = active_tasks_query.all()
 
         total_rem_hours = sum(t.estimated_hours * (1.0 - t.progress_pct / 100.0) for t in active_tasks)
 

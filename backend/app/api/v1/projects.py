@@ -9,6 +9,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, require_manager
 from app.core.demo_data import DEMO_USER_EMAILS
+from app.core.tenancy import can_access_project, require_company_manager, require_project_access
 
 from app.models.user import User
 from app.models.project import Project, ProjectMember
@@ -38,21 +39,20 @@ def list_projects(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    projects = db.query(Project).all()
+    project_query = db.query(Project)
+    if current_user.role == "MANAGER":
+        project_query = project_query.filter(
+            Project.company_id == current_user.company_id
+        )
+    elif current_user.role != "ADMIN":
+        project_query = project_query.filter(
+            Project.company_id == current_user.company_id
+        )
+    projects = project_query.all()
     results = []
 
     for project in projects:
-        is_manager = project.manager_id == current_user.id
-        is_member = any(
-            member.user_id == current_user.id
-            for member in project.members
-        )
-
-        if not (
-            is_manager
-            or is_member
-            or current_user.role == "ADMIN"
-        ):
+        if not can_access_project(current_user, project):
             continue
 
         total_tasks = len(project.tasks)
@@ -104,10 +104,16 @@ def create_project(
     current_user: User = Depends(require_manager),
     db: Session = Depends(get_db),
 ):
+    if current_user.role != "ADMIN" and current_user.company_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Join or create a company before creating projects.",
+        )
     project = Project(
         name=data.name,
         description=data.description,
         manager_id=current_user.id,
+        company_id=current_user.company_id,
         start_date=data.start_date,
         target_end_date=data.target_end_date,
         status=data.status or "ACTIVE",
@@ -179,21 +185,7 @@ def get_project(
             detail="Project not found",
         )
 
-    is_manager = project.manager_id == current_user.id
-    is_member = any(
-        member.user_id == current_user.id
-        for member in project.members
-    )
-
-    if not (
-        is_manager
-        or is_member
-        or current_user.role == "ADMIN"
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied to this project",
-        )
+    require_project_access(current_user, project)
 
     total_tasks = len(project.tasks)
     completed_tasks = sum(
@@ -252,14 +244,7 @@ def update_project(
         )
 
     # A manager may update only their own projects.
-    if (
-        project.manager_id != current_user.id
-        and current_user.role != "ADMIN"
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You cannot update this project",
-        )
+    require_company_manager(current_user, project.company_id)
 
     if data.name is not None:
         project.name = data.name
@@ -314,14 +299,8 @@ def delete_project(
         )
 
     # Only the project's manager or an admin can delete it.
-    if (
-        project.manager_id != current_user.id
-        and current_user.role != "ADMIN"
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to delete this project",
-        )
+    if current_user.role != "ADMIN":
+        require_company_manager(current_user, project.company_id)
 
     try:
         # Remove known records linked to this project.
@@ -397,13 +376,23 @@ def add_project_member(
             detail="Project not found",
         )
 
+    require_company_manager(current_user, project.company_id)
+
+    assigned_user = (
+        db.query(User)
+        .filter(User.id == data.user_id)
+        .first()
+    )
     if (
-        project.manager_id != current_user.id
-        and current_user.role != "ADMIN"
+        assigned_user is None
+        or (
+            current_user.role != "ADMIN"
+            and assigned_user.company_id != current_user.company_id
+        )
     ):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You cannot manage members of this project",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Project members must belong to your company.",
         )
 
     existing = (
@@ -420,12 +409,6 @@ def add_project_member(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User is already a member of this project",
         )
-
-    assigned_user = (
-        db.query(User)
-        .filter(User.id == data.user_id)
-        .first()
-    )
 
     member = ProjectMember(
         project_id=project_id,
@@ -481,14 +464,7 @@ def remove_project_member(
             detail="Project not found",
         )
 
-    if (
-        project.manager_id != current_user.id
-        and current_user.role != "ADMIN"
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You cannot manage members of this project",
-        )
+    require_company_manager(current_user, project.company_id)
 
     member = (
         db.query(ProjectMember)
@@ -526,11 +502,10 @@ def list_all_team_users(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    users = (
-        db.query(User)
-        .filter(~User.email.in_(DEMO_USER_EMAILS))
-        .all()
-    )
+    users_query = db.query(User).filter(~User.email.in_(DEMO_USER_EMAILS))
+    if current_user.role != "ADMIN":
+        users_query = users_query.filter(User.company_id == current_user.company_id)
+    users = users_query.all()
 
     return [
         UserSimple.model_validate(user)

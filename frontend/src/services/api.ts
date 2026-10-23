@@ -13,6 +13,7 @@ import {
   Notification,
   TeamMemberAvailability,
   UserSimple,
+  Company,
   FocusGuardianContext,
   ProjectAnalytics,
   PortfolioHealth,
@@ -140,9 +141,10 @@ class ApiService {
   async sendSignupOtp(
     email: string,
     role: 'EMPLOYEE' | 'MANAGER',
-    managerDetails?: {
-      company_name: string;
-      designation: string;
+    companyDetails?: {
+      company_name?: string;
+      company_code?: string;
+      designation?: string;
     }
   ): Promise<{ message: string }> {
     return this.request('/auth/signup/send-otp', {
@@ -150,7 +152,7 @@ class ApiService {
       body: JSON.stringify({
         email,
         role,
-        ...managerDetails,
+        ...companyDetails,
       }),
     });
   }
@@ -163,6 +165,7 @@ class ApiService {
     role: 'EMPLOYEE' | 'MANAGER';
     otp_code: string;
     company_name?: string;
+    company_code?: string;
     designation?: string;
   }): Promise<{ access_token: string; user: User }> {
     return this.request('/auth/signup', {
@@ -173,6 +176,16 @@ class ApiService {
 
   async getMe(): Promise<User> {
     return this.request('/auth/me');
+  }
+
+  async getMyCompany(): Promise<Company> {
+    return this.request('/companies/me');
+  }
+
+  async generateCompanyJoinCode(): Promise<Company> {
+    return this.request('/companies/me/join-code', {
+      method: 'POST',
+    });
   }
 
   // --- Projects ---

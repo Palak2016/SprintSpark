@@ -20,6 +20,7 @@ import {
   Moon,
   CircleHelp,
   UsersRound,
+  Building2,
   LogOut,
   X,
   Check,
@@ -106,6 +107,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { name: 'Daily Updates', href: '/manager/daily-updates', icon: Send },
     { name: 'Work Logs', href: '/manager/work-logs', icon: Clock },
     { name: 'Team & Capacity', href: '/manager/team', icon: Users },
+    { name: 'Company Portal', href: '/manager/company', icon: Building2 },
     { name: 'Leave Requests', href: '/manager/leave', icon: CalendarDays },
     {
       name: 'Recovery Plans',

@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 
 type SignupRole = 'EMPLOYEE' | 'MANAGER';
+type ManagerSignupMode = 'CREATE' | 'JOIN';
 
 export const Signup: React.FC = () => {
   const navigate = useNavigate();
@@ -32,7 +33,10 @@ export const Signup: React.FC = () => {
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [companyName, setCompanyName] = useState('');
+  const [companyCode, setCompanyCode] = useState('');
   const [designation, setDesignation] = useState('');
+  const [managerSignupMode, setManagerSignupMode] =
+    useState<ManagerSignupMode>('CREATE');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState<SignupRole>('EMPLOYEE');
@@ -41,6 +45,21 @@ export const Signup: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const isCreatingCompany =
+    role === 'MANAGER' && managerSignupMode === 'CREATE';
+
+  const companySignupDetails =
+    role === 'MANAGER'
+      ? managerSignupMode === 'CREATE'
+        ? {
+            company_name: companyName.trim(),
+            designation: designation.trim(),
+          }
+        : {
+            company_code: companyCode.trim().toUpperCase(),
+            designation: designation.trim(),
+          }
+      : { company_code: companyCode.trim().toUpperCase() };
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,13 +82,16 @@ export const Signup: React.FC = () => {
       return;
     }
 
-    if (
-      role === 'MANAGER' &&
-      (!companyName.trim() || !designation.trim())
-    ) {
-      setErrorMessage(
-        'Company name and designation are required for manager signup.'
-      );
+    if (isCreatingCompany && !companyName.trim()) {
+      setErrorMessage('Company name is required to create a company.');
+      return;
+    }
+    if (role === 'MANAGER' && !designation.trim()) {
+      setErrorMessage('Designation is required for manager signup.');
+      return;
+    }
+    if (!isCreatingCompany && !companyCode.trim()) {
+      setErrorMessage('Enter the company code to join a company.');
       return;
     }
 
@@ -79,12 +101,7 @@ export const Signup: React.FC = () => {
       await api.sendSignupOtp(
         email.trim(),
         role,
-        role === 'MANAGER'
-          ? {
-              company_name: companyName.trim(),
-              designation: designation.trim(),
-            }
-          : undefined
+        companySignupDetails
       );
 
       setStep(2);
@@ -107,12 +124,7 @@ export const Signup: React.FC = () => {
       await api.sendSignupOtp(
         email.trim(),
         role,
-        role === 'MANAGER'
-          ? {
-              company_name: companyName.trim(),
-              designation: designation.trim(),
-            }
-          : undefined
+        companySignupDetails
       );
     } catch (err) {
       setErrorMessage(
@@ -146,11 +158,11 @@ export const Signup: React.FC = () => {
         password,
         role,
         otp_code: otpCode,
+        ...(isCreatingCompany
+          ? { company_name: companyName.trim() }
+          : { company_code: companyCode.trim().toUpperCase() }),
         ...(role === 'MANAGER'
-          ? {
-              company_name: companyName.trim(),
-              designation: designation.trim(),
-            }
+          ? { designation: designation.trim() }
           : {}),
       });
 
@@ -364,7 +376,7 @@ export const Signup: React.FC = () => {
                   </div>
                 </fieldset>
 
-                {/* Manager-only fields */}
+                {/* Company registration and membership */}
                 {role === 'MANAGER' && (
                   <motion.div
                     initial={reduceMotion ? false : { opacity: 0, y: 8 }}
@@ -373,9 +385,34 @@ export const Signup: React.FC = () => {
                   >
                     <div className="flex items-center gap-2 text-xs font-semibold text-[#D1D3D6]">
                       <BriefcaseBusiness className="h-4 w-4" />
-                      Manager workspace details
+                      Company workspace
                     </div>
 
+                    <div className="grid grid-cols-2 gap-2">
+                      {([
+                        ['CREATE', 'Create company'],
+                        ['JOIN', 'Join company'],
+                      ] as const).map(([mode, label]) => (
+                        <button
+                          key={mode}
+                          type="button"
+                          aria-pressed={managerSignupMode === mode}
+                          onClick={() => {
+                            setManagerSignupMode(mode);
+                            setErrorMessage(null);
+                          }}
+                          className={`rounded-lg border px-3 py-2 text-xs font-semibold transition ${
+                            managerSignupMode === mode
+                              ? 'border-white/40 bg-white/10 text-white'
+                              : 'border-white/10 text-[#AEB4BA] hover:border-white/25'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {isCreatingCompany ? (
                     <div>
                       <label
                         htmlFor="companyName"
@@ -395,6 +432,23 @@ export const Signup: React.FC = () => {
                         className={inputClass}
                       />
                     </div>
+                    ) : (
+                      <div>
+                        <label htmlFor="companyCode" className={labelClass}>
+                          Company code *
+                        </label>
+                        <input
+                          id="companyCode"
+                          type="text"
+                          required
+                          autoComplete="off"
+                          placeholder="Enter your company code"
+                          value={companyCode}
+                          onChange={(e) => setCompanyCode(e.target.value)}
+                          className={inputClass}
+                        />
+                      </div>
+                    )}
 
                     <div>
                       <label
@@ -416,6 +470,27 @@ export const Signup: React.FC = () => {
                       />
                     </div>
                   </motion.div>
+                )}
+
+                {role === 'EMPLOYEE' && (
+                  <div>
+                    <label htmlFor="companyCode" className={labelClass}>
+                      Company code *
+                    </label>
+                    <input
+                      id="companyCode"
+                      type="text"
+                      required
+                      autoComplete="off"
+                      placeholder="Enter your company code"
+                      value={companyCode}
+                      onChange={(e) => setCompanyCode(e.target.value)}
+                      className={inputClass}
+                    />
+                    <p className="mt-2 text-[11px] text-[#92979D]">
+                      Ask your company manager for its signup code.
+                    </p>
+                  </div>
                 )}
 
                 {/* Full name */}

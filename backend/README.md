@@ -6,6 +6,22 @@ Signup verification sends a six-digit, single-use code to the submitted email.
 Codes expire after 10 minutes, allow up to five attempts, and can be resent
 after 60 seconds. Phone numbers are optional and are not verified.
 
+## Company workspaces
+
+A manager can create a company during signup. The company workspace then
+provides a join code from the manager portal. Employees and additional
+managers must enter that code to join; signup checks that it identifies an
+existing company. The Company Portal shows the company roster and can generate
+a replacement join code; replacing it invalidates the previous code for new
+signups. Users and projects are stored with a company foreign key,
+and manager-facing project, team, leave, and work data is scoped to that
+company.
+
+Apply the company workspace migration using the same `alembic upgrade head`
+command below. Existing manager company names are migrated into workspaces;
+records without a known company remain unassigned until they are associated
+with a company.
+
 Configure SMTP in `backend/.env`. For Gmail, use an app password rather than
 your regular account password:
 
@@ -27,6 +43,10 @@ Apply database migrations after checkout:
 ```powershell
 alembic upgrade head
 ```
+
+Start the WorkPilot API from `backend` with `python run_server.py`; it listens
+on `127.0.0.1:8001`. The frontend Vite server proxies `/api` to this port so
+the API does not collide with other local services using port `8000`.
 
 ## AI recovery planner
 

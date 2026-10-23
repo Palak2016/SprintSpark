@@ -39,6 +39,7 @@ def test_signup_duplicate_email(client):
         "password": "NewPassword123!",
         "role": "EMPLOYEE",
         "otp_code": "123456",
+        "company_code": "WORKPILOT",
     })
     assert response.status_code == 400
     assert "already exists" in response.json()["detail"]
@@ -92,7 +93,10 @@ def test_manager_signup_uses_email_otp_and_needs_no_phone(client, monkeypatch, d
 def test_employee_signup_can_keep_optional_phone(client, monkeypatch):
     _mock_email_otp(monkeypatch)
     email = "new.employee@example.com"
-    sent = client.post("/api/v1/auth/signup/send-otp", json={"email": email})
+    sent = client.post("/api/v1/auth/signup/send-otp", json={
+        "email": email,
+        "company_code": "WORKPILOT",
+    })
     assert sent.status_code == 202
 
     response = client.post("/api/v1/auth/signup", json={
@@ -101,9 +105,11 @@ def test_employee_signup_can_keep_optional_phone(client, monkeypatch):
         "password": "Password123!",
         "role": "EMPLOYEE",
         "otp_code": "123456",
+        "company_code": "WORKPILOT",
     })
     assert response.status_code == 201
     assert response.json()["user"]["phone_number"] is None
+    assert response.json()["user"]["company_id"] is not None
 
 
 def test_manager_signup_requires_company_and_designation(client):
@@ -122,7 +128,10 @@ def test_signup_rejects_invalid_email_otp_without_creating_account(client, monke
 
     _mock_email_otp(monkeypatch)
     email = "unverified.employee@example.com"
-    sent = client.post("/api/v1/auth/signup/send-otp", json={"email": email})
+    sent = client.post("/api/v1/auth/signup/send-otp", json={
+        "email": email,
+        "company_code": "WORKPILOT",
+    })
     assert sent.status_code == 202
 
     response = client.post("/api/v1/auth/signup", json={
@@ -131,6 +140,7 @@ def test_signup_rejects_invalid_email_otp_without_creating_account(client, monke
         "password": "Password123!",
         "role": "EMPLOYEE",
         "otp_code": "654321",
+        "company_code": "WORKPILOT",
     })
     assert response.status_code == 400
     assert "invalid or expired" in response.json()["detail"]
@@ -139,7 +149,10 @@ def test_signup_rejects_invalid_email_otp_without_creating_account(client, monke
 
 def test_email_otp_resend_is_rate_limited(client, monkeypatch):
     sent_emails = _mock_email_otp(monkeypatch)
-    request_data = {"email": "resend@example.com"}
+    request_data = {
+        "email": "resend@example.com",
+        "company_code": "WORKPILOT",
+    }
 
     first = client.post("/api/v1/auth/signup/send-otp", json=request_data)
     second = client.post("/api/v1/auth/signup/send-otp", json=request_data)
@@ -149,6 +162,203 @@ def test_email_otp_resend_is_rate_limited(client, monkeypatch):
     assert len(sent_emails) == 1
 
 
+def test_company_manager_signup_returns_join_code(client, monkeypatch):
+    _mock_email_otp(monkeypatch)
+    email = "company.owner@example.com"
+    company_data = {
+        "role": "MANAGER",
+        "company_name": "Signup Company",
+        "designation": "Company Manager",
+    }
+    sent = client.post(
+        "/api/v1/auth/signup/send-otp",
+        json={"email": email, **company_data},
+    )
+    assert sent.status_code == 202
+
+    created = client.post(
+        "/api/v1/auth/signup",
+        json={
+            "full_name": "Company Owner",
+            "email": email,
+            "password": "Password123!",
+            "otp_code": "123456",
+            **company_data,
+        },
+    )
+    assert created.status_code == 201
+    company = client.get(
+        "/api/v1/companies/me",
+        headers={
+            "Authorization": "Bearer " + created.json()["access_token"]
+        },
+    )
+    assert company.status_code == 200
+    assert company.json()["name"] == "Signup Company"
+    assert len(company.json()["join_code"]) == 8
+    assert company.json()["manager_count"] == 1
+    assert [member["email"] for member in company.json()["members"]] == [email]
+
+    first_join_code = company.json()["join_code"]
+    regenerated = client.post(
+        "/api/v1/companies/me/join-code",
+        headers={
+            "Authorization": "Bearer " + created.json()["access_token"]
+        },
+    )
+    assert regenerated.status_code == 200
+    assert regenerated.json()["join_code"] != first_join_code
+    assert client.post(
+        "/api/v1/auth/signup/send-otp",
+        json={
+            "email": "old.code@example.com",
+            "role": "EMPLOYEE",
+            "company_code": first_join_code,
+        },
+    ).status_code == 400
+
+    joining_manager_email = "joining.manager@example.com"
+    joining_manager_details = {
+        "email": joining_manager_email,
+        "role": "MANAGER",
+        "company_code": regenerated.json()["join_code"],
+        "designation": "Team Manager",
+    }
+    assert client.post(
+        "/api/v1/auth/signup/send-otp",
+        json=joining_manager_details,
+    ).status_code == 202
+    joined_manager = client.post(
+        "/api/v1/auth/signup",
+        json={
+            "full_name": "Joining Manager",
+            "password": "Password123!",
+            "otp_code": "123456",
+            **joining_manager_details,
+        },
+    )
+    assert joined_manager.status_code == 201
+    assert joined_manager.json()["user"]["company_id"] == regenerated.json()["id"]
+
+    employee_email = "signup.employee@example.com"
+    employee_details = {
+        "email": employee_email,
+        "role": "EMPLOYEE",
+        "company_code": regenerated.json()["join_code"].lower(),
+    }
+    assert client.post(
+        "/api/v1/auth/signup/send-otp",
+        json=employee_details,
+    ).status_code == 202
+    employee = client.post(
+        "/api/v1/auth/signup",
+        json={
+            "full_name": "Company Employee",
+            "email": employee_email,
+            "password": "Password123!",
+            "role": "EMPLOYEE",
+            "otp_code": "123456",
+            "company_code": regenerated.json()["join_code"],
+        },
+    )
+    assert employee.status_code == 201
+    assert employee.json()["user"]["company_id"] == regenerated.json()["id"]
+
+    refreshed_company = client.get(
+        "/api/v1/companies/me",
+        headers={
+            "Authorization": "Bearer " + created.json()["access_token"]
+        },
+    )
+    assert {
+        member["email"] for member in refreshed_company.json()["members"]
+    } == {email, joining_manager_email, employee_email}
+
+
+def test_signup_requires_a_valid_company_code(client):
+    response = client.post(
+        "/api/v1/auth/signup/send-otp",
+        json={"email": "invalid.code@example.com", "company_code": "INVALID1"},
+    )
+    assert response.status_code == 400
+    assert response.json()["detail"] == "The company code is invalid."
+
+
+def test_manager_team_directory_is_company_scoped(client, db_session, manager_token):
+    from datetime import date, timedelta
+
+    from app.core.security import get_password_hash
+    from app.models.company import Company
+    from app.models.project import Project
+    from app.models.user import User
+    from app.models.task import Task
+
+    manager = db_session.query(User).filter_by(email="manager@workpilot.ai").one()
+    other_company = Company(name="Other Company", join_code="OTHER123")
+    db_session.add(other_company)
+    db_session.flush()
+    same_company_user = User(
+        email="same-company@example.com",
+        full_name="Same Company",
+        hashed_password=get_password_hash("Password123!"),
+        role="EMPLOYEE",
+        company_id=manager.company_id,
+        company_name=manager.company_name,
+    )
+    other_company_user = User(
+        email="other-company@example.com",
+        full_name="Other Company",
+        hashed_password=get_password_hash("Password123!"),
+        role="EMPLOYEE",
+        company_id=other_company.id,
+        company_name=other_company.name,
+    )
+    db_session.add_all([same_company_user, other_company_user])
+    db_session.flush()
+    foreign_project = Project(
+        name="Other company's project",
+        manager_id=other_company_user.id,
+        company_id=other_company.id,
+        start_date=date.today(),
+        target_end_date=date.today() + timedelta(days=1),
+    )
+    db_session.add(foreign_project)
+    db_session.flush()
+    db_session.add(Task(
+        project_id=foreign_project.id,
+        title="Other company task",
+        assignee_id=other_company_user.id,
+        start_date=date.today(),
+        due_date=date.today() + timedelta(days=1),
+    ))
+    db_session.commit()
+
+    directory = client.get(
+        "/api/v1/projects/users/all",
+        headers={"Authorization": "Bearer " + manager_token},
+    )
+    assert directory.status_code == 200
+    emails = {user["email"] for user in directory.json()}
+    assert "same-company@example.com" in emails
+    assert "other-company@example.com" not in emails
+
+    project_response = client.get(
+        f"/api/v1/projects/{foreign_project.id}",
+        headers={"Authorization": "Bearer " + manager_token},
+    )
+    assert project_response.status_code == 403
+
+    task_list = client.get(
+        "/api/v1/tasks",
+        headers={"Authorization": "Bearer " + manager_token},
+    )
+    assert task_list.status_code == 200
+    assert all(
+        task["project_id"] != foreign_project.id
+        for task in task_list.json()
+    )
+
+
 def test_signup_reports_missing_smtp_configuration(client, monkeypatch):
     from app.core.config import settings
 
@@ -156,6 +366,7 @@ def test_signup_reports_missing_smtp_configuration(client, monkeypatch):
     monkeypatch.setattr(settings, "SMTP_FROM_EMAIL", None)
     response = client.post("/api/v1/auth/signup/send-otp", json={
         "email": "smtp.not.configured@example.com",
+        "company_code": "WORKPILOT",
     })
 
     assert response.status_code == 503

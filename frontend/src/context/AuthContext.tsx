@@ -17,6 +17,7 @@ interface SignupData {
   role: 'EMPLOYEE' | 'MANAGER';
   otp_code: string;
   company_name?: string;
+  company_code?: string;
   designation?: string;
 }
 

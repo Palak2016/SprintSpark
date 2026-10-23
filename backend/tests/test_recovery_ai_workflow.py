@@ -11,6 +11,7 @@ import pytest
 from app.core.config import settings
 from app.core.security import create_access_token
 from app.models.audit import AuditEvent
+from app.models.company import Company
 from app.models.leave import LeaveRequest, LeaveStatus
 from app.models.project import Project, ProjectMember
 from app.models.recovery import ProposalStatus, RecoveryProposal
@@ -33,12 +34,15 @@ def scenario(db_session):
     today = date.today()
     suffix = str(id(db_session))[-6:]
     asha = User(email=f"asha.{suffix}@example.com", hashed_password="x",
-                full_name="Asha Iyer", role=UserRole.EMPLOYEE.value)
+                full_name="Asha Iyer", role=UserRole.EMPLOYEE.value,
+                company_id=1, company_name="WorkPilot AI")
     ben = User(email=f"ben.{suffix}@example.com", hashed_password="x",
-               full_name="Ben Okafor", role=UserRole.EMPLOYEE.value)
+               full_name="Ben Okafor", role=UserRole.EMPLOYEE.value,
+               company_id=1, company_name="WorkPilot AI")
     db_session.add_all([asha, ben])
     db_session.flush()
     project = Project(name=f"Recovery scenario {suffix}", manager_id=1,
+                      company_id=1,
                       start_date=today - timedelta(days=10),
                       target_end_date=today + timedelta(days=12))
     db_session.add(project)
@@ -240,9 +244,13 @@ def test_approval_applies_validated_actions_and_records_execution(client, manage
         assert task.assignee_id == reassign["proposed_values"]["assignee_id"]
 
 
-def test_only_the_projects_manager_can_view_or_decide(client, employee_token, db_session, scenario):
+def test_managers_can_only_view_company_projects(client, employee_token, db_session, scenario):
+    other_company = Company(name="Other Recovery Company", join_code="OTHERREC")
+    db_session.add(other_company)
+    db_session.flush()
     other = User(email=f"other.mgr.{scenario['project'].id}@example.com", hashed_password="x",
-                 full_name="Other Manager", role=UserRole.MANAGER.value)
+                 full_name="Other Manager", role=UserRole.MANAGER.value,
+                 company_id=other_company.id, company_name=other_company.name)
     db_session.add(other)
     db_session.commit()
     other_token = create_access_token(subject=other.id, role="MANAGER")
@@ -260,10 +268,12 @@ def test_only_the_projects_manager_can_view_or_decide(client, employee_token, db
 
 def test_timeline_date_changes_are_validated(client, manager_token, employee_token, scenario):
     blocked, follow = scenario["blocked"], scenario["follow"]
+    original_start = blocked.start_date
+    original_due = blocked.due_date
     url = f"/api/v1/tasks/{blocked.id}"
 
     inverted = client.put(url, headers=_auth(manager_token), json={
-        "start_date": str(blocked.due_date), "due_date": str(blocked.start_date - timedelta(days=1))})
+        "start_date": str(original_due), "due_date": str(original_start - timedelta(days=1))})
     assert inverted.status_code == 400
 
     past_dependent = client.put(url, headers=_auth(manager_token), json={
@@ -272,16 +282,22 @@ def test_timeline_date_changes_are_validated(client, manager_token, employee_tok
     assert past_dependent.json()["detail"]["conflicts"][0]["task_id"] == follow.id
 
     assert client.put(url, headers=_auth(employee_token), json={
-        "due_date": str(blocked.due_date + timedelta(days=1))}).status_code == 403
+        "due_date": str(original_due + timedelta(days=1))}).status_code == 403
 
     moved = client.put(url, headers=_auth(manager_token), json={
-        "start_date": str(blocked.start_date + timedelta(days=1)),
-        "due_date": str(blocked.due_date + timedelta(days=1))})
+        "start_date": str(original_start + timedelta(days=1)),
+        "due_date": str(original_due + timedelta(days=1))})
     assert moved.status_code == 200
-    assert moved.json()["due_date"] == str(blocked.due_date + timedelta(days=1))
+    assert moved.json()["due_date"] == str(original_due + timedelta(days=1))
 
 
 def test_project_analytics_use_real_records(client, manager_token, db_session, scenario):
+    other_company = Company(
+        name="Analytics Outsider Company",
+        join_code=f"ANALYTICS{scenario['project'].id}",
+    )
+    db_session.add(other_company)
+    db_session.flush()
     url = f"/api/v1/analytics/projects/{scenario['project'].id}"
     data = client.get(url, headers=_auth(manager_token)).json()
     counts = {row["status"]: row["count"] for row in data["status_distribution"]}
@@ -300,7 +316,8 @@ def test_project_analytics_use_real_records(client, manager_token, db_session, s
     assert trend["points"][-1]["actual_pct"] == 20.0
 
     outsider = User(email=f"outsider.{scenario['project'].id}@example.com", hashed_password="x",
-                    full_name="Outsider", role=UserRole.EMPLOYEE.value)
+                    full_name="Outsider", role=UserRole.EMPLOYEE.value,
+                    company_id=other_company.id, company_name=other_company.name)
     db_session.add(outsider)
     db_session.commit()
     token = create_access_token(subject=outsider.id, role="EMPLOYEE")

@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, require_manager
+from app.core.tenancy import require_project_access, require_task_access
 
 from app.models.user import User
 from app.models.task import Task
@@ -40,11 +41,7 @@ def list_project_focus_contexts(
             detail="Project not found",
         )
 
-    if current_user.role != "ADMIN" and project.manager_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only view Focus Guardian context for your projects",
-        )
+    require_project_access(current_user, project)
 
     rows = (
         db.query(FocusContext, Task.title, User.full_name)
@@ -93,6 +90,7 @@ def submit_focus_context(
             detail="Task not found",
         )
 
+    require_task_access(current_user, task)
     # Employees can submit context only for their assigned tasks.
     if task.assignee_id != current_user.id:
         raise HTTPException(

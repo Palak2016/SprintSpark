@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, require_manager
+from app.core.tenancy import require_project_access
 from app.models.project import Project
 from app.models.risk import RiskAnalysis
 from app.models.task import Task
@@ -20,9 +21,11 @@ router = APIRouter(prefix="/analytics", tags=["Analytics"])
 
 
 def _can_view(user: User, project: Project) -> bool:
-    if user.role == UserRole.ADMIN.value or project.manager_id == user.id:
+    try:
+        require_project_access(user, project)
         return True
-    return any(member.user_id == user.id for member in project.members)
+    except HTTPException:
+        return False
 
 
 @router.get("/projects/{project_id}")
@@ -72,7 +75,9 @@ def portfolio_analytics(
 ):
     query = db.query(Project)
     if current_user.role != UserRole.ADMIN.value:
-        query = query.filter(Project.manager_id == current_user.id)
+        if current_user.company_id is None:
+            return portfolio_health([])
+        query = query.filter(Project.company_id == current_user.company_id)
     rows = []
     for project in query.all():
         latest = (

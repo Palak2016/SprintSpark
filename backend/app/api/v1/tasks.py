@@ -2,12 +2,14 @@ from datetime import datetime, timezone
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import false, or_
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, require_manager
+from app.core.tenancy import require_company_manager, require_task_access
 from app.models.user import User, UserRole
-from app.models.project import Project
+from app.models.project import Project, ProjectMember
 from app.models.task import Task, TaskDependency, TaskStatus
 from app.models.audit import AuditEvent
 from app.models.notification import Notification
@@ -69,6 +71,23 @@ def list_tasks(
     db: Session = Depends(get_db),
 ):
     query = db.query(Task)
+    if current_user.role == UserRole.ADMIN.value:
+        pass
+    elif current_user.role == UserRole.MANAGER.value:
+        if current_user.company_id is None:
+            query = query.filter(false())
+        else:
+            query = query.join(Project).filter(
+                Project.company_id == current_user.company_id
+            )
+    else:
+        query = query.join(Project).filter(
+            Project.company_id == current_user.company_id,
+            or_(
+                Task.assignee_id == current_user.id,
+                Project.members.any(ProjectMember.user_id == current_user.id),
+            ),
+        )
 
     if project_id:
         query = query.filter(Task.project_id == project_id)
@@ -153,6 +172,15 @@ def create_task(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Project not found",
         )
+
+    require_company_manager(current_user, project.company_id)
+    if data.assignee_id is not None:
+        assignee = db.query(User).filter(User.id == data.assignee_id).first()
+        if assignee is None or assignee.company_id != project.company_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Task assignees must belong to the project company.",
+            )
 
     new_task = Task(
         project_id=data.project_id,
@@ -243,6 +271,7 @@ def get_task(
             detail="Task not found",
         )
 
+    require_task_access(current_user, task)
     return TaskOut.model_validate(task)
 
 
@@ -325,7 +354,24 @@ def update_task(
             detail="Task not found",
         )
 
+    require_task_access(current_user, task)
+    if current_user.role == UserRole.EMPLOYEE.value and task.assignee_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only update tasks assigned to you.",
+        )
+    if current_user.role in (UserRole.MANAGER.value, UserRole.ADMIN.value):
+        require_company_manager(current_user, task.project.company_id)
+
     previous_assignee_id = task.assignee_id
+
+    if data.assignee_id is not None:
+        assignee = db.query(User).filter(User.id == data.assignee_id).first()
+        if assignee is None or assignee.company_id != task.project.company_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Task assignees must belong to the project company.",
+            )
 
     if data.start_date is not None or data.due_date is not None:
         _validate_schedule_change(task, data, current_user, db)
@@ -442,6 +488,7 @@ def delete_task(
             detail="Task not found",
         )
 
+    require_company_manager(current_user, task.project.company_id)
     db.delete(task)
     db.commit()
 
@@ -467,6 +514,7 @@ def update_task_progress(
             detail="Task not found",
         )
 
+    require_task_access(current_user, task)
     if task.assignee_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -542,6 +590,16 @@ def report_or_resolve_blocker(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Task not found",
+        )
+
+    require_task_access(current_user, task)
+    if (
+        current_user.role == UserRole.EMPLOYEE.value
+        and task.assignee_id != current_user.id
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only report blockers for tasks assigned to you.",
         )
 
     task.is_blocked = data.is_blocked
@@ -631,6 +689,9 @@ def add_task_dependency(
             detail="Task or prerequisite task not found",
         )
 
+    require_company_manager(current_user, task.project.company_id)
+    require_company_manager(current_user, prerequisite.project.company_id)
+
     if task.project_id != prerequisite.project_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -708,6 +769,16 @@ def remove_task_dependency(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Dependency link not found",
         )
+
+    task = db.query(Task).filter(Task.id == task_id).first()
+    prerequisite = db.query(Task).filter(Task.id == prerequisite_id).first()
+    if task is None or prerequisite is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task or prerequisite task not found",
+        )
+    require_company_manager(current_user, task.project.company_id)
+    require_company_manager(current_user, prerequisite.project.company_id)
 
     db.delete(dependency)
     db.commit()

@@ -1,5 +1,5 @@
 import enum
-from sqlalchemy import Column, Integer, String, DateTime, Enum, func
+from sqlalchemy import Column, ForeignKey, Integer, String, DateTime, Enum, func
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
@@ -25,6 +25,7 @@ class User(Base):
     full_name = Column(String(255), nullable=False)
     role = Column(String(50), default=UserRole.EMPLOYEE.value, nullable=False)
     company_name = Column(String(255), nullable=True)
+    company_id = Column(Integer, ForeignKey("companies.id", ondelete="SET NULL"), nullable=True, index=True)
     designation = Column(String(255), nullable=True)
     approval_status = Column(
         String(50),
@@ -40,6 +41,7 @@ class User(Base):
 
     # Relationships
     managed_projects = relationship("Project", back_populates="manager", foreign_keys="Project.manager_id")
+    company = relationship("Company", back_populates="users")
     project_memberships = relationship("ProjectMember", back_populates="user", cascade="all, delete-orphan")
     assigned_tasks = relationship("Task", back_populates="assignee", foreign_keys="Task.assignee_id")
     work_logs = relationship("WorkLog", back_populates="user", cascade="all, delete-orphan")

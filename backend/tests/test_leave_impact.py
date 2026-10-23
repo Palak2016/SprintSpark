@@ -36,6 +36,8 @@ def test_team_availability_calculation(client, manager_token, db_session):
         hashed_password="not-used",
         full_name="Availability Employee",
         role=UserRole.EMPLOYEE.value,
+        company_id=1,
+        company_name="WorkPilot AI",
     )
     db_session.add(employee)
     db_session.flush()

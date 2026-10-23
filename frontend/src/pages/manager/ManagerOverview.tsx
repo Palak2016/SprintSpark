@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import {
   Task,
+  Company,
   RiskAnalysis,
   LeaveRequest,
   RecoveryProposal,
@@ -26,12 +27,16 @@ import {
   Clock,
   ArrowUpRight,
   RefreshCw,
+  Building2,
+  UsersRound,
 } from 'lucide-react';
 
 export const ManagerOverview: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { activeProject, refreshProjects } = useProject();
+  const [company, setCompany] = useState<Company | null>(null);
+  const [companyError, setCompanyError] = useState<string | null>(null);
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [riskAnalysis, setRiskAnalysis] =
@@ -52,6 +57,36 @@ export const ManagerOverview: React.FC = () => {
 
   // Track the project associated with the current request.
   const activeProjectId = activeProject?.id;
+
+  useEffect(() => {
+    if (user?.role !== 'MANAGER') {
+      setCompany(null);
+      return;
+    }
+
+    let isMounted = true;
+    api.getMyCompany()
+      .then((data) => {
+        if (isMounted) {
+          setCompany(data);
+          setCompanyError(null);
+        }
+      })
+      .catch((error: unknown) => {
+        console.error('Failed to load company workspace:', error);
+        if (isMounted) {
+          setCompanyError(
+            error instanceof Error
+              ? error.message
+              : 'Could not load your company workspace.'
+          );
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.role]);
 
   const loadOverviewData = useCallback(
     async (showLoader = false) => {
@@ -234,6 +269,41 @@ export const ManagerOverview: React.FC = () => {
           </div>
         )}
       </section>
+
+      {user?.role === 'MANAGER' && (
+        <section className="flex flex-col justify-between gap-4 rounded-2xl border border-violet-400/20 bg-violet-500/[0.06] p-5 sm:flex-row sm:items-center">
+          <div>
+            <div className="flex items-center gap-2 text-sm font-bold text-white">
+              <Building2 className="h-4 w-4 text-violet-300" />
+              {company?.name ?? 'Company workspace'}
+            </div>
+            {company ? (
+              <>
+                <p className="mt-2 text-xs text-[#B7ADC9]">
+                  Your company portal manages members and signup access.
+                </p>
+                <Link
+                  to="/manager/company"
+                  className="mt-3 inline-flex items-center gap-2 rounded-lg border border-violet-300/25 bg-violet-400/10 px-3.5 py-2 text-xs font-semibold text-violet-100 transition hover:bg-violet-400/20"
+                >
+                  Open company portal
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </>
+            ) : (
+              <p className="mt-2 text-xs text-rose-200">
+                {companyError ?? 'Loading company workspace...'}
+              </p>
+            )}
+          </div>
+          {company && (
+            <div className="flex items-center gap-2 text-xs text-[#D1C7E0]">
+              <UsersRound className="h-4 w-4 text-violet-300" />
+              {company.employee_count} employees · {company.manager_count} managers
+            </div>
+          )}
+        </section>
+      )}
 
       {/* Pending recovery proposals */}
       {pendingProposals.length > 0 && (

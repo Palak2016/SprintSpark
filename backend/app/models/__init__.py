@@ -1,5 +1,6 @@
 from app.core.database import Base
 from app.models.user import User, UserRole
+from app.models.company import Company
 from app.models.project import Project, ProjectMember, ProjectStatus
 from app.models.task import Task, TaskDependency, TaskPriority, TaskStatus
 from app.models.work_log import WorkLog, DailyUpdate
@@ -15,6 +16,7 @@ __all__ = [
     "Base",
     "User",
     "UserRole",
+    "Company",
     "Project",
     "ProjectMember",
     "ProjectStatus",

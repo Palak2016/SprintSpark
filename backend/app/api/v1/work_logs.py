@@ -3,11 +3,14 @@ from datetime import date
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import false
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
+from app.core.tenancy import require_company_manager, require_task_access
 from app.models.user import User
+from app.models.project import Project
 from app.models.task import Task, TaskStatus
 from app.models.work_log import WorkLog, DailyUpdate
 from app.models.notification import Notification
@@ -34,20 +37,24 @@ def list_work_logs(
     db: Session = Depends(get_db),
 ):
     query = db.query(WorkLog)
+    if current_user.role == "ADMIN":
+        query = query.join(Task, Task.id == WorkLog.task_id)
+    elif current_user.role == "MANAGER":
+        query = query.join(Task, Task.id == WorkLog.task_id).join(
+            Project, Project.id == Task.project_id
+        )
+        if current_user.company_id is None:
+            query = query.filter(false())
+        else:
+            query = query.filter(Project.company_id == current_user.company_id)
+    else:
+        query = query.filter(WorkLog.user_id == current_user.id)
 
     if task_id:
         query = query.filter(WorkLog.task_id == task_id)
 
     if user_id:
         query = query.filter(WorkLog.user_id == user_id)
-    elif (
-        current_user.role not in ("MANAGER", "ADMIN")
-        and not task_id
-    ):
-        query = query.filter(
-            WorkLog.user_id == current_user.id
-        )
-
     logs = query.order_by(
         WorkLog.log_date.desc(),
         WorkLog.created_at.desc(),
@@ -79,6 +86,15 @@ def create_work_log(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Task not found",
+        )
+
+    require_task_access(current_user, task)
+    if current_user.role == "MANAGER":
+        require_company_manager(current_user, task.project.company_id)
+    elif current_user.role != "ADMIN" and task.assignee_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only log work for your assigned tasks.",
         )
 
     if (
@@ -154,20 +170,24 @@ def list_daily_updates(
     db: Session = Depends(get_db),
 ):
     query = db.query(DailyUpdate)
+    if current_user.role == "ADMIN":
+        query = query.join(Task, Task.id == DailyUpdate.task_id)
+    elif current_user.role == "MANAGER":
+        query = query.join(Task, Task.id == DailyUpdate.task_id).join(
+            Project, Project.id == Task.project_id
+        )
+        if current_user.company_id is None:
+            query = query.filter(false())
+        else:
+            query = query.filter(Project.company_id == current_user.company_id)
+    else:
+        query = query.filter(DailyUpdate.user_id == current_user.id)
 
     if task_id:
         query = query.filter(DailyUpdate.task_id == task_id)
 
     if user_id:
         query = query.filter(DailyUpdate.user_id == user_id)
-    elif (
-        current_user.role not in ("MANAGER", "ADMIN")
-        and not task_id
-    ):
-        query = query.filter(
-            DailyUpdate.user_id == current_user.id
-        )
-
     updates = query.order_by(
         DailyUpdate.date.desc(),
         DailyUpdate.created_at.desc(),
@@ -200,6 +220,7 @@ def analyze_daily_update_progress(
             detail="Task not found",
         )
 
+    require_task_access(current_user, task)
     if task.assignee_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -250,6 +271,7 @@ def submit_daily_update(
             detail="Task not found",
         )
 
+    require_task_access(current_user, task)
     if task.assignee_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

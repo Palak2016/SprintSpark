@@ -1,19 +1,27 @@
 from app.core.security import create_access_token
+from app.models.company import Company
 from app.models.user import User, UserRole
 
 
 def test_manager_team_views_hide_seeded_demo_accounts(client, db_session):
+    company = Company(name="Real Company", join_code="REALCO01")
+    db_session.add(company)
+    db_session.flush()
     manager = User(
         email="real.manager@example.com",
         hashed_password="not-used",
         full_name="Real Manager",
         role=UserRole.MANAGER.value,
+        company_id=company.id,
+        company_name=company.name,
     )
     employee = User(
         email="real.employee@example.com",
         hashed_password="not-used",
         full_name="Real Employee",
         role=UserRole.EMPLOYEE.value,
+        company_id=company.id,
+        company_name=company.name,
     )
     db_session.add_all([manager, employee])
     db_session.flush()

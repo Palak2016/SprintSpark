@@ -16,6 +16,27 @@ export interface User extends UserSimple {
   approval_status: 'PENDING' | 'APPROVED' | 'REJECTED';
   approval_reviewed_at?: string;
   approval_notes?: string;
+  company_id?: number;
+}
+
+export interface Company {
+  id: number;
+  name: string;
+  join_code: string;
+  created_at: string;
+  employee_count: number;
+  manager_count: number;
+  members: CompanyMember[];
+}
+
+export interface CompanyMember {
+  id: number;
+  full_name: string;
+  email: string;
+  role: 'MANAGER' | 'EMPLOYEE' | string;
+  designation?: string;
+  approval_status: string;
+  created_at: string;
 }
 
 export interface ProjectMember {

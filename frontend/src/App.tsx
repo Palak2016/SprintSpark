@@ -21,6 +21,7 @@ import { RiskIntelligenceView } from './pages/manager/RiskIntelligenceView';
 import { RecoveryPlansView } from './pages/manager/RecoveryPlansView';
 import { AuditHistoryView } from './pages/manager/AuditHistoryView';
 import { SettingsView } from './pages/manager/SettingsView';
+import { CompanyPortalView } from './pages/manager/CompanyPortalView';
 
 // Employee Views
 import { EmployeeOverview } from './pages/employee/EmployeeOverview';
@@ -86,6 +87,7 @@ export const App: React.FC = () => {
               }
             >
               <Route index element={<ManagerOverview />} />
+              <Route path="company" element={<CompanyPortalView />} />
               <Route path="projects" element={<ProjectsView />} />
               <Route path="tasks" element={<TasksView />} />
               <Route path="my-tasks" element={<MyTasksView />} />

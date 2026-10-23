@@ -1,5 +1,5 @@
 from app.models.recovery import RecoveryProposal, ProposalStatus
-from app.models.task import Task
+from app.models.task import Task, TaskStatus
 from app.models.audit import AuditEvent
 
 
@@ -18,7 +18,15 @@ def test_focus_context_informs_recovery_proposal(
     client,
     employee_token,
     manager_token,
+    db_session,
 ):
+    task = db_session.get(Task, 3)
+    task.status = TaskStatus.BLOCKED.value
+    task.is_blocked = True
+    task.progress_pct = 40
+    task.blocker_reason = "Awaiting identity provider sandbox access."
+    db_session.commit()
+
     context_response = client.post(
         "/api/v1/focus-guardian/context",
         headers={"Authorization": f"Bearer {employee_token}"},

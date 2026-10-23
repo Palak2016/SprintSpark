@@ -12,6 +12,7 @@ from app.api.v1.audit import router as audit_router
 from app.api.v1.notifications import router as notifications_router
 from app.api.v1.focus_guardian import router as focus_guardian_router
 from app.api.v1.analytics import router as analytics_router
+from app.api.v1.companies import router as companies_router
 
 api_v1_router = APIRouter(prefix="/api/v1")
 
@@ -26,3 +27,4 @@ api_v1_router.include_router(audit_router)
 api_v1_router.include_router(notifications_router)
 api_v1_router.include_router(focus_guardian_router)
 api_v1_router.include_router(analytics_router)
+api_v1_router.include_router(companies_router)
