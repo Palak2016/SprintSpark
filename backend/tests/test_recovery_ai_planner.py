@@ -1,6 +1,7 @@
 """LLM client and AI strategy parsing (no network, no database)."""
 
 import json
+import io
 import urllib.error
 
 import pytest
@@ -9,6 +10,7 @@ from app.services.llm_client import LLMConfig, LLMError, call_json_model
 from app.services.recovery_ai_planner import SYSTEM_PROMPT, parse_strategies
 
 OPENAI = LLMConfig("openai", "gpt-test", "sk-secret-value", "https://api.openai.com/v1", 5)
+WAYJET = LLMConfig("wayjet", "gpt-wayjet-test", "sk-wayjet-value", "https://api.wayjet.ai/v1", 5)
 GEMINI = LLMConfig("gemini", "gemini-test", "g-secret-value", "https://generativelanguage.googleapis.com/v1beta", 5)
 
 
@@ -30,6 +32,42 @@ def test_openai_request_and_response_parsing():
     assert result.model == "gpt-test-2026"
     assert result.content == {"strategies": []}
     assert result.usage == {"total_tokens": 42}
+
+
+def test_wayjet_uses_openai_compatible_chat_completions():
+    seen = {}
+
+    def transport(url, body, headers, timeout):
+        seen.update(url=url, body=body, headers=headers)
+        return {
+            "model": "gpt-wayjet-test",
+            "choices": [{"message": {"content": json.dumps({"progress_pct": 40})}}],
+        }
+
+    result = call_json_model("sys", "user", transport=transport, config=WAYJET)
+
+    assert seen["url"] == "https://api.wayjet.ai/v1/chat/completions"
+    assert seen["headers"]["Authorization"] == "Bearer sk-wayjet-value"
+    assert seen["body"]["model"] == "gpt-wayjet-test"
+    assert result.provider == "wayjet"
+    assert result.content == {"progress_pct": 40}
+
+
+def test_wayjet_configuration_is_selected_by_provider(monkeypatch):
+    from app.core import config
+    from app.services import llm_client
+
+    monkeypatch.setattr(config.settings, "OPENAI_API_KEY", None)
+    monkeypatch.setattr(config.settings, "WAYJET_API_KEY", "sk-wayjet-test")
+    monkeypatch.setattr(config.settings, "GEMINI_API_KEY", None)
+    monkeypatch.setattr(config.settings, "LLM_PROVIDER", "wayjet")
+
+    resolved = llm_client.resolve_config()
+
+    assert resolved is not None
+    assert resolved.provider == "wayjet"
+    assert resolved.api_key == "sk-wayjet-test"
+    assert resolved.base_url == "https://api.wayjet.ai/v1"
 
 
 def test_gemini_request_and_response_parsing():
@@ -59,6 +97,69 @@ def test_errors_are_categorised_and_never_include_the_key():
     with pytest.raises(LLMError) as exc:
         call_json_model("s", "u", transport=bad_json, config=OPENAI)
     assert exc.value.category == "INVALID_RESPONSE"
+
+
+@pytest.mark.parametrize(
+    ("provider_code", "category", "message_text"),
+    [
+        (
+            "insufficient_quota",
+            "QUOTA_EXCEEDED",
+            "Check billing, project budget, and organization usage limits.",
+        ),
+        (
+            "rate_limit_exceeded",
+            "RATE_LIMITED",
+            "Wait briefly before retrying",
+        ),
+    ],
+)
+def test_openai_429_errors_are_actionable_and_do_not_expose_response_body(
+    provider_code,
+    category,
+    message_text,
+):
+    body = json.dumps({
+        "error": {
+            "type": provider_code,
+            "code": provider_code,
+            "message": "provider detail should not be shown directly",
+        }
+    }).encode("utf-8")
+
+    def http_error(*_):
+        raise urllib.error.HTTPError(
+            "https://api.openai.com/v1/chat/completions",
+            429,
+            "Too Many Requests",
+            {},
+            io.BytesIO(body),
+        )
+
+    with pytest.raises(LLMError) as exc:
+        call_json_model("s", "u", transport=http_error, config=OPENAI)
+
+    assert exc.value.category == category
+    assert message_text in exc.value.message
+    assert "provider detail should not be shown directly" not in exc.value.message
+
+
+def test_wayjet_402_error_explains_balance_action():
+    def http_error(*_):
+        raise urllib.error.HTTPError(
+            "https://api.wayjet.ai/v1/chat/completions",
+            402,
+            "Payment Required",
+            {},
+            io.BytesIO(b'{"error":{"message":"payment required"}}'),
+        )
+
+    with pytest.raises(LLMError) as exc:
+        call_json_model("s", "u", transport=http_error, config=WAYJET)
+
+    assert exc.value.category == "PAYMENT_REQUIRED"
+    assert "Wayjet requires an active balance" in exc.value.message
+    assert "Add funds" in exc.value.message
 
 
 def test_not_configured_raises(monkeypatch):

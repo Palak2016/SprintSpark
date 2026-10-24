@@ -72,17 +72,21 @@ touches has changed.
 
 ### Configure the model
 
-Add one key to `backend/.env` (the existing settings are reused; no SDK is
+Add your Gemini key to `backend/.env` (the existing settings are reused; no SDK is
 needed):
 
 ```dotenv
-OPENAI_API_KEY=...        # or GEMINI_API_KEY=...
-# Optional
-LLM_PROVIDER=openai       # openai | gemini; defaults to the first key found
-OPENAI_MODEL=gpt-4o-mini  # set to the model your account uses
+GEMINI_API_KEY=...
+LLM_PROVIDER=gemini
 GEMINI_MODEL=gemini-2.0-flash
 LLM_TIMEOUT_SECONDS=45
 RECOVERY_REQUIRE_LLM=false
+
+# Optional
+OPENAI_API_KEY=...
+OPENAI_MODEL=gpt-4o-mini
+WAYJET_API_KEY=...
+LLM_PROVIDER=openai       # gemini | openai | wayjet
 ```
 
 **Fallback:** with no key, or if the model call fails, the rule-based planner
@@ -93,6 +97,10 @@ Set `RECOVERY_REQUIRE_LLM=true` to return HTTP 503 instead of falling back.
 `GET /api/v1/recovery-planner/status` shows which provider and model will be
 used (never the key). The model receives task, capacity and risk facts and
 employee blocker notes; it does not receive email addresses or leave reasons.
+
+Daily task progress is estimated from submitted work notes by Gemini. Progress
+updates are not saved if the model is unavailable, and there is no rule-based
+progress fallback.
 
 Run `alembic upgrade head` after pulling: migration `e3f7a1c9b250` adds
 `recovery_proposals.generation_trace` and `proposal_decisions.execution_report`.

@@ -27,10 +27,10 @@ class WorkLogOut(BaseModel):
 
 class DailyUpdateCreate(BaseModel):
     task_id: int
-    progress_pct: int = Field(..., ge=0, le=100)
+    analysis_token: Optional[str] = None
     is_blocked: bool = False
     blocker_notes: Optional[str] = None
-    update_notes: Optional[str] = None
+    update_notes: str = Field(..., min_length=5, max_length=4000)
     date: Optional[date] = None
 
 
@@ -42,6 +42,7 @@ class DailyUpdateProgressAnalysisRequest(BaseModel):
 class DailyUpdateProgressAnalysisOut(BaseModel):
     progress_pct: int = Field(..., ge=0, le=100)
     explanation: str = Field(..., min_length=1, max_length=500)
+    analysis_token: str = Field(..., min_length=1)
 
 
 class DailyUpdateOut(BaseModel):

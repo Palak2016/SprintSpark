@@ -7,38 +7,42 @@ def _auth(token):
     return {"Authorization": f"Bearer {token}"}
 
 
-def test_daily_update_progress_analysis_updates_progress_estimate(
+def _employee_task(client, employee_token):
+    response = client.get(
+        "/api/v1/tasks?project_id=1&assignee_id=2",
+        headers=_auth(employee_token),
+    )
+    assert response.status_code == 200
+    return response.json()[0]
+
+
+def test_progress_analysis_uses_task_context_and_gemini_estimate(
     client,
     employee_token,
     monkeypatch,
 ):
     from app.services import progress_estimator
 
-    task_response = client.get(
-        "/api/v1/tasks?project_id=1&assignee_id=2",
-        headers=_auth(employee_token),
-    )
-    assert task_response.status_code == 200
-    task = task_response.json()[0]
+    task = _employee_task(client, employee_token)
 
-    def fake_model(system_prompt, user_prompt):
+    def fake_model(system_prompt, user_prompt, **_kwargs):
         assert "Task title:" in user_prompt
         assert task["title"] in user_prompt
         assert "completed the API integration" in user_prompt
         return SimpleNamespace(
             content={
-                "progress_pct": 88,
-                "explanation": "The reported integration work completes most remaining implementation.",
+                "progress_pct": 38,
+                "explanation": "The API integration is complete; remaining work is not reported.",
             },
-            provider="test",
-            model="test-model",
+            provider="gemini",
+            model="gpt-test",
             latency_ms=1,
         )
 
     monkeypatch.setattr(
         progress_estimator,
         "resolve_config",
-        lambda: SimpleNamespace(provider="test"),
+        lambda: SimpleNamespace(provider="gemini"),
     )
     monkeypatch.setattr(progress_estimator, "call_json_model", fake_model)
 
@@ -52,605 +56,419 @@ def test_daily_update_progress_analysis_updates_progress_estimate(
     )
 
     assert response.status_code == 200
-    assert response.json() == {
-        "progress_pct": 88,
-        "explanation": "AI estimate: The reported integration work completes most remaining implementation.",
-    }
-
-
-def test_daily_update_progress_analysis_works_without_ai_key(
-    client,
-    db_session,
-    employee_token,
-    monkeypatch,
-):
-    from app.services import progress_estimator
-
-    task_response = client.get(
-        "/api/v1/tasks?project_id=1&assignee_id=2",
-        headers=_auth(employee_token),
-    )
-    assert task_response.status_code == 200
-    task = task_response.json()[0]
-    db_session.get(Task, task["id"]).description = (
-        "Build API integration and review performance."
-    )
-    db_session.commit()
-
-    monkeypatch.setattr(progress_estimator, "resolve_config", lambda: None)
-
-    def unexpected_model_call(*args, **kwargs):
-        raise AssertionError("No model call should be made without a key")
-
-    monkeypatch.setattr(
-        progress_estimator,
-        "call_json_model",
-        unexpected_model_call,
-    )
-
-    response = client.post(
-        "/api/v1/daily-updates/analyze-progress",
-        headers=_auth(employee_token),
-        json={
-            "task_id": task["id"],
-            "update_notes": "Implemented the API and tested the integration. Next, will review performance.",
-        },
-    )
-
-    assert response.status_code == 200
     result = response.json()
-    assert result["progress_pct"] == task["progress_pct"] + 16
-    assert "No AI provider is configured" in result["explanation"]
-    assert "2 completed work item(s)" in result["explanation"]
+    assert result["progress_pct"] == max(task["progress_pct"], 38)
+    assert result["explanation"] == (
+        "AI estimate: The API integration is complete; remaining work is not reported."
+    )
+    assert result["analysis_token"]
 
 
-def test_rule_based_progress_estimate_varies_with_update_detail(
-    client,
-    db_session,
-    employee_token,
+def test_progress_estimator_uses_gemini_model(
     monkeypatch,
 ):
     from app.services import progress_estimator
 
-    task_response = client.get(
-        "/api/v1/tasks?project_id=1&assignee_id=2",
-        headers=_auth(employee_token),
-    )
-    assert task_response.status_code == 200
-    task = task_response.json()[0]
-    db_session.get(Task, task["id"]).description = (
-        "Build API integration with authentication, validation, "
-        "deployment, and monitoring."
-    )
-    db_session.commit()
-    monkeypatch.setattr(progress_estimator, "resolve_config", lambda: None)
+    config = SimpleNamespace(provider="gemini", model="gemini-test")
 
-    brief_response = client.post(
-        "/api/v1/daily-updates/analyze-progress",
-        headers=_auth(employee_token),
-        json={
-            "task_id": task["id"],
-            "update_notes": "Built API.",
-        },
-    )
-    detailed_response = client.post(
-        "/api/v1/daily-updates/analyze-progress",
-        headers=_auth(employee_token),
-        json={
-            "task_id": task["id"],
-            "update_notes": (
-                "Built API integration with authentication, validation, "
-                "deployment, and monitoring."
-            ),
-        },
-    )
-
-    assert brief_response.status_code == 200
-    assert detailed_response.status_code == 200
-    assert (
-        detailed_response.json()["progress_pct"]
-        > brief_response.json()["progress_pct"]
-    )
-
-
-def test_rule_based_progress_counts_added_components_in_listed_update(
-    client,
-    db_session,
-    employee_token,
-    monkeypatch,
-):
-    from app.services import progress_estimator
-
-    task_response = client.get(
-        "/api/v1/tasks?project_id=1&assignee_id=2",
-        headers=_auth(employee_token),
-    )
-    assert task_response.status_code == 200
-    task = task_response.json()[0]
-    db_session.get(Task, task["id"]).description = (
-        "Complete database setup, AI pipeline, authentication, "
-        "and authorization."
-    )
-    db_session.commit()
-    monkeypatch.setattr(progress_estimator, "resolve_config", lambda: None)
-
-    response = client.post(
-        "/api/v1/daily-updates/analyze-progress",
-        headers=_auth(employee_token),
-        json={
-            "task_id": task["id"],
-            "update_notes": (
-                "1. worked till database setup\n"
-                "2. added ai pipeline\n"
-                "3. authentication and authorization added"
-            ),
-        },
-    )
-
-    assert response.status_code == 200
-    estimate = response.json()
-    assert estimate["progress_pct"] > task["progress_pct"] + 3
-    assert "2 completed work item(s)" in estimate["explanation"]
-    assert "1 in-progress work item(s)" in estimate["explanation"]
-
-
-def test_rule_based_progress_counts_work_even_when_task_scope_differs(
-    client,
-    db_session,
-    employee_token,
-    monkeypatch,
-):
-    from app.services import progress_estimator
-
-    task_response = client.get(
-        "/api/v1/tasks?project_id=1&assignee_id=2",
-        headers=_auth(employee_token),
-    )
-    assert task_response.status_code == 200
-    task = task_response.json()[0]
-    db_session.get(Task, task["id"]).description = (
-        "Set up PostgreSQL database schema and CDC replication."
-    )
-    db_session.commit()
-    monkeypatch.setattr(progress_estimator, "resolve_config", lambda: None)
-
-    response = client.post(
-        "/api/v1/daily-updates/analyze-progress",
-        headers=_auth(employee_token),
-        json={
-            "task_id": task["id"],
-            "update_notes": "Added the AI pipeline.",
-        },
-    )
-
-    assert response.status_code == 200
-    assert response.json()["progress_pct"] > task["progress_pct"]
-    assert "1 completed work item(s)" in response.json()["explanation"]
-
-
-def test_ai_estimate_cannot_discard_recognized_update_evidence(
-    client,
-    db_session,
-    employee_token,
-    monkeypatch,
-):
-    from app.services import progress_estimator
-
-    task_response = client.get(
-        "/api/v1/tasks?project_id=1&assignee_id=2",
-        headers=_auth(employee_token),
-    )
-    assert task_response.status_code == 200
-    task = task_response.json()[0]
-    db_session.get(Task, task["id"]).description = (
-        "Build a customer-facing dashboard and reporting tools."
-    )
-    db_session.commit()
-
-    monkeypatch.setattr(
-        progress_estimator,
-        "resolve_config",
-        lambda: SimpleNamespace(provider="test"),
-    )
-    monkeypatch.setattr(
-        progress_estimator,
-        "call_json_model",
-        lambda *_args, **_kwargs: SimpleNamespace(
-            content={"progress_pct": 0, "explanation": "No progress found."},
-            provider="test",
-            model="test-model",
-            latency_ms=1,
-        ),
-    )
-
-    response = client.post(
-        "/api/v1/daily-updates/analyze-progress",
-        headers=_auth(employee_token),
-        json={
-            "task_id": task["id"],
-            "update_notes": (
-                "1. worked till database setup\n"
-                "2. added ai pipeline\n"
-                "3. authentication and authorization added"
-            ),
-        },
-    )
-
-    assert response.status_code == 200
-    result = response.json()
-    assert result["progress_pct"] > task["progress_pct"]
-    assert "raised to account for completed and in-progress work" in (
-        result["explanation"]
-    )
-
-
-def test_daily_update_progress_analysis_recognizes_done_phrase(
-    client,
-    db_session,
-    employee_token,
-    monkeypatch,
-):
-    from app.services import progress_estimator
-
-    task_response = client.get(
-        "/api/v1/tasks?project_id=1&assignee_id=2",
-        headers=_auth(employee_token),
-    )
-    assert task_response.status_code == 200
-    task = task_response.json()[0]
-    db_session.get(Task, task["id"]).description = (
-        "Build the admin dashboard with React and TypeScript."
-    )
-    db_session.commit()
-
-    monkeypatch.setattr(progress_estimator, "resolve_config", lambda: None)
-
-    response = client.post(
-        "/api/v1/daily-updates/analyze-progress",
-        headers=_auth(employee_token),
-        json={
-            "task_id": task["id"],
-            "update_notes": "Done till admin dashboard with React and TypeScript.",
-        },
-    )
-
-    assert response.status_code == 200
-    result = response.json()
-    assert result["progress_pct"] > task["progress_pct"]
-    assert "1 completed work item(s)" in result["explanation"]
-
-
-def test_daily_update_progress_sets_explicitly_completed_work_to_100(
-    client,
-    employee_token,
-    monkeypatch,
-):
-    from app.services import progress_estimator
-
-    task_response = client.get(
-        "/api/v1/tasks?project_id=1&assignee_id=2",
-        headers=_auth(employee_token),
-    )
-    assert task_response.status_code == 200
-    task = task_response.json()[0]
-    monkeypatch.setattr(progress_estimator, "resolve_config", lambda: None)
-
-    response = client.post(
-        "/api/v1/daily-updates/analyze-progress",
-        headers=_auth(employee_token),
-        json={
-            "task_id": task["id"],
-            "update_notes": (
-                "Work is completed from my end, waiting for update."
-            ),
-        },
-    )
-
-    assert response.status_code == 200
-    assert response.json()["progress_pct"] == 100
-    assert "work is complete" in response.json()["explanation"]
-
-
-def test_full_completion_phrases_set_progress_to_100(
-    client,
-    db_session,
-    employee_token,
-    monkeypatch,
-):
-    from app.services import progress_estimator
-
-    task_response = client.get(
-        "/api/v1/tasks?project_id=1&assignee_id=2",
-        headers=_auth(employee_token),
-    )
-    assert task_response.status_code == 200
-    task = task_response.json()[0]
-    db_session.get(Task, task["id"]).progress_pct = 13
-    db_session.commit()
-    monkeypatch.setattr(progress_estimator, "resolve_config", lambda: None)
-
-    for update_notes in (
-        "The task is fully completed.",
-        "I have completed the whole task.",
-        "Everything completed from my end.",
-        "Completed from my end, waiting for the update.",
-        "Completed.",
-    ):
-        response = client.post(
-            "/api/v1/daily-updates/analyze-progress",
-            headers=_auth(employee_token),
-            json={
-                "task_id": task["id"],
-                "update_notes": update_notes,
-            },
-        )
-
-        assert response.status_code == 200
-        assert response.json()["progress_pct"] == 100, update_notes
-
-
-def test_completing_one_deliverable_does_not_mark_entire_task_complete(
-    client,
-    db_session,
-    employee_token,
-    monkeypatch,
-):
-    from app.services import progress_estimator
-
-    task_response = client.get(
-        "/api/v1/tasks?project_id=1&assignee_id=2",
-        headers=_auth(employee_token),
-    )
-    assert task_response.status_code == 200
-    task = task_response.json()[0]
-    db_task = db_session.get(Task, task["id"])
-    db_task.progress_pct = 13
-    db_task.description = (
-        "Complete database setup and authentication implementation."
-    )
-    db_session.commit()
-    monkeypatch.setattr(progress_estimator, "resolve_config", lambda: None)
-
-    response = client.post(
-        "/api/v1/daily-updates/analyze-progress",
-        headers=_auth(employee_token),
-        json={
-            "task_id": task["id"],
-            "update_notes": "Completed the database setup.",
-        },
-    )
-
-    assert response.status_code == 200
-    assert 13 < response.json()["progress_pct"] < 100
-
-
-def test_daily_update_progress_builds_on_last_submitted_estimate(
-    client,
-    db_session,
-    employee_token,
-    monkeypatch,
-):
-    from app.services import progress_estimator
-
-    task_response = client.get(
-        "/api/v1/tasks?project_id=1&assignee_id=2",
-        headers=_auth(employee_token),
-    )
-    assert task_response.status_code == 200
-    task = task_response.json()[0]
-    db_task = db_session.get(Task, task["id"])
-    db_task.progress_pct = 10
-    db_task.description = (
-        "Set up the database schema and implement authentication."
-    )
-    db_session.commit()
-    monkeypatch.setattr(progress_estimator, "resolve_config", lambda: None)
-
-    first_estimate_response = client.post(
-        "/api/v1/daily-updates/analyze-progress",
-        headers=_auth(employee_token),
-        json={
-            "task_id": task["id"],
-            "update_notes": "Completed the database schema setup.",
-        },
-    )
-    assert first_estimate_response.status_code == 200
-    first_estimate = first_estimate_response.json()["progress_pct"]
-    assert first_estimate > 10
-
-    submit_response = client.post(
-        "/api/v1/daily-updates",
-        headers=_auth(employee_token),
-        json={
-            "task_id": task["id"],
-            "progress_pct": first_estimate,
-            "update_notes": "Completed the database schema setup.",
-        },
-    )
-    assert submit_response.status_code == 201
-    db_session.refresh(db_task)
-    assert db_task.progress_pct == first_estimate
-
-    second_estimate_response = client.post(
-        "/api/v1/daily-updates/analyze-progress",
-        headers=_auth(employee_token),
-        json={
-            "task_id": task["id"],
-            "update_notes": "Implemented authentication.",
-        },
-    )
-
-    assert second_estimate_response.status_code == 200
-    second_estimate = second_estimate_response.json()["progress_pct"]
-    assert second_estimate > first_estimate
-    assert f"from {first_estimate}%" in (
-        second_estimate_response.json()["explanation"]
-    )
-
-    second_submission = client.post(
-        "/api/v1/daily-updates",
-        headers=_auth(employee_token),
-        json={
-            "task_id": task["id"],
-            "progress_pct": second_estimate,
-            "update_notes": "Implemented authentication.",
-        },
-    )
-    assert second_submission.status_code == 201
-    db_session.refresh(db_task)
-    assert db_task.progress_pct == second_estimate
-
-    lower_submission = client.post(
-        "/api/v1/daily-updates",
-        headers=_auth(employee_token),
-        json={
-            "task_id": task["id"],
-            "progress_pct": first_estimate,
-            "update_notes": "No additional work reported.",
-        },
-    )
-    assert lower_submission.status_code == 201
-    assert lower_submission.json()["progress_pct"] == second_estimate
-    db_session.refresh(db_task)
-    assert db_task.progress_pct == second_estimate
-
-
-def test_ai_estimate_never_reduces_saved_progress(
-    client,
-    db_session,
-    employee_token,
-    monkeypatch,
-):
-    from app.services import progress_estimator
-
-    task_response = client.get(
-        "/api/v1/tasks?project_id=1&assignee_id=2",
-        headers=_auth(employee_token),
-    )
-    assert task_response.status_code == 200
-    task = task_response.json()[0]
-    db_task = db_session.get(Task, task["id"])
-    db_task.progress_pct = 10
-    db_task.description = "Implement backend authentication."
-    db_session.commit()
-
-    monkeypatch.setattr(
-        progress_estimator,
-        "resolve_config",
-        lambda: SimpleNamespace(provider="test"),
-    )
-    monkeypatch.setattr(
-        progress_estimator,
-        "call_json_model",
-        lambda *_args, **_kwargs: SimpleNamespace(
-            content={"progress_pct": 0, "explanation": "No change."},
-            provider="test",
-            model="test-model",
-            latency_ms=1,
-        ),
-    )
-
-    response = client.post(
-        "/api/v1/daily-updates/analyze-progress",
-        headers=_auth(employee_token),
-        json={
-            "task_id": task["id"],
-            "update_notes": "Reviewed the existing authentication work.",
-        },
-    )
-
-    assert response.status_code == 200
-    assert response.json()["progress_pct"] >= 10
-
-
-def test_ai_estimate_receives_saved_progress_as_new_update_baseline(
-    client,
-    db_session,
-    employee_token,
-    monkeypatch,
-):
-    from app.services import progress_estimator
-
-    task_response = client.get(
-        "/api/v1/tasks?project_id=1&assignee_id=2",
-        headers=_auth(employee_token),
-    )
-    assert task_response.status_code == 200
-    task = task_response.json()[0]
-    db_task = db_session.get(Task, task["id"])
-    db_task.progress_pct = 10
-    db_session.commit()
-
-    def fake_model(_system_prompt, user_prompt):
-        assert "Current completion: 10%" in user_prompt
+    def fake_model(_system_prompt, user_prompt, config=None):
+        assert "Current completion: 12%" in user_prompt
+        assert config.provider == "gemini"
         return SimpleNamespace(
-            content={
-                "progress_pct": 15,
-                "explanation": "The new update adds five points of work.",
-            },
-            provider="test",
-            model="test-model",
+            content={"progress_pct": 36, "explanation": "One milestone is complete."},
+            provider="gemini",
+            model="gemini-test",
             latency_ms=1,
         )
 
-    monkeypatch.setattr(
-        progress_estimator,
-        "resolve_config",
-        lambda: SimpleNamespace(provider="test"),
-    )
+    monkeypatch.setattr(progress_estimator, "resolve_config", lambda: config)
     monkeypatch.setattr(progress_estimator, "call_json_model", fake_model)
 
+    progress, explanation = progress_estimator.estimate_task_progress(
+        SimpleNamespace(
+            title="Implement dashboard",
+            description="Build the dashboard and reports.",
+            progress_pct=12,
+            status="IN_PROGRESS",
+        ),
+        "Completed dashboard filtering.",
+    )
+
+    assert progress == 36
+    assert explanation == "AI estimate: One milestone is complete."
+
+
+def test_analyzed_estimate_is_the_value_saved_on_submit(
+    client,
+    employee_token,
+    monkeypatch,
+):
+    from app.api.v1 import work_logs
+
+    task = _employee_task(client, employee_token)
+    calls = []
+
+    def fake_estimate(_task, notes):
+        calls.append(notes)
+        return 74, "AI estimate: the reported work covers most requirements."
+
+    monkeypatch.setattr(work_logs, "estimate_task_progress", fake_estimate)
+    notes = "Completed the task's main workflow and verified it."
+    analysis = client.post(
+        "/api/v1/daily-updates/analyze-progress",
+        headers=_auth(employee_token),
+        json={"task_id": task["id"], "update_notes": notes},
+    )
+    assert analysis.status_code == 200
+    estimate = analysis.json()
+
+    submission = client.post(
+        "/api/v1/daily-updates",
+        headers=_auth(employee_token),
+        json={
+            "task_id": task["id"],
+            "analysis_token": estimate["analysis_token"],
+            "update_notes": notes,
+        },
+    )
+
+    assert submission.status_code == 201
+    assert submission.json()["progress_pct"] == estimate["progress_pct"] == 74
+    assert calls == [notes]
+
+
+def test_analyzed_estimate_rejects_changed_notes(
+    client,
+    employee_token,
+    monkeypatch,
+):
+    from app.api.v1 import work_logs
+
+    task = _employee_task(client, employee_token)
+    monkeypatch.setattr(
+        work_logs,
+        "estimate_task_progress",
+        lambda _task, _notes: (58, "AI estimate: partial completion."),
+    )
+    analysis = client.post(
+        "/api/v1/daily-updates/analyze-progress",
+        headers=_auth(employee_token),
+        json={
+            "task_id": task["id"],
+            "update_notes": "Completed database schema and tests.",
+        },
+    )
+    assert analysis.status_code == 200
+
+    submission = client.post(
+        "/api/v1/daily-updates",
+        headers=_auth(employee_token),
+        json={
+            "task_id": task["id"],
+            "analysis_token": analysis.json()["analysis_token"],
+            "update_notes": "Completed database schema and tests plus deployment.",
+        },
+    )
+
+    assert submission.status_code == 409
+    assert "Analyze the update again" in submission.json()["detail"]
+
+
+def test_full_task_completion_language_can_set_progress_to_100(
+    client,
+    employee_token,
+    monkeypatch,
+):
+    from app.api.v1 import work_logs
+    from app.services import progress_estimator
+
+    task = _employee_task(client, employee_token)
+
+    def completion_estimate(_task, notes):
+        assert notes == "Completed this task."
+        return 100, "AI estimate: the update states the entire assigned task is complete."
+
+    monkeypatch.setattr(work_logs, "estimate_task_progress", completion_estimate)
+    notes = "Completed this task."
+    analysis = client.post(
+        "/api/v1/daily-updates/analyze-progress",
+        headers=_auth(employee_token),
+        json={"task_id": task["id"], "update_notes": notes},
+    )
+
+    assert analysis.status_code == 200
+    assert analysis.json()["progress_pct"] == 100
+    assert "completed this task" in progress_estimator.SYSTEM_PROMPT.lower()
+
+    submission = client.post(
+        "/api/v1/daily-updates",
+        headers=_auth(employee_token),
+        json={
+            "task_id": task["id"],
+            "analysis_token": analysis.json()["analysis_token"],
+            "update_notes": notes,
+        },
+    )
+
+    assert submission.status_code == 201
+    assert submission.json()["progress_pct"] == 100
+
+
+def test_progress_analysis_requires_openai_configuration(
+    client,
+    employee_token,
+    monkeypatch,
+):
+    from app.services import progress_estimator
+
+    task = _employee_task(client, employee_token)
+    monkeypatch.setattr(progress_estimator, "resolve_config", lambda: None)
+
     response = client.post(
         "/api/v1/daily-updates/analyze-progress",
         headers=_auth(employee_token),
         json={
             "task_id": task["id"],
-            "update_notes": "Finished the next backend milestone.",
+            "update_notes": "Completed implementation of the assigned API endpoint.",
         },
     )
 
-    assert response.status_code == 200
-    assert response.json()["progress_pct"] == 15
+    assert response.status_code == 503
+    assert "GEMINI_API_KEY" in response.json()["detail"]
 
 
-def test_daily_update_progress_analysis_only_allows_assignee(
+def test_daily_update_submission_returns_openai_rate_limit_to_client(
+    client,
+    employee_token,
+    monkeypatch,
+):
+    from app.api.v1 import work_logs
+    from app.services.llm_client import LLMError
+
+    task = _employee_task(client, employee_token)
+
+    def rate_limited_estimate(_task, _notes):
+        raise LLMError(
+            "RATE_LIMITED",
+            "OpenAI rate limit reached. Wait briefly before retrying.",
+        )
+
+    monkeypatch.setattr(work_logs, "estimate_task_progress", rate_limited_estimate)
+
+    response = client.post(
+        "/api/v1/daily-updates",
+        headers=_auth(employee_token),
+        json={
+            "task_id": task["id"],
+            "update_notes": "Completed validation for the task acceptance criteria.",
+        },
+    )
+
+    assert response.status_code == 429
+    assert "Wait briefly before retrying" in response.json()["detail"]
+
+
+def test_daily_update_submission_returns_payment_required_to_client(
+    client,
+    employee_token,
+    monkeypatch,
+):
+    from app.api.v1 import work_logs
+    from app.services.llm_client import LLMError
+
+    task = _employee_task(client, employee_token)
+
+    def payment_required_estimate(_task, _notes):
+        raise LLMError(
+            "PAYMENT_REQUIRED",
+            "Wayjet requires an active balance. Add funds and retry.",
+        )
+
+    monkeypatch.setattr(
+        work_logs,
+        "estimate_task_progress",
+        payment_required_estimate,
+    )
+
+    response = client.post(
+        "/api/v1/daily-updates",
+        headers=_auth(employee_token),
+        json={
+            "task_id": task["id"],
+            "update_notes": "Completed validation for the task acceptance criteria.",
+        },
+    )
+
+    assert response.status_code == 402
+    assert "Add funds" in response.json()["detail"]
+
+
+def test_submission_calculates_and_persists_progress_with_ai(
+    client,
+    db_session,
+    employee_token,
+    monkeypatch,
+):
+    from app.api.v1 import work_logs
+
+    task = _employee_task(client, employee_token)
+    db_task = db_session.get(Task, task["id"])
+    db_task.progress_pct = 10
+    db_session.commit()
+
+    calls = []
+
+    def fake_estimate(task_arg, notes):
+        calls.append((task_arg.progress_pct, notes))
+        return 42, "AI estimate: the reported deliverables represent 42% completion."
+
+    monkeypatch.setattr(work_logs, "estimate_task_progress", fake_estimate)
+
+    response = client.post(
+        "/api/v1/daily-updates",
+        headers=_auth(employee_token),
+        json={
+            "task_id": task["id"],
+            "progress_pct": 99,
+            "update_notes": "Completed API validation and added integration tests.",
+        },
+    )
+
+    assert response.status_code == 201
+    assert response.json()["progress_pct"] == 42
+    assert calls == [
+        (10, "Completed API validation and added integration tests.")
+    ]
+    db_session.refresh(db_task)
+    assert db_task.progress_pct == 42
+
+
+def test_submission_estimate_builds_on_saved_progress(
+    client,
+    db_session,
+    employee_token,
+    monkeypatch,
+):
+    from app.api.v1 import work_logs
+
+    task = _employee_task(client, employee_token)
+    db_task = db_session.get(Task, task["id"])
+    db_task.progress_pct = 10
+    db_session.commit()
+
+    def fake_estimate(task_arg, notes):
+        assert task_arg.progress_pct == 10
+        assert notes == "Finished the first implementation milestone."
+        return 27, "AI estimate: the first milestone is complete."
+
+    monkeypatch.setattr(work_logs, "estimate_task_progress", fake_estimate)
+
+    first = client.post(
+        "/api/v1/daily-updates",
+        headers=_auth(employee_token),
+        json={
+            "task_id": task["id"],
+            "update_notes": "Finished the first implementation milestone.",
+        },
+    )
+    assert first.status_code == 201
+    db_session.refresh(db_task)
+    assert db_task.progress_pct == 27
+
+    def lower_estimate(task_arg, _notes):
+        assert task_arg.progress_pct == 27
+        return 20, "AI estimate: this update adds no verified progress."
+
+    monkeypatch.setattr(work_logs, "estimate_task_progress", lower_estimate)
+    second = client.post(
+        "/api/v1/daily-updates",
+        headers=_auth(employee_token),
+        json={
+            "task_id": task["id"],
+            "update_notes": "Reviewed existing work; no new deliverable completed.",
+        },
+    )
+
+    assert second.status_code == 201
+    assert second.json()["progress_pct"] == 27
+    db_session.refresh(db_task)
+    assert db_task.progress_pct == 27
+
+
+def test_project_manager_can_submit_ai_progress_for_project_task(
+    client,
+    manager_token,
+    monkeypatch,
+):
+    from app.api.v1 import work_logs
+
+    tasks_response = client.get(
+        "/api/v1/tasks?project_id=1",
+        headers=_auth(manager_token),
+    )
+    assert tasks_response.status_code == 200
+    task = tasks_response.json()[0]
+    monkeypatch.setattr(
+        work_logs,
+        "estimate_task_progress",
+        lambda _task, _notes: (31, "AI estimate: work is partially complete."),
+    )
+
+    response = client.post(
+        "/api/v1/daily-updates",
+        headers=_auth(manager_token),
+        json={
+            "task_id": task["id"],
+            "update_notes": "Reviewed and completed the first acceptance criterion.",
+        },
+    )
+
+    assert response.status_code == 201
+    assert response.json()["user_id"] == 1
+    assert response.json()["progress_pct"] == max(task["progress_pct"], 31)
+
+
+def test_employee_cannot_submit_update_for_another_users_task(
     client,
     employee_token,
 ):
     response = client.post(
-        "/api/v1/daily-updates/analyze-progress",
+        "/api/v1/daily-updates",
         headers=_auth(employee_token),
         json={
             "task_id": 1,
-            "update_notes": "I completed the assigned implementation work.",
+            "update_notes": "Completed the assigned implementation work.",
         },
     )
 
     assert response.status_code == 403
 
 
-def test_daily_update_progress_is_reflected_in_project_progress(
+def test_ai_progress_flows_into_project_completion(
     client,
     employee_token,
     manager_token,
+    monkeypatch,
 ):
-    task_response = client.get(
-        "/api/v1/tasks?project_id=1&assignee_id=2",
-        headers=_auth(employee_token),
+    from app.api.v1 import work_logs
+
+    task = _employee_task(client, employee_token)
+    monkeypatch.setattr(
+        work_logs,
+        "estimate_task_progress",
+        lambda _task, _notes: (83, "AI estimate: the reported work is nearly complete."),
     )
-    assert task_response.status_code == 200
-    task = task_response.json()[0]
 
     update_response = client.post(
         "/api/v1/daily-updates",
         headers=_auth(employee_token),
         json={
             "task_id": task["id"],
-            "progress_pct": 83,
-            "update_notes": "Progress updated for project rollup test.",
+            "update_notes": "Completed the core work and verified all acceptance tests.",
         },
     )
     assert update_response.status_code == 201
+    assert update_response.json()["progress_pct"] == 83
 
     tasks_response = client.get(
         "/api/v1/tasks?project_id=1",

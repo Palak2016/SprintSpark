@@ -629,7 +629,7 @@ class ApiService {
   async analyzeDailyUpdateProgress(data: {
     task_id: number;
     update_notes: string;
-  }): Promise<{ progress_pct: number; explanation: string }> {
+  }): Promise<{ progress_pct: number; explanation: string; analysis_token: string }> {
     return this.request('/daily-updates/analyze-progress', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -638,7 +638,7 @@ class ApiService {
 
   async submitDailyUpdate(data: {
     task_id: number;
-    progress_pct: number;
+    analysis_token: string;
     is_blocked: boolean;
     blocker_notes?: string;
     update_notes?: string;

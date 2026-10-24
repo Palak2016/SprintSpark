@@ -33,6 +33,7 @@ def no_real_llm(monkeypatch):
     from app.core.config import settings
 
     monkeypatch.setattr(settings, "OPENAI_API_KEY", None)
+    monkeypatch.setattr(settings, "WAYJET_API_KEY", None)
     monkeypatch.setattr(settings, "GEMINI_API_KEY", None)
     monkeypatch.setattr(settings, "RECOVERY_REQUIRE_LLM", False)
 
@@ -43,6 +44,7 @@ def setup_test_db():
 
     # The seed runs the recovery workflow; keep it on the rule-based path.
     settings.OPENAI_API_KEY = None
+    settings.WAYJET_API_KEY = None
     settings.GEMINI_API_KEY = None
     Base.metadata.drop_all(bind=test_engine)
     Base.metadata.create_all(bind=test_engine)

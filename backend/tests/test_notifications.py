@@ -172,7 +172,16 @@ def test_daily_update_notifies_project_manager(
     client,
     employee_token,
     manager_token,
+    monkeypatch,
 ):
+    from app.api.v1 import work_logs
+
+    monkeypatch.setattr(
+        work_logs,
+        "estimate_task_progress",
+        lambda task, _notes: (task.progress_pct, "AI estimate: no additional work."),
+    )
+
     task_response = client.get(
         "/api/v1/tasks?project_id=1&assignee_id=2",
         headers=_auth(employee_token),

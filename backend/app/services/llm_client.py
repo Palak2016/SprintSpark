@@ -61,6 +61,14 @@ def resolve_config() -> Optional[LLMConfig]:
             base_url=settings.OPENAI_BASE_URL.rstrip("/"),
             timeout=settings.LLM_TIMEOUT_SECONDS,
         ))
+    if settings.WAYJET_API_KEY:
+        candidates.append(LLMConfig(
+            provider="wayjet",
+            model=settings.WAYJET_MODEL,
+            api_key=settings.WAYJET_API_KEY,
+            base_url=settings.WAYJET_BASE_URL.rstrip("/"),
+            timeout=settings.LLM_TIMEOUT_SECONDS,
+        ))
     if settings.GEMINI_API_KEY:
         candidates.append(LLMConfig(
             provider="gemini",
@@ -128,7 +136,7 @@ def call_json_model(
 
     started = time.monotonic()
     try:
-        if config.provider == "openai":
+        if config.provider in {"openai", "wayjet"}:
             payload = transport(
                 f"{config.base_url}/chat/completions",
                 {
@@ -168,9 +176,47 @@ def call_json_model(
     except LLMError:
         raise
     except urllib.error.HTTPError as exc:
+        error_code = None
+        try:
+            response_body = json.loads(exc.read().decode("utf-8"))
+            provider_error = response_body.get("error", {})
+            error_code = (
+                provider_error.get("code") or provider_error.get("type")
+                if isinstance(provider_error, dict)
+                else None
+            )
+        except (AttributeError, UnicodeDecodeError, json.JSONDecodeError, OSError):
+            pass
+
+        if exc.code == 402:
+            category = "PAYMENT_REQUIRED"
+            message = (
+                f"{config.provider.title()} requires an active balance or billing setup. "
+                "Add funds or review the API key's spending budget, then retry."
+            )
+        elif exc.code == 429 and str(error_code).lower() in {
+            "insufficient_quota",
+            "billing_hard_limit_reached",
+            "budget_exceeded",
+        }:
+            category = "QUOTA_EXCEEDED"
+            message = (
+                f"{config.provider.title()} API quota is exhausted or a usage limit was reached. "
+                "Check billing, project budget, and organization usage limits."
+            )
+        elif exc.code == 429:
+            category = "RATE_LIMITED"
+            message = (
+                f"{config.provider.title()} rate limit reached. Wait briefly before retrying; "
+                "if it persists, check your project rate limits."
+            )
+        else:
+            category = "HTTP_ERROR"
+            message = f"{config.provider} returned HTTP {exc.code}."
+
         raise LLMError(
-            "HTTP_ERROR",
-            f"{config.provider} returned HTTP {exc.code}.",
+            category,
+            message,
             config.provider, config.model, int((time.monotonic() - started) * 1000),
         ) from None
     except TimeoutError:

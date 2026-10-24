@@ -41,7 +41,7 @@ export const DailyUpdatesView: React.FC = () => {
   const [updates, setUpdates] = useState<DailyUpdate[]>([]);
   const [myTasks, setMyTasks] = useState<Task[]>([]);
   const [selectedTaskId, setSelectedTaskId] = useState<number | undefined>();
-  const [progressPct, setProgressPct] = useState(50);
+  const [progressPct, setProgressPct] = useState(0);
   const [isBlocked, setIsBlocked] = useState(false);
   const [blockerNotes, setBlockerNotes] = useState('');
   const [updateNotes, setUpdateNotes] = useState('');
@@ -50,6 +50,7 @@ export const DailyUpdatesView: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [analysisToken, setAnalysisToken] = useState<string | null>(null);
   const [progressAnalysis, setProgressAnalysis] = useState<string | null>(null);
   const [progressAnalysisError, setProgressAnalysisError] = useState(false);
 
@@ -63,7 +64,9 @@ export const DailyUpdatesView: React.FC = () => {
   const loadTasks = useCallback(async (syncForm = true) => {
     if (!user) return;
 
-    const data = await api.getTasks({ assignee_id: user.id });
+    const data = await api.getTasks(
+      user.role === 'MANAGER' ? undefined : { assignee_id: user.id },
+    );
     setMyTasks(data);
 
     const selected = data.find((task) => task.id === selectedTaskId);
@@ -115,7 +118,9 @@ export const DailyUpdatesView: React.FC = () => {
       try {
         const [updateData, taskData] = await Promise.all([
           api.getDailyUpdates({ user_id: user.id }),
-          api.getTasks({ assignee_id: user.id }),
+          api.getTasks(
+            user.role === 'MANAGER' ? undefined : { assignee_id: user.id },
+          ),
         ]);
 
         if (cancelled) return;
@@ -165,6 +170,7 @@ export const DailyUpdatesView: React.FC = () => {
     setSelectedTaskId(taskId);
     setSuccessMsg(null);
     setErrorMsg(null);
+    setAnalysisToken(null);
     setProgressAnalysis(null);
 
     const task = myTasks.find((item) => item.id === taskId);
@@ -177,9 +183,10 @@ export const DailyUpdatesView: React.FC = () => {
   };
 
   const handleAnalyzeProgress = async () => {
-    if (!selectedTaskId || !updateNotes.trim() || isAnalyzingProgress) return;
+    if (!selectedTaskId || updateNotes.trim().length < 5 || isAnalyzingProgress) return;
 
     setIsAnalyzingProgress(true);
+    setAnalysisToken(null);
     setProgressAnalysis(null);
     setProgressAnalysisError(false);
 
@@ -188,10 +195,10 @@ export const DailyUpdatesView: React.FC = () => {
         task_id: selectedTaskId,
         update_notes: updateNotes.trim(),
       });
-
       setProgressPct(estimate.progress_pct);
+      setAnalysisToken(estimate.analysis_token);
       setProgressAnalysis(
-        `Progress estimate set to ${estimate.progress_pct}%. ${estimate.explanation}`,
+        `AI estimates ${estimate.progress_pct}%. ${estimate.explanation}`,
       );
     } catch (error: unknown) {
       console.error('Failed to analyze daily update progress:', error);
@@ -215,6 +222,10 @@ export const DailyUpdatesView: React.FC = () => {
       setErrorMsg('Please describe the blocker before submitting.');
       return;
     }
+    if (!analysisToken) {
+      setErrorMsg('Analyze the work update before submitting.');
+      return;
+    }
 
     setIsSubmitting(true);
     setSuccessMsg(null);
@@ -222,13 +233,22 @@ export const DailyUpdatesView: React.FC = () => {
 
     try {
       // 1. Submit the daily report.
-      await api.submitDailyUpdate({
+      const submittedUpdate = await api.submitDailyUpdate({
         task_id: selectedTaskId,
-        progress_pct: Number(progressPct),
+        analysis_token: analysisToken,
         is_blocked: isBlocked,
         blocker_notes: isBlocked ? blockerNotes.trim() : undefined,
         update_notes: updateNotes.trim(),
       });
+      setProgressPct(submittedUpdate.progress_pct);
+      setAnalysisToken(null);
+      setMyTasks((tasks) =>
+        tasks.map((task) =>
+          task.id === submittedUpdate.task_id
+            ? { ...task, progress_pct: submittedUpdate.progress_pct }
+            : task,
+        ),
+      );
 
       // 2. Refresh update history and task data automatically.
       // If either refresh fails, the report may still have been saved.
@@ -243,10 +263,11 @@ export const DailyUpdatesView: React.FC = () => {
 
       // 3. Show success and reset the notes field.
       setSuccessMsg(
-        'Daily report submitted successfully. Your updates and tasks have been refreshed.'
+        `Daily report submitted. AI updated task progress to ${submittedUpdate.progress_pct}%.`
       );
 
       setUpdateNotes('');
+      setProgressAnalysis(null);
     } catch (error: unknown) {
       console.error('Failed to submit daily update:', error);
 
@@ -402,9 +423,12 @@ export const DailyUpdatesView: React.FC = () => {
         <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           {[
             {
-              label: 'Assigned tasks',
+              label: user?.role === 'MANAGER' ? 'Team tasks' : 'Assigned tasks',
               value: myTasks.length,
-              description: 'Tasks assigned to you',
+              description:
+                user?.role === 'MANAGER'
+                  ? 'Tasks in projects you manage'
+                  : 'Tasks assigned to you',
               icon: ClipboardList,
               color: 'var(--ui-accent)',
             },
@@ -550,7 +574,11 @@ export const DailyUpdatesView: React.FC = () => {
                   className="animate-spin"
                   style={{ color: C.purple }}
                 />
-                <p className="text-sm">Loading your tasks...</p>
+                <p className="text-sm">
+                  {user?.role === 'MANAGER'
+                    ? 'Loading project tasks...'
+                    : 'Loading your tasks...'}
+                </p>
               </div>
             ) : myTasks.length === 0 ? (
               <div className="flex min-h-72 flex-col items-center justify-center p-8 text-center">
@@ -563,13 +591,18 @@ export const DailyUpdatesView: React.FC = () => {
                 >
                   <ClipboardList size={28} />
                 </div>
-                <h3 className="text-base font-bold">No assigned tasks yet</h3>
+                <h3 className="text-base font-bold">
+                  {user?.role === 'MANAGER'
+                    ? 'No project tasks yet'
+                    : 'No assigned tasks yet'}
+                </h3>
                 <p
                   className="mt-2 max-w-sm text-sm leading-6"
                   style={{ color: C.muted }}
                 >
-                  Once a task is assigned to you, you can submit progress and
-                  share blockers here.
+                  {user?.role === 'MANAGER'
+                    ? 'Tasks in projects you manage will appear here.'
+                    : 'Once a task is assigned to you, you can submit progress and share blockers here.'}
                 </p>
               </div>
             ) : (
@@ -633,16 +666,12 @@ export const DailyUpdatesView: React.FC = () => {
                   )}
                 </div>
 
-                {/* Progress slider */}
+                {/* Current progress */}
                 <div>
                   <div className="mb-4 flex items-center justify-between gap-3">
-                    <label
-                      htmlFor="progress-range"
-                      className="text-xs font-semibold"
-                      style={{ color: C.lilac }}
-                    >
-                      Overall completion
-                    </label>
+                    <span className="text-xs font-semibold" style={{ color: C.lilac }}>
+                      {analysisToken ? 'Estimated completion' : 'Current completion'}
+                    </span>
 
                     <span
                       className="rounded-lg px-3 py-1.5 text-sm font-bold tabular-nums"
@@ -655,29 +684,22 @@ export const DailyUpdatesView: React.FC = () => {
                     </span>
                   </div>
 
-                  <input
-                    id="progress-range"
-                    type="range"
-                    min="0"
-                    max="100"
-                    step="5"
-                    value={progressPct}
-                    onChange={(event) =>
-                      setProgressPct(Number(event.target.value))
-                    }
-                    className="neutral-progress-range h-2 w-full cursor-pointer appearance-none rounded-full"
-                    style={{
-                      background: `linear-gradient(to right, var(--ui-accent) ${progressPct}%, var(--ui-border) ${progressPct}%)`,
-                    }}
-                  />
-
                   <div
-                    className="mt-2 flex justify-between text-[10px]"
-                    style={{ color: C.muted }}
+                    role="progressbar"
+                    aria-label="Current task completion"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={progressPct}
+                    className="h-2 overflow-hidden rounded-full"
+                    style={{ background: 'var(--ui-border)' }}
                   >
-                    <span>Not started</span>
-                    <span>In progress</span>
-                    <span>Completed</span>
+                    <div
+                      className="h-full rounded-full transition-[width]"
+                      style={{
+                        width: `${progressPct}%`,
+                        background: 'var(--ui-accent)',
+                      }}
+                    />
                   </div>
                 </div>
 
@@ -762,11 +784,17 @@ export const DailyUpdatesView: React.FC = () => {
                   <textarea
                     id="update-notes"
                     rows={4}
+                    required
+                    minLength={5}
                     placeholder="What did you accomplish today? What will you work on next?"
                     value={updateNotes}
                     onChange={(event) => {
                       setUpdateNotes(event.target.value);
+                      setAnalysisToken(null);
                       setProgressAnalysis(null);
+                      setProgressPct(
+                        myTasks.find((task) => task.id === selectedTaskId)?.progress_pct ?? 0,
+                      );
                     }}
                     className="w-full resize-y rounded-xl border px-4 py-3 text-sm leading-6 outline-none transition focus:ring-2 focus:ring-forest-500"
                     style={{
@@ -779,7 +807,7 @@ export const DailyUpdatesView: React.FC = () => {
                     className="mt-2 text-[10px]"
                     style={{ color: C.muted }}
                   >
-                    Include key progress, decisions, and next actions.
+                    Include the work completed against this task and any remaining work.
                   </p>
                   <div className="mt-3 flex flex-wrap items-center gap-3">
                     <button
@@ -803,9 +831,7 @@ export const DailyUpdatesView: React.FC = () => {
                       ) : (
                         <Sparkles size={14} />
                       )}
-                      {isAnalyzingProgress
-                        ? 'Analyzing update...'
-                        : 'Analyze update'}
+                      {isAnalyzingProgress ? 'Analyzing update...' : 'Analyze update'}
                     </button>
                     {progressAnalysis && (
                       <p
@@ -831,7 +857,7 @@ export const DailyUpdatesView: React.FC = () => {
                   <button
                     type="submit"
                     disabled={
-                      isSubmitting || isAnalyzingProgress || !selectedTaskId
+                      isSubmitting || isAnalyzingProgress || !selectedTaskId || !analysisToken
                     }
                     className="flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3.5 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:min-w-52"
                     style={{

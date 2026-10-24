@@ -15,7 +15,12 @@ from app.models.task import Task, TaskStatus
 from app.models.work_log import WorkLog, DailyUpdate
 from app.models.notification import Notification
 from app.services.llm_client import LLMError
-from app.services.progress_estimator import estimate_task_progress
+from app.services.progress_estimator import (
+    ProgressAnalysisTokenError,
+    create_progress_analysis_token,
+    estimate_task_progress,
+    verify_progress_analysis_token,
+)
 from app.models.audit import AuditEvent
 from app.schemas.work_log import (
     WorkLogCreate,
@@ -213,7 +218,9 @@ def analyze_daily_update_progress(
         )
 
     require_task_access(current_user, task)
-    if task.assignee_id != current_user.id:
+    if is_manager_role(current_user):
+        require_project_manager(current_user, task.project)
+    elif task.assignee_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only analyze progress for tasks assigned to you.",
@@ -230,6 +237,10 @@ def analyze_daily_update_progress(
             if error.category != "INVALID_RESPONSE"
             else status.HTTP_502_BAD_GATEWAY
         )
+        if error.category == "RATE_LIMITED":
+            response_status = status.HTTP_429_TOO_MANY_REQUESTS
+        elif error.category == "PAYMENT_REQUIRED":
+            response_status = status.HTTP_402_PAYMENT_REQUIRED
         raise HTTPException(
             status_code=response_status,
             detail=error.message,
@@ -238,6 +249,13 @@ def analyze_daily_update_progress(
     return DailyUpdateProgressAnalysisOut(
         progress_pct=progress_pct,
         explanation=explanation,
+        analysis_token=create_progress_analysis_token(
+            task_id=task.id,
+            user_id=current_user.id,
+            update_notes=data.update_notes,
+            current_progress=task.progress_pct or 0,
+            progress_pct=progress_pct,
+        ),
     )
 
 
@@ -264,13 +282,49 @@ def submit_daily_update(
         )
 
     require_task_access(current_user, task)
-    if task.assignee_id != current_user.id:
+    if is_manager_role(current_user):
+        require_project_manager(current_user, task.project)
+    elif task.assignee_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only submit daily updates for tasks assigned to you.",
+            detail="You can only submit updates for tasks assigned to you.",
         )
 
-    progress_pct = max(task.progress_pct or 0, data.progress_pct)
+    if data.analysis_token:
+        try:
+            progress_pct = verify_progress_analysis_token(
+                token=data.analysis_token,
+                task_id=task.id,
+                user_id=current_user.id,
+                update_notes=data.update_notes,
+                current_progress=task.progress_pct or 0,
+            )
+        except ProgressAnalysisTokenError as error:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="This analysis is expired or no longer matches the task or notes. Analyze the update again.",
+            ) from error
+    else:
+        try:
+            progress_pct, _explanation = estimate_task_progress(
+                task,
+                data.update_notes,
+            )
+        except LLMError as error:
+            response_status = (
+                status.HTTP_503_SERVICE_UNAVAILABLE
+                if error.category != "INVALID_RESPONSE"
+                else status.HTTP_502_BAD_GATEWAY
+            )
+            if error.category == "RATE_LIMITED":
+                response_status = status.HTTP_429_TOO_MANY_REQUESTS
+            elif error.category == "PAYMENT_REQUIRED":
+                response_status = status.HTTP_402_PAYMENT_REQUIRED
+            raise HTTPException(
+                status_code=response_status,
+                detail=error.message,
+            ) from error
+    progress_pct = max(task.progress_pct or 0, progress_pct)
 
     update = DailyUpdate(
         task_id=data.task_id,
