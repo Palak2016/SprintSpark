@@ -17,7 +17,7 @@ import {
 
 export const Login: React.FC = () => {
   const navigate = useNavigate();
-  const { login, user, isManager } = useAuth();
+  const { login, user, isManager, isApproved } = useAuth();
   const reduceMotion = useReducedMotion();
 
   const [email, setEmail] = useState('');
@@ -30,11 +30,12 @@ export const Login: React.FC = () => {
   // Redirect authenticated users to their workspace.
   useEffect(() => {
     if (user) {
-      navigate(isManager ? '/manager' : '/employee', {
-        replace: true,
-      });
+      navigate(
+        !isApproved ? '/pending-approval' : isManager ? '/manager' : '/employee',
+        { replace: true }
+      );
     }
-  }, [user, isManager, navigate]);
+  }, [user, isManager, isApproved, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

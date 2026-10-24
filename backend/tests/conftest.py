@@ -15,6 +15,16 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_
 
 
 @pytest.fixture(autouse=True)
+def reset_rate_limits():
+    """Auth rate limits are in-process; start every test with clean counters."""
+    from app.core import rate_limit
+
+    rate_limit.reset()
+    yield
+    rate_limit.reset()
+
+
+@pytest.fixture(autouse=True)
 def no_real_llm(monkeypatch):
     """Tests never call a hosted model, even if backend/.env has a key.
 

@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef, useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   FolderKanban,
@@ -25,9 +25,11 @@ import {
   X,
   Check,
   ArrowUpRight,
+  ShieldCheck,
 } from 'lucide-react';
 import { Logo } from '../common/Logo';
 import { useAuth } from '../../context/AuthContext';
+import { api } from '../../services/api';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -46,9 +48,38 @@ export const Sidebar: React.FC<SidebarProps> = ({
   collapsed,
   setCollapsed,
 }) => {
-  const { user, isManager, isAdmin, logout } = useAuth();
+  const { user, isManager, isAdmin, isCompanyAdmin, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const accountMenuRef = useRef<HTMLDivElement>(null);
+
+  // Pending "become Company Admin" requests addressed to this user.
+  const [incomingTransfers, setIncomingTransfers] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadIncomingTransfers = async () => {
+      try {
+        const transfers = await api.getIncomingCompanyTransfers();
+        if (!cancelled) {
+          setIncomingTransfers(
+            transfers.filter((t) => t.status === 'PENDING').length,
+          );
+        }
+      } catch {
+        // Not critical: the link just stays hidden.
+      }
+    };
+
+    void loadIncomingTransfers();
+    window.addEventListener('focus', loadIncomingTransfers);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener('focus', loadIncomingTransfers);
+    };
+  }, [location.pathname]);
 
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
@@ -107,7 +138,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { name: 'Daily Updates', href: '/manager/daily-updates', icon: Send },
     { name: 'Work Logs', href: '/manager/work-logs', icon: Clock },
     { name: 'Team & Capacity', href: '/manager/team', icon: Users },
-    { name: 'Company Portal', href: '/manager/company', icon: Building2 },
+    { name: 'Company Portal', href: '/company', icon: Building2 },
     { name: 'Leave Requests', href: '/manager/leave', icon: CalendarDays },
     {
       name: 'Recovery Plans',
@@ -128,7 +159,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { name: 'Focus Guardian', href: '/employee/focus', icon: Eye },
   ];
 
-  const navItems = isManager ? managerNav : employeeNav;
+  // The Company Portal entry is shown only to designated Company Admins
+  // (the backend enforces this regardless of what the UI shows).
+  const companyPortalItem: NavItem = {
+    name: 'Company Portal',
+    href: '/company',
+    icon: Building2,
+  };
+  const transferItem: NavItem = {
+    name: 'Admin Transfer',
+    href: '/company-transfer',
+    icon: ShieldCheck,
+    highlight: true,
+    badge: String(incomingTransfers),
+  };
+  const navItems = [
+    ...(incomingTransfers > 0 ? [transferItem] : []),
+    ...(isManager ? managerNav : [...employeeNav, companyPortalItem]),
+  ].filter((item) => item.href !== '/company' || isCompanyAdmin);
 
   const accountSettingsPath = isManager
     ? '/manager/settings'

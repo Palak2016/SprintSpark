@@ -32,7 +32,21 @@ def test_login_invalid_password(client):
     assert "Invalid email or password" in response.json()["detail"]
 
 
-def test_signup_duplicate_email(client):
+def test_signup_duplicate_email(client, monkeypatch, db_session):
+    # Updated for multi-company Company Portal: signup no longer reveals
+    # whether an email already has an account. send-otp answers generically
+    # (and sends no code), and signup fails on the unverified code.
+    from app.models.user import User
+
+    sent_emails = _mock_email_otp(monkeypatch)
+    send = client.post("/api/v1/auth/signup/send-otp", json={
+        "email": "manager@workpilot.ai",
+        "role": "EMPLOYEE",
+        "company_code": "WORKPILOT",
+    })
+    assert send.status_code == 202
+    assert sent_emails == []
+
     response = client.post("/api/v1/auth/signup", json={
         "full_name": "Duplicate User",
         "email": "manager@workpilot.ai",
@@ -42,7 +56,8 @@ def test_signup_duplicate_email(client):
         "company_code": "WORKPILOT",
     })
     assert response.status_code == 400
-    assert "already exists" in response.json()["detail"]
+    assert "already exists" not in response.json()["detail"]
+    assert db_session.query(User).filter_by(email="manager@workpilot.ai").count() == 1
 
 
 def test_manager_signup_uses_email_otp_and_needs_no_phone(client, monkeypatch, db_session):
@@ -163,6 +178,9 @@ def test_email_otp_resend_is_rate_limited(client, monkeypatch):
 
 
 def test_company_manager_signup_returns_join_code(client, monkeypatch):
+    # Updated for multi-company Company Portal: the creator becomes the
+    # company's designated Company Admin; the join code is only available
+    # through the admin-only portal; people joining by code stay PENDING.
     _mock_email_otp(monkeypatch)
     email = "company.owner@example.com"
     company_data = {
@@ -187,35 +205,45 @@ def test_company_manager_signup_returns_join_code(client, monkeypatch):
         },
     )
     assert created.status_code == 201
-    company = client.get(
-        "/api/v1/companies/me",
-        headers={
-            "Authorization": "Bearer " + created.json()["access_token"]
-        },
-    )
+    owner_headers = {"Authorization": "Bearer " + created.json()["access_token"]}
+    company_id = created.json()["user"]["company_id"]
+    assert created.json()["user"]["administered_company_ids"] == [company_id]
+
+    summary = client.get("/api/v1/companies/me", headers=owner_headers)
+    assert summary.status_code == 200
+    assert summary.json()["name"] == "Signup Company"
+    assert summary.json()["manager_count"] == 1
+    assert summary.json()["is_company_admin"] is True
+    assert "join_code" not in summary.json()
+
+    company = client.get(f"/api/v1/companies/{company_id}/portal", headers=owner_headers)
     assert company.status_code == 200
-    assert company.json()["name"] == "Signup Company"
     assert len(company.json()["join_code"]) == 8
-    assert company.json()["manager_count"] == 1
     assert [member["email"] for member in company.json()["members"]] == [email]
 
     first_join_code = company.json()["join_code"]
     regenerated = client.post(
-        "/api/v1/companies/me/join-code",
-        headers={
-            "Authorization": "Bearer " + created.json()["access_token"]
-        },
+        f"/api/v1/companies/{company_id}/join-code/rotate",
+        headers=owner_headers,
     )
     assert regenerated.status_code == 200
     assert regenerated.json()["join_code"] != first_join_code
+
+    old_code_email = "old.code@example.com"
     assert client.post(
         "/api/v1/auth/signup/send-otp",
-        json={
-            "email": "old.code@example.com",
-            "role": "EMPLOYEE",
-            "company_code": first_join_code,
-        },
-    ).status_code == 400
+        json={"email": old_code_email, "role": "EMPLOYEE", "company_code": first_join_code},
+    ).status_code == 202
+    old_code_signup = client.post("/api/v1/auth/signup", json={
+        "full_name": "Old Code",
+        "email": old_code_email,
+        "password": "Password123!",
+        "role": "EMPLOYEE",
+        "otp_code": "123456",
+        "company_code": first_join_code,
+    })
+    assert old_code_signup.status_code == 400
+    assert old_code_signup.json()["detail"] == "The company code is invalid."
 
     joining_manager_email = "joining.manager@example.com"
     joining_manager_details = {
@@ -238,7 +266,9 @@ def test_company_manager_signup_returns_join_code(client, monkeypatch):
         },
     )
     assert joined_manager.status_code == 201
-    assert joined_manager.json()["user"]["company_id"] == regenerated.json()["id"]
+    assert joined_manager.json()["user"]["company_id"] == company_id
+    assert joined_manager.json()["user"]["approval_status"] == "PENDING"
+    assert joined_manager.json()["user"]["administered_company_ids"] == []
 
     employee_email = "signup.employee@example.com"
     employee_details = {
@@ -262,26 +292,32 @@ def test_company_manager_signup_returns_join_code(client, monkeypatch):
         },
     )
     assert employee.status_code == 201
-    assert employee.json()["user"]["company_id"] == regenerated.json()["id"]
+    assert employee.json()["user"]["company_id"] == company_id
+    assert employee.json()["user"]["approval_status"] == "PENDING"
 
-    refreshed_company = client.get(
-        "/api/v1/companies/me",
-        headers={
-            "Authorization": "Bearer " + created.json()["access_token"]
-        },
-    )
+    refreshed_company = client.get(f"/api/v1/companies/{company_id}/portal", headers=owner_headers)
     assert {
         member["email"] for member in refreshed_company.json()["members"]
     } == {email, joining_manager_email, employee_email}
+    assert refreshed_company.json()["pending_count"] == 2
 
 
-def test_signup_requires_a_valid_company_code(client):
-    response = client.post(
-        "/api/v1/auth/signup/send-otp",
-        json={"email": "invalid.code@example.com", "company_code": "INVALID1"},
-    )
-    assert response.status_code == 400
-    assert response.json()["detail"] == "The company code is invalid."
+def test_signup_requires_a_valid_company_code(client, monkeypatch):
+    # Updated: send-otp no longer reveals whether a code exists; the code is
+    # validated at signup, after the email address has been verified.
+    _mock_email_otp(monkeypatch)
+    payload = {"email": "invalid.code@example.com", "role": "EMPLOYEE", "company_code": "INVALID1"}
+    response = client.post("/api/v1/auth/signup/send-otp", json=payload)
+    assert response.status_code == 202
+
+    signup = client.post("/api/v1/auth/signup", json={
+        **payload,
+        "full_name": "Invalid Code",
+        "password": "Password123!",
+        "otp_code": "123456",
+    })
+    assert signup.status_code == 400
+    assert signup.json()["detail"] == "The company code is invalid."
 
 
 def test_manager_team_directory_is_company_scoped(client, db_session, manager_token):
@@ -426,3 +462,33 @@ def test_get_me(client, manager_token):
 def test_demo_endpoints_are_removed(client):
     assert client.get("/api/v1/demo/accounts").status_code == 404
     assert client.post("/api/v1/demo/reset-seed").status_code == 404
+
+
+def test_signup_phone_numbers_are_normalized_or_rejected_clearly():
+    import pytest
+    from pydantic import ValidationError
+    from app.schemas.auth import UserSignup
+
+    base = {
+        "full_name": "Phone Person",
+        "email": "phone.person@example.com",
+        "password": "Password123!",
+        "otp_code": "123456",
+        "company_code": "ABCDEF12",
+    }
+    accepted = {
+        "98765 43210": "+919876543210",
+        "+91 98765-43210": "+919876543210",
+        "0091 9876543210": "+919876543210",
+        "09876543210": "+919876543210",
+        "(+1) 415-555-0123": "+14155550123",
+        "": None,
+        "   ": None,
+    }
+    for typed, stored in accepted.items():
+        assert UserSignup(**base, phone_number=typed).phone_number == stored, typed
+
+    for bad in ("12345", "abc", "+0123456789", "+91 98765 43210 99999"):
+        with pytest.raises(ValidationError) as err:
+            UserSignup(**base, phone_number=bad)
+        assert "country code" in str(err.value)

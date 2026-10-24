@@ -4,7 +4,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import decode_access_token
-from app.models.user import User, UserRole
+from app.models.user import ManagerApprovalStatus, User, UserRole
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
 
@@ -12,7 +12,24 @@ def get_current_user(
     token: Optional[str] = Depends(oauth2_scheme),
     db: Session = Depends(get_db)
 ) -> User:
-    return get_authenticated_user(token, db)
+    """Authenticated *and approved* user.
+
+    Users who joined a company by code stay PENDING until that company's
+    Company Admin approves them; PENDING and REJECTED users can still sign in
+    and read ``/auth/me`` (which uses ``get_authenticated_user``) but cannot
+    use any business endpoint, including manager actions.
+    """
+    user = get_authenticated_user(token, db)
+    if user.approval_status != ManagerApprovalStatus.APPROVED.value:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                "Your account is awaiting approval by your company administrator."
+                if user.approval_status == ManagerApprovalStatus.PENDING.value
+                else "Your company administrator has not approved this account."
+            ),
+        )
+    return user
 
 
 def get_authenticated_user(

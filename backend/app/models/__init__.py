@@ -11,6 +11,12 @@ from app.models.audit import AuditEvent
 from app.models.notification import Notification
 from app.models.email_verification import EmailVerification
 from app.models.focus_context import FocusContext
+from app.models.company_access import (
+    CompanyAdmin,
+    CompanyAdminTransfer,
+    CompanyAuditEvent,
+    CompanyInvitation,
+)
 
 __all__ = [
     "Base",
@@ -37,4 +43,8 @@ __all__ = [
     "Notification",
     "EmailVerification",
     "FocusContext",
+    "CompanyAdmin",
+    "CompanyAdminTransfer",
+    "CompanyAuditEvent",
+    "CompanyInvitation",
 ]

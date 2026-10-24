@@ -10,6 +10,7 @@ import {
   Menu,
   CheckCheck,
   Layers3,
+  ArrowUpRight,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useProject } from '../../context/ProjectContext';
@@ -119,6 +120,34 @@ export const Topbar: React.FC<TopbarProps> = ({
     } finally {
       setMarkingRead(false);
     }
+  };
+
+  // Only follow in-app paths; "/login" links are useless once signed in.
+  const notificationTarget = (notification: Notification) => {
+    const link = notification.link;
+    if (!link || !link.startsWith('/') || link.startsWith('//')) return null;
+    if (link === '/login') return null;
+    return link;
+  };
+
+  const openNotification = (notification: Notification) => {
+    const target = notificationTarget(notification);
+    if (!target) return;
+
+    setShowNotifications(false);
+
+    if (!notification.is_read) {
+      setNotifications((previous) =>
+        previous.map((n) =>
+          n.id === notification.id ? { ...n, is_read: true } : n,
+        ),
+      );
+      api.markNotificationRead(notification.id).catch((err) => {
+        console.error('Failed to mark notification read:', err);
+      });
+    }
+
+    navigate(target);
   };
 
   const unreadCount = notifications.filter(
@@ -340,11 +369,31 @@ export const Topbar: React.FC<TopbarProps> = ({
                     </p>
                   </div>
                 ) : (
-                  notifications.map((notification) => (
+                  notifications.map((notification) => {
+                    const clickable = notificationTarget(notification) !== null;
+
+                    return (
                     <div
                       key={notification.id}
+                      role={clickable ? 'button' : undefined}
+                      tabIndex={clickable ? 0 : undefined}
+                      onClick={clickable ? () => openNotification(notification) : undefined}
+                      onKeyDown={
+                        clickable
+                          ? (event) => {
+                              if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault();
+                                openNotification(notification);
+                              }
+                            }
+                          : undefined
+                      }
                       className={`relative px-4 py-3.5 transition-colors hover:bg-white/[0.025] ${
                         notification.is_read ? '' : 'bg-violet-500/[0.045]'
+                      } ${
+                        clickable
+                          ? 'cursor-pointer hover:bg-white/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-400'
+                          : ''
                       }`}
                     >
                       <div className="flex items-start gap-3">
@@ -370,9 +419,14 @@ export const Topbar: React.FC<TopbarProps> = ({
                             {formatIndianDateTime(notification.created_at)}
                           </span>
                         </div>
+
+                        {clickable && (
+                          <ArrowUpRight className="mt-1 h-4 w-4 shrink-0 text-[#8F83A7]" />
+                        )}
                       </div>
                     </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
 

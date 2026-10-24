@@ -6,7 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import {
   Task,
-  Company,
+  CompanySummary,
   RiskAnalysis,
   LeaveRequest,
   RecoveryProposal,
@@ -35,7 +35,7 @@ export const ManagerOverview: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { activeProject, refreshProjects } = useProject();
-  const [company, setCompany] = useState<Company | null>(null);
+  const [company, setCompany] = useState<CompanySummary | null>(null);
   const [companyError, setCompanyError] = useState<string | null>(null);
 
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -278,18 +278,24 @@ export const ManagerOverview: React.FC = () => {
               {company?.name ?? 'Company workspace'}
             </div>
             {company ? (
-              <>
+              company.is_company_admin ? (
+                <>
+                  <p className="mt-2 text-xs text-[#B7ADC9]">
+                    Your company portal manages members and signup access.
+                  </p>
+                  <Link
+                    to={`/company/${company.id}`}
+                    className="mt-3 inline-flex items-center gap-2 rounded-lg border border-violet-300/25 bg-violet-400/10 px-3.5 py-2 text-xs font-semibold text-violet-100 transition hover:bg-violet-400/20"
+                  >
+                    Open company portal
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                </>
+              ) : (
                 <p className="mt-2 text-xs text-[#B7ADC9]">
-                  Your company portal manages members and signup access.
+                  Members and signup access are managed by your company's Company Admin.
                 </p>
-                <Link
-                  to="/manager/company"
-                  className="mt-3 inline-flex items-center gap-2 rounded-lg border border-violet-300/25 bg-violet-400/10 px-3.5 py-2 text-xs font-semibold text-violet-100 transition hover:bg-violet-400/20"
-                >
-                  Open company portal
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
-              </>
+              )
             ) : (
               <p className="mt-2 text-xs text-rose-200">
                 {companyError ?? 'Loading company workspace...'}

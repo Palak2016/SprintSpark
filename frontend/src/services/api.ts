@@ -14,6 +14,15 @@ import {
   TeamMemberAvailability,
   UserSimple,
   Company,
+  CompanySummary,
+  AdministeredCompany,
+  CompanyInvitation,
+  CompanyInvitationCreated,
+  InvitationPreview,
+  CompanyAdminTransfer,
+  CompanyAuditEvent,
+  CompanyAnalytics,
+  CompanyMember,
   FocusGuardianContext,
   ProjectAnalytics,
   PortfolioHealth,
@@ -93,7 +102,9 @@ class ApiService {
           errorMsg = errorData.detail.message;
         } else if (Array.isArray(errorData.detail)) {
           errorMsg = errorData.detail
-            .map((item: { msg?: string }) => item?.msg)
+            .map((item: { msg?: string }) =>
+              item?.msg?.replace(/^Value error, /, ''),
+            )
             .filter(Boolean)
             .join('; ') || errorMsg;
         } else if (typeof errorData.message === 'string') {
@@ -144,6 +155,7 @@ class ApiService {
     companyDetails?: {
       company_name?: string;
       company_code?: string;
+      invitation_token?: string;
       designation?: string;
     }
   ): Promise<{ message: string }> {
@@ -166,6 +178,7 @@ class ApiService {
     otp_code: string;
     company_name?: string;
     company_code?: string;
+    invitation_token?: string;
     designation?: string;
   }): Promise<{ access_token: string; user: User }> {
     return this.request('/auth/signup', {
@@ -178,12 +191,115 @@ class ApiService {
     return this.request('/auth/me');
   }
 
-  async getMyCompany(): Promise<Company> {
+  async previewInvitation(token: string): Promise<InvitationPreview> {
+    return this.request('/auth/invitations/preview', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    });
+  }
+
+  // --- Companies ---
+  /** Summary of the caller's own company (no join code / member list). */
+  async getMyCompany(): Promise<CompanySummary> {
     return this.request('/companies/me');
   }
 
-  async generateCompanyJoinCode(): Promise<Company> {
-    return this.request('/companies/me/join-code', {
+  // --- Company Portal (designated Company Admin only; enforced server-side) ---
+  async getAdministeredCompanies(): Promise<AdministeredCompany[]> {
+    return this.request('/companies/administered');
+  }
+
+  async getCompanyPortal(companyId: number): Promise<Company> {
+    return this.request(`/companies/${companyId}/portal`);
+  }
+
+  async rotateCompanyJoinCode(companyId: number): Promise<Company> {
+    return this.request(`/companies/${companyId}/join-code/rotate`, {
+      method: 'POST',
+    });
+  }
+
+  async decideCompanyMember(
+    companyId: number,
+    userId: number,
+    decision: 'approve' | 'reject',
+    notes?: string
+  ): Promise<CompanyMember> {
+    return this.request(`/companies/${companyId}/members/${userId}/${decision}`, {
+      method: 'POST',
+      body: JSON.stringify(notes ? { notes } : {}),
+    });
+  }
+
+  async listCompanyInvitations(companyId: number): Promise<CompanyInvitation[]> {
+    return this.request(`/companies/${companyId}/invitations`);
+  }
+
+  async createCompanyInvitation(
+    companyId: number,
+    email: string,
+    intendedRole: 'MANAGER' | 'EMPLOYEE'
+  ): Promise<CompanyInvitationCreated> {
+    return this.request(`/companies/${companyId}/invitations`, {
+      method: 'POST',
+      body: JSON.stringify({ email, intended_role: intendedRole }),
+    });
+  }
+
+  async revokeCompanyInvitation(
+    companyId: number,
+    invitationId: number
+  ): Promise<CompanyInvitation> {
+    return this.request(`/companies/${companyId}/invitations/${invitationId}/revoke`, {
+      method: 'POST',
+    });
+  }
+
+  async getCompanyAnalytics(companyId: number): Promise<CompanyAnalytics> {
+    return this.request(`/companies/${companyId}/analytics`);
+  }
+
+  async getCompanyAuditEvents(companyId: number): Promise<CompanyAuditEvent[]> {
+    return this.request(`/companies/${companyId}/audit-events`);
+  }
+
+  async listCompanyTransfers(companyId: number): Promise<CompanyAdminTransfer[]> {
+    return this.request(`/companies/${companyId}/admin-transfers`);
+  }
+
+  async requestCompanyTransfer(
+    companyId: number,
+    toUserId: number,
+    password: string
+  ): Promise<CompanyAdminTransfer> {
+    return this.request(`/companies/${companyId}/admin-transfers`, {
+      method: 'POST',
+      body: JSON.stringify({ to_user_id: toUserId, password }),
+    });
+  }
+
+  async getIncomingCompanyTransfers(): Promise<CompanyAdminTransfer[]> {
+    return this.request('/companies/admin-transfers/incoming');
+  }
+
+  async acceptCompanyTransfer(
+    transferId: number,
+    password: string
+  ): Promise<CompanyAdminTransfer> {
+    return this.request(`/companies/admin-transfers/${transferId}/accept`, {
+      method: 'POST',
+      body: JSON.stringify({ password }),
+    });
+  }
+
+  async declineCompanyTransfer(transferId: number): Promise<CompanyAdminTransfer> {
+    return this.request(`/companies/admin-transfers/${transferId}/decline`, {
+      method: 'POST',
+    });
+  }
+
+  async cancelCompanyTransfer(transferId: number): Promise<CompanyAdminTransfer> {
+    return this.request(`/companies/admin-transfers/${transferId}/cancel`, {
       method: 'POST',
     });
   }

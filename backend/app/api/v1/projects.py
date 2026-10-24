@@ -9,7 +9,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, require_manager
 from app.core.demo_data import DEMO_USER_EMAILS
-from app.core.tenancy import can_access_project, require_company_manager, require_project_access
+from app.core.tenancy import require_project_access, require_project_manager, visible_projects_clause
 
 from app.models.user import User
 from app.models.project import Project, ProjectMember
@@ -39,22 +39,16 @@ def list_projects(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    project_query = db.query(Project)
-    if current_user.role == "MANAGER":
-        project_query = project_query.filter(
-            Project.company_id == current_user.company_id
-        )
-    elif current_user.role != "ADMIN":
-        project_query = project_query.filter(
-            Project.company_id == current_user.company_id
-        )
-    projects = project_query.all()
+    # Lead, member, or Company Admin of the project's company only.
+    projects = (
+        db.query(Project)
+        .filter(visible_projects_clause(current_user, db))
+        .order_by(Project.id)
+        .all()
+    )
     results = []
 
     for project in projects:
-        if not can_access_project(current_user, project):
-            continue
-
         total_tasks = len(project.tasks)
         completed_tasks = sum(
             1
@@ -244,7 +238,7 @@ def update_project(
         )
 
     # A manager may update only their own projects.
-    require_company_manager(current_user, project.company_id)
+    require_project_manager(current_user, project)
 
     if data.name is not None:
         project.name = data.name
@@ -300,7 +294,7 @@ def delete_project(
 
     # Only the project's manager or an admin can delete it.
     if current_user.role != "ADMIN":
-        require_company_manager(current_user, project.company_id)
+        require_project_manager(current_user, project)
 
     try:
         # Remove known records linked to this project.
@@ -376,7 +370,7 @@ def add_project_member(
             detail="Project not found",
         )
 
-    require_company_manager(current_user, project.company_id)
+    require_project_manager(current_user, project)
 
     assigned_user = (
         db.query(User)
@@ -464,7 +458,7 @@ def remove_project_member(
             detail="Project not found",
         )
 
-    require_company_manager(current_user, project.company_id)
+    require_project_manager(current_user, project)
 
     member = (
         db.query(ProjectMember)
@@ -504,6 +498,10 @@ def list_all_team_users(
 ):
     users_query = db.query(User).filter(~User.email.in_(DEMO_USER_EMAILS))
     if current_user.role != "ADMIN":
+        if current_user.company_id is None:
+            # Without this guard "company_id == NULL" matched every other
+            # user who has no company.
+            return []
         users_query = users_query.filter(User.company_id == current_user.company_id)
     users = users_query.all()
 

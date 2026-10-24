@@ -66,8 +66,8 @@ def submit_leave_request(
     db.commit()
     db.refresh(leave)
 
-    # Notify managers
-    managers = db.query(User).filter(
+    # Notify managers of the requester's own company only.
+    managers = [] if current_user.company_id is None else db.query(User).filter(
         User.company_id == current_user.company_id,
         User.role.in_([UserRole.MANAGER.value, UserRole.ADMIN.value]),
     ).all()

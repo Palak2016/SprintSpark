@@ -50,6 +50,9 @@ class Settings(BaseSettings):
     
     ENVIRONMENT: str = "development"
 
+    # Used to build Company Portal invitation links.
+    FRONTEND_BASE_URL: str = "http://localhost:5173"
+
     model_config = SettingsConfigDict(
         env_file=BACKEND_DIR / ".env",
         case_sensitive=True,

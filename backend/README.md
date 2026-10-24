@@ -96,3 +96,39 @@ employee blocker notes; it does not receive email addresses or leave reasons.
 
 Run `alembic upgrade head` after pulling: migration `e3f7a1c9b250` adds
 `recovery_proposals.generation_trace` and `proposal_decisions.execution_report`.
+
+## Company Portal administration (multi-company)
+
+Each company has exactly one designated **Company Admin**, stored in
+`company_admins` and enforced by a partial unique index. The platform roles
+`MANAGER` and `ADMIN` do **not** grant Company Portal access on their own; every
+`/api/v1/companies/{company_id}/...` endpoint checks for an ACTIVE grant for that
+specific company.
+
+- Creating a company at signup makes the verified creator its Company Admin.
+- Joining with a company code creates a `PENDING` account that the company's
+  admin must approve. `PENDING`/`REJECTED` users can sign in but cannot use any
+  business endpoint.
+- Invitations are company-scoped, email-bound and role-bound, expire after 7 days,
+  are stored only as HMAC hashes, and never grant admin rights.
+- Ownership transfers need the current admin's password, the recipient's
+  acceptance (with their password), and complete in a single transaction.
+- Set `FRONTEND_BASE_URL` in `.env` so invitation links point at your frontend.
+
+**Upgrading an existing database** (back up first; the migration only adds tables):
+
+```bash
+alembic upgrade head          # adds company_admins, company_admin_transfers,
+                              # company_invitations, company_audit_events
+```
+
+Existing companies have **no** Company Admin after the upgrade; everything else
+keeps working. Review and assign administrators explicitly:
+
+```bash
+python -m scripts.company_admins review                      # dry run
+python -m scripts.company_admins review --assign 1=alice@acme.com
+python -m scripts.company_admins apply  --assign 1=alice@acme.com   # asks for a typed confirmation
+```
+
+Rollback: `alembic downgrade f7a4c2d19b61` drops only the four new tables.

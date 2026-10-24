@@ -18,6 +18,7 @@ interface SignupData {
   otp_code: string;
   company_name?: string;
   company_code?: string;
+  invitation_token?: string;
   designation?: string;
 }
 
@@ -27,11 +28,17 @@ interface AuthContextType {
   isLoading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
-  signup: (data: SignupData) => Promise<void>;
+  signup: (data: SignupData) => Promise<User>;
   logout: () => void;
+  refreshUser: () => Promise<User | null>;
   isManager: boolean;
   isEmployee: boolean;
   isAdmin: boolean;
+  /** True only when the account has been approved for its company. */
+  isApproved: boolean;
+  /** UI hint: the user is the designated Company Admin of >= 1 company.
+   * The backend enforces Company Admin authorization on every request. */
+  isCompanyAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -114,7 +121,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   // Create a new user account.
-  const signup = async (data: SignupData) => {
+  const signup = async (data: SignupData): Promise<User> => {
     setIsLoading(true);
     setError(null);
 
@@ -124,6 +131,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       localStorage.setItem('workpilot_token', res.access_token);
       setToken(res.access_token);
       setUser(res.user);
+      return res.user;
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : 'Failed to create account';
@@ -132,6 +140,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       throw err;
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Re-read the signed-in user (e.g. after approval or an admin transfer).
+  const refreshUser = async (): Promise<User | null> => {
+    if (!localStorage.getItem('workpilot_token')) return null;
+    try {
+      const userData = await api.getMe();
+      setUser(userData);
+      return userData;
+    } catch (err) {
+      console.error('Could not refresh the signed-in user:', err);
+      return null;
     }
   };
 
@@ -148,6 +169,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const isEmployee = user?.role === 'EMPLOYEE';
   const isAdmin = user?.role === 'ADMIN';
+  const isApproved = user?.approval_status === 'APPROVED';
+  const isCompanyAdmin =
+    isApproved && (user?.administered_company_ids?.length ?? 0) > 0;
 
   return (
     <AuthContext.Provider
@@ -159,9 +183,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         login,
         signup,
         logout,
+        refreshUser,
         isManager,
         isEmployee,
         isAdmin,
+        isApproved,
+        isCompanyAdmin,
       }}
     >
       {children}

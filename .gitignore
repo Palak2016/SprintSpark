@@ -1,4 +1,3 @@
-@'
 .env
 .env.*
 !.env.example
@@ -12,4 +11,6 @@ __pycache__/
 venv/
 node_modules/
 dist/
-'@ | Add-Content .gitignore
+
+# Database backups
+*.dump

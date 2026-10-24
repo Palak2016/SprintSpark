@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, require_manager
-from app.core.tenancy import require_company_manager, require_task_access
+from app.core.tenancy import require_project_manager, require_task_access, visible_projects_clause
 from app.models.user import User, UserRole
 from app.models.project import Project, ProjectMember
 from app.models.task import Task, TaskDependency, TaskStatus
@@ -73,19 +73,15 @@ def list_tasks(
     query = db.query(Task)
     if current_user.role == UserRole.ADMIN.value:
         pass
-    elif current_user.role == UserRole.MANAGER.value:
-        if current_user.company_id is None:
-            query = query.filter(false())
-        else:
-            query = query.join(Project).filter(
-                Project.company_id == current_user.company_id
-            )
+    elif current_user.company_id is None:
+        query = query.filter(false())
     else:
+        # Tasks in projects the user may see, plus tasks assigned to them.
         query = query.join(Project).filter(
             Project.company_id == current_user.company_id,
             or_(
+                visible_projects_clause(current_user, db),
                 Task.assignee_id == current_user.id,
-                Project.members.any(ProjectMember.user_id == current_user.id),
             ),
         )
 
@@ -173,7 +169,7 @@ def create_task(
             detail="Project not found",
         )
 
-    require_company_manager(current_user, project.company_id)
+    require_project_manager(current_user, project)
     if data.assignee_id is not None:
         assignee = db.query(User).filter(User.id == data.assignee_id).first()
         if assignee is None or assignee.company_id != project.company_id:
@@ -361,7 +357,7 @@ def update_task(
             detail="You can only update tasks assigned to you.",
         )
     if current_user.role in (UserRole.MANAGER.value, UserRole.ADMIN.value):
-        require_company_manager(current_user, task.project.company_id)
+        require_project_manager(current_user, task.project)
 
     previous_assignee_id = task.assignee_id
 
@@ -488,7 +484,7 @@ def delete_task(
             detail="Task not found",
         )
 
-    require_company_manager(current_user, task.project.company_id)
+    require_project_manager(current_user, task.project)
     db.delete(task)
     db.commit()
 
@@ -689,8 +685,8 @@ def add_task_dependency(
             detail="Task or prerequisite task not found",
         )
 
-    require_company_manager(current_user, task.project.company_id)
-    require_company_manager(current_user, prerequisite.project.company_id)
+    require_project_manager(current_user, task.project)
+    require_project_manager(current_user, prerequisite.project)
 
     if task.project_id != prerequisite.project_id:
         raise HTTPException(
@@ -777,8 +773,8 @@ def remove_task_dependency(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Task or prerequisite task not found",
         )
-    require_company_manager(current_user, task.project.company_id)
-    require_company_manager(current_user, prerequisite.project.company_id)
+    require_project_manager(current_user, task.project)
+    require_project_manager(current_user, prerequisite.project)
 
     db.delete(dependency)
     db.commit()

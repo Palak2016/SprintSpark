@@ -10,8 +10,12 @@ import {
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { Company, CompanyMember } from '../../types';
+import { useCompanyId } from '../company/shared';
 
 export const CompanyPortalView: React.FC = () => {
+  // The company being administered comes from the URL; the backend checks
+  // that the caller is its designated Company Admin on every request.
+  const companyId = useCompanyId();
   const [company, setCompany] = useState<Company | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -19,10 +23,11 @@ export const CompanyPortalView: React.FC = () => {
   const [copied, setCopied] = useState(false);
 
   const loadCompany = useCallback(async () => {
+    if (!companyId) return;
     setError(null);
     setIsLoading(true);
     try {
-      setCompany(await api.getMyCompany());
+      setCompany(await api.getCompanyPortal(companyId));
     } catch (loadError) {
       console.error('Failed to load company portal:', loadError);
       setError(
@@ -33,11 +38,13 @@ export const CompanyPortalView: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [companyId]);
 
   useEffect(() => {
+    if (!companyId) return;
     let isMounted = true;
-    api.getMyCompany()
+    setIsLoading(true);
+    api.getCompanyPortal(companyId)
       .then((data) => {
         if (isMounted) {
           setCompany(data);
@@ -60,13 +67,14 @@ export const CompanyPortalView: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [companyId]);
 
   const generateJoinCode = async () => {
+    if (!companyId) return;
     setIsGeneratingCode(true);
     setError(null);
     try {
-      setCompany(await api.generateCompanyJoinCode());
+      setCompany(await api.rotateCompanyJoinCode(companyId));
       setCopied(false);
     } catch (generateError) {
       console.error('Failed to generate a company signup code:', generateError);
@@ -93,10 +101,10 @@ export const CompanyPortalView: React.FC = () => {
   };
 
   const managers = company?.members.filter(
-    (member) => member.role === 'MANAGER'
+    (member) => member.role === 'MANAGER' && member.approval_status === 'APPROVED'
   ) ?? [];
   const employees = company?.members.filter(
-    (member) => member.role === 'EMPLOYEE'
+    (member) => member.role === 'EMPLOYEE' && member.approval_status === 'APPROVED'
   ) ?? [];
 
   return (
@@ -110,7 +118,8 @@ export const CompanyPortalView: React.FC = () => {
         </h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-[#B7ADC9]">
           View the people in your company and manage the signup code used by
-          new managers and employees.
+          new managers and employees. People who join with the code wait for
+          your approval.
         </p>
       </header>
 
@@ -154,6 +163,11 @@ export const CompanyPortalView: React.FC = () => {
                   <span className="rounded-full border border-white/10 bg-black/15 px-3 py-1.5">
                     {company.employee_count} employee{company.employee_count === 1 ? '' : 's'}
                   </span>
+                  {company.pending_count > 0 && (
+                    <span className="rounded-full border border-amber-300/25 bg-amber-400/10 px-3 py-1.5 text-amber-200">
+                      {company.pending_count} awaiting approval
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -176,7 +190,8 @@ export const CompanyPortalView: React.FC = () => {
                 </div>
                 <p className="mt-2 text-[11px] leading-5 text-[#A99DBD]">
                   Share this code with people who should join this company.
-                  Generating a new code invalidates the current one.
+                  They stay pending until you approve them. Generating a new
+                  code invalidates the current one.
                 </p>
                 <button
                   type="button"

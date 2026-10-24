@@ -163,3 +163,64 @@ def verify_signup_otp(email: str, otp_code: str, db: Session) -> bool:
     db.delete(verification)
     db.commit()
     return True
+
+
+def _deliver_email(email: str, subject: str, body: str) -> None:
+    host, port, sender, username, password, use_ssl, starttls = _smtp_settings()
+    message = EmailMessage()
+    message["Subject"] = subject
+    message["From"] = sender
+    message["To"] = email
+    message.set_content(body)
+    if use_ssl:
+        with smtplib.SMTP_SSL(host, port, timeout=10, context=ssl.create_default_context()) as smtp:
+            if username and password:
+                smtp.login(username, password)
+            smtp.send_message(message)
+    else:
+        with smtplib.SMTP(host, port, timeout=10) as smtp:
+            if starttls:
+                smtp.starttls(context=ssl.create_default_context())
+            if username and password:
+                smtp.login(username, password)
+            smtp.send_message(message)
+
+
+def ensure_email_configured() -> None:
+    """Raise the same 503 as OTP delivery when SMTP is not configured."""
+    _smtp_settings()
+
+
+def send_account_exists_notice(email: str) -> None:
+    """Tell the owner of an existing account that someone tried to sign up.
+
+    Used instead of an API error so the signup endpoints do not reveal which
+    email addresses already have accounts. Delivery failures are swallowed
+    for the same reason.
+    """
+    try:
+        _deliver_email(
+            email,
+            "Your WorkPilot account",
+            "Someone tried to create a new WorkPilot account with this email "
+            "address, but an account already exists. If this was you, sign in "
+            "instead. If it was not you, you can ignore this email.",
+        )
+    except (HTTPException, OSError, smtplib.SMTPException):
+        pass
+
+
+def send_company_invitation_email(email: str, company_name: str, invite_url: str, expires_days: int) -> bool:
+    """Best-effort invitation email. Returns False if it could not be sent."""
+    try:
+        _deliver_email(
+            email,
+            f"You're invited to join {company_name} on WorkPilot",
+            f"You have been invited to join {company_name} on WorkPilot.\n\n"
+            f"Create your account here: {invite_url}\n\n"
+            f"This invitation expires in {expires_days} days and can only be "
+            "used with this email address.",
+        )
+        return True
+    except (HTTPException, OSError, smtplib.SMTPException):
+        return False

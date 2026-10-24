@@ -45,6 +45,7 @@ def test_api_timestamp_schema_normalizes_explicit_offsets_to_utc():
     schema = NotificationOut(
         id=1,
         user_id=1,
+        type="system",
         title="Offset test",
         message="Explicit offset",
         is_read=False,

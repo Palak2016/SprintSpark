@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
-from app.core.tenancy import require_company_manager, require_task_access
+from app.core.tenancy import require_project_manager, require_task_access, visible_projects_clause
 from app.models.user import User
 from app.models.project import Project
 from app.models.task import Task, TaskStatus
@@ -40,13 +40,11 @@ def list_work_logs(
     if current_user.role == "ADMIN":
         query = query.join(Task, Task.id == WorkLog.task_id)
     elif current_user.role == "MANAGER":
+        # Only entries for projects this manager leads, is assigned to,
+        # or administers as Company Admin.
         query = query.join(Task, Task.id == WorkLog.task_id).join(
             Project, Project.id == Task.project_id
-        )
-        if current_user.company_id is None:
-            query = query.filter(false())
-        else:
-            query = query.filter(Project.company_id == current_user.company_id)
+        ).filter(visible_projects_clause(current_user, db))
     else:
         query = query.filter(WorkLog.user_id == current_user.id)
 
@@ -90,7 +88,7 @@ def create_work_log(
 
     require_task_access(current_user, task)
     if current_user.role == "MANAGER":
-        require_company_manager(current_user, task.project.company_id)
+        require_project_manager(current_user, task.project)
     elif current_user.role != "ADMIN" and task.assignee_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -173,13 +171,11 @@ def list_daily_updates(
     if current_user.role == "ADMIN":
         query = query.join(Task, Task.id == DailyUpdate.task_id)
     elif current_user.role == "MANAGER":
+        # Only entries for projects this manager leads, is assigned to,
+        # or administers as Company Admin.
         query = query.join(Task, Task.id == DailyUpdate.task_id).join(
             Project, Project.id == Task.project_id
-        )
-        if current_user.company_id is None:
-            query = query.filter(false())
-        else:
-            query = query.filter(Project.company_id == current_user.company_id)
+        ).filter(visible_projects_clause(current_user, db))
     else:
         query = query.filter(DailyUpdate.user_id == current_user.id)
 

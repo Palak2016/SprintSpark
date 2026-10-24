@@ -17,8 +17,12 @@ export interface User extends UserSimple {
   approval_reviewed_at?: string;
   approval_notes?: string;
   company_id?: number;
+  /** Companies this user is the designated Company Admin of (UI hint only;
+   * the backend re-checks authorization on every request). */
+  administered_company_ids?: number[];
 }
 
+/** Company Admin-only portal data (includes the join code and members). */
 export interface Company {
   id: number;
   name: string;
@@ -26,7 +30,90 @@ export interface Company {
   created_at: string;
   employee_count: number;
   manager_count: number;
+  pending_count: number;
+  admin_user_id: number;
   members: CompanyMember[];
+}
+
+/** What any approved manager may see about their own company. */
+export interface CompanySummary {
+  id: number;
+  name: string;
+  created_at: string;
+  employee_count: number;
+  manager_count: number;
+  is_company_admin: boolean;
+}
+
+export interface AdministeredCompany {
+  id: number;
+  name: string;
+  pending_approvals: number;
+}
+
+export interface CompanyInvitation {
+  id: number;
+  email: string;
+  intended_role: 'MANAGER' | 'EMPLOYEE';
+  status: 'PENDING' | 'ACCEPTED' | 'REVOKED' | 'EXPIRED';
+  expires_at: string;
+  created_at: string;
+  accepted_at?: string | null;
+  revoked_at?: string | null;
+}
+
+export interface CompanyInvitationCreated extends CompanyInvitation {
+  invite_url: string;
+  email_sent: boolean;
+}
+
+export interface InvitationPreview {
+  company_name: string;
+  email: string;
+  intended_role: 'MANAGER' | 'EMPLOYEE';
+  expires_at: string;
+}
+
+export interface CompanyAdminTransfer {
+  id: number;
+  company_id: number;
+  company_name: string;
+  from_user_id: number;
+  from_user_name: string;
+  to_user_id: number;
+  to_user_name: string;
+  status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CANCELLED' | 'EXPIRED';
+  expires_at: string;
+  created_at: string;
+  decided_at?: string | null;
+}
+
+export interface CompanyAuditEvent {
+  id: number;
+  actor_id?: number | null;
+  event_type: string;
+  metadata_json: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface CompanyAnalytics {
+  members: {
+    managers: number;
+    employees: number;
+    pending: number;
+    rejected: number;
+  };
+  pending_invitations: number;
+  project_count: number;
+  portfolio: {
+    distribution: { risk_level: string; count: number }[];
+    projects: {
+      project_id: number;
+      name: string;
+      status: string;
+      risk_level: string | null;
+    }[];
+  };
 }
 
 export interface CompanyMember {

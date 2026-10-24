@@ -1,10 +1,11 @@
 
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, useReducedMotion } from 'motion/react';
 import { Logo } from '../components/common/Logo';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
+import { InvitationPreview } from '../types';
 import {
   AlertCircle,
   ArrowLeft,
@@ -27,6 +28,10 @@ export const Signup: React.FC = () => {
   const navigate = useNavigate();
   const { signup } = useAuth();
   const reduceMotion = useReducedMotion();
+  const [searchParams] = useSearchParams();
+  const inviteToken = searchParams.get('invite');
+  const [invite, setInvite] = useState<InvitationPreview | null>(null);
+  const [inviteError, setInviteError] = useState<string | null>(null);
 
   const [step, setStep] = useState<1 | 2>(1);
   const [fullName, setFullName] = useState('');
@@ -45,11 +50,40 @@ export const Signup: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const isCreatingCompany =
-    role === 'MANAGER' && managerSignupMode === 'CREATE';
+  // Invitation links (/signup?invite=...) pre-fill the email and role. The
+  // backend re-validates the token, email and role at signup.
+  useEffect(() => {
+    if (!inviteToken) return;
+    let active = true;
+    api.previewInvitation(inviteToken)
+      .then((preview) => {
+        if (!active) return;
+        setInvite(preview);
+        setEmail(preview.email);
+        setRole(preview.intended_role);
+      })
+      .catch((err: unknown) => {
+        if (active) {
+          setInviteError(
+            err instanceof Error ? err.message : 'This invitation is invalid or has expired.'
+          );
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [inviteToken]);
 
-  const companySignupDetails =
-    role === 'MANAGER'
+  const isInvited = Boolean(invite && inviteToken);
+  const isCreatingCompany =
+    !isInvited && role === 'MANAGER' && managerSignupMode === 'CREATE';
+
+  const companySignupDetails = isInvited
+    ? {
+        invitation_token: inviteToken as string,
+        ...(role === 'MANAGER' ? { designation: designation.trim() } : {}),
+      }
+    : role === 'MANAGER'
       ? managerSignupMode === 'CREATE'
         ? {
             company_name: companyName.trim(),
@@ -61,9 +95,26 @@ export const Signup: React.FC = () => {
           }
       : { company_code: companyCode.trim().toUpperCase() };
 
+  // Mirrors the backend: "98765 43210" or "+91-98765-43210" -> "+919876543210".
+  // Returns '' when empty and null when the number can't be valid.
+  const normalizePhone = (value: string): string | null => {
+    let cleaned = value.replace(/[\s\-().]/g, '');
+    if (!cleaned) return '';
+    if (cleaned.startsWith('00')) cleaned = `+${cleaned.slice(2)}`;
+    if (/^0?[6-9]\d{9}$/.test(cleaned)) cleaned = `+91${cleaned.slice(-10)}`;
+    return /^\+[1-9]\d{7,14}$/.test(cleaned) ? cleaned : null;
+  };
+
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
+
+    if (normalizePhone(phoneNumber) === null) {
+      setErrorMessage(
+        'Enter a valid phone number with country code, for example +91 98765 43210, or leave it empty.'
+      );
+      return;
+    }
 
     if (password.length < 8) {
       setErrorMessage('Password must be at least 8 characters long.');
@@ -90,7 +141,7 @@ export const Signup: React.FC = () => {
       setErrorMessage('Designation is required for manager signup.');
       return;
     }
-    if (!isCreatingCompany && !companyCode.trim()) {
+    if (!isInvited && !isCreatingCompany && !companyCode.trim()) {
       setErrorMessage('Enter the company code to join a company.');
       return;
     }
@@ -146,28 +197,40 @@ export const Signup: React.FC = () => {
       return;
     }
 
+    if (normalizePhone(phoneNumber) === null) {
+      setErrorMessage(
+        'The phone number is not valid. Click "Edit details" and use the format +91 98765 43210, or leave it empty.'
+      );
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      await signup({
+      const createdUser = await signup({
         full_name: fullName.trim(),
         email: email.trim(),
-        ...(phoneNumber.trim()
-          ? { phone_number: phoneNumber.trim() }
+        ...(normalizePhone(phoneNumber)
+          ? { phone_number: normalizePhone(phoneNumber) as string }
           : {}),
         password,
         role,
         otp_code: otpCode,
-        ...(isCreatingCompany
-          ? { company_name: companyName.trim() }
-          : { company_code: companyCode.trim().toUpperCase() }),
+        ...(isInvited
+          ? { invitation_token: inviteToken as string }
+          : isCreatingCompany
+            ? { company_name: companyName.trim() }
+            : { company_code: companyCode.trim().toUpperCase() }),
         ...(role === 'MANAGER'
           ? { designation: designation.trim() }
           : {}),
       });
 
-      // Redirect according to the role selected during registration.
-      if (role === 'MANAGER') {
+      // People who joined with a company code wait for their Company
+      // Admin's approval before they can use their workspace.
+      if (createdUser.approval_status !== 'APPROVED') {
+        navigate('/pending-approval', { replace: true });
+      } else if (role === 'MANAGER') {
         navigate('/manager', { replace: true });
       } else {
         navigate('/employee', { replace: true });
@@ -303,6 +366,22 @@ export const Signup: React.FC = () => {
               </div>
             )}
 
+            {inviteError && (
+              <div
+                role="alert"
+                className="mb-5 flex items-start gap-3 rounded-xl border border-rose-400/20 bg-rose-400/[0.08] p-3.5 text-sm text-rose-200"
+              >
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
+                <span>{inviteError}</span>
+              </div>
+            )}
+            {isInvited && invite && (
+              <div className="mb-5 rounded-xl border border-white/[0.12] bg-white/[0.04] p-3.5 text-sm text-[#D1D3D6]">
+                You're joining <strong className="text-white">{invite.company_name}</strong> as{' '}
+                {invite.intended_role === 'MANAGER' ? 'a manager' : 'an employee'} by invitation.
+              </div>
+            )}
+
             {step === 1 ? (
               <form onSubmit={handleSendOtp} className="space-y-5">
                 {/* Role selection */}
@@ -321,6 +400,7 @@ export const Signup: React.FC = () => {
                             key={value}
                             type="button"
                             aria-pressed={selected}
+                            disabled={isInvited && !selected}
                             onClick={() => {
                               setRole(value);
                               setErrorMessage(null);
@@ -388,6 +468,7 @@ export const Signup: React.FC = () => {
                       Company workspace
                     </div>
 
+                    {!isInvited && (
                     <div className="grid grid-cols-2 gap-2">
                       {([
                         ['CREATE', 'Create company'],
@@ -412,7 +493,9 @@ export const Signup: React.FC = () => {
                       ))}
                     </div>
 
-                    {isCreatingCompany ? (
+                    )}
+
+                    {isInvited ? null : isCreatingCompany ? (
                     <div>
                       <label
                         htmlFor="companyName"
@@ -472,7 +555,7 @@ export const Signup: React.FC = () => {
                   </motion.div>
                 )}
 
-                {role === 'EMPLOYEE' && (
+                {role === 'EMPLOYEE' && !isInvited && (
                   <div>
                     <label htmlFor="companyCode" className={labelClass}>
                       Company code *
@@ -488,7 +571,8 @@ export const Signup: React.FC = () => {
                       className={inputClass}
                     />
                     <p className="mt-2 text-[11px] text-[#92979D]">
-                      Ask your company manager for its signup code.
+                      Ask your Company Admin for its signup code. You can use
+                      WorkPilot once they approve your account.
                     </p>
                   </div>
                 )}
@@ -533,6 +617,7 @@ export const Signup: React.FC = () => {
                           : 'name@example.com'
                       }
                       value={email}
+                      readOnly={isInvited}
                       onChange={(e) => setEmail(e.target.value)}
                       className={`${inputClass} pl-10`}
                     />
@@ -552,7 +637,7 @@ export const Signup: React.FC = () => {
                     id="phoneNumber"
                     type="tel"
                     autoComplete="tel"
-                    placeholder="Add a contact phone number"
+                    placeholder="+91 98765 43210"
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
                     className={inputClass}

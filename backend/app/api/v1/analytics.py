@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, require_manager
-from app.core.tenancy import require_project_access
+from app.core.tenancy import require_project_access, visible_projects_clause
 from app.models.project import Project
 from app.models.risk import RiskAnalysis
 from app.models.task import Task
@@ -68,18 +68,10 @@ def project_analytics(
     )
 
 
-@router.get("/portfolio")
-def portfolio_analytics(
-    current_user: User = Depends(require_manager),
-    db: Session = Depends(get_db),
-):
-    query = db.query(Project)
-    if current_user.role != UserRole.ADMIN.value:
-        if current_user.company_id is None:
-            return portfolio_health([])
-        query = query.filter(Project.company_id == current_user.company_id)
+def build_portfolio_rows(projects, db: Session):
+    """Latest risk snapshot per project (shared by manager and Company Portal analytics)."""
     rows = []
-    for project in query.all():
+    for project in projects:
         latest = (
             db.query(RiskAnalysis)
             .filter(RiskAnalysis.project_id == project.id)
@@ -95,4 +87,18 @@ def portfolio_analytics(
             "risk_score": latest.score if latest else None,
             "analyzed_at": normalize_utc(latest.created_at).isoformat() if latest else None,
         })
-    return portfolio_health(rows)
+    return rows
+
+
+@router.get("/portfolio")
+def portfolio_analytics(
+    current_user: User = Depends(require_manager),
+    db: Session = Depends(get_db),
+):
+    projects = (
+        db.query(Project)
+        .filter(visible_projects_clause(current_user, db))
+        .order_by(Project.id)
+        .all()
+    )
+    return portfolio_health(build_portfolio_rows(projects, db))
