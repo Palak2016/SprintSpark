@@ -58,6 +58,9 @@ from app.schemas.company import (
     InvitationCreatedOut,
     InvitationOut,
     MemberDecision,
+    MemberDesignationUpdate,
+    MemberRoleUpdate,
+    MemberStatusChange,
     TransferAccept,
     TransferCreate,
     TransferOut,
@@ -479,6 +482,197 @@ def reject_member(
     db: Session = Depends(get_db),
 ):
     return _decide_member(db, current_user, company_id, user_id, False, data.notes)
+
+
+# ---------------------------------------------------------------------------
+# Member management (Company Admin only, own company only)
+# ---------------------------------------------------------------------------
+def _managed_member(db: Session, admin: User, company_id: int, user_id: int) -> User:
+    """The target member, after checking the caller administers this company.
+
+    The member must belong to the company in the URL, so IDs from another
+    company return 404 whatever the caller tries.
+    """
+    require_company_admin(db, admin, company_id)
+    return _member_of_company(db, company_id, user_id)
+
+
+def _is_active_admin_anywhere(db: Session, user_id: int) -> bool:
+    return (
+        db.query(CompanyAdmin.id)
+        .filter(CompanyAdmin.user_id == user_id, CompanyAdmin.status == CompanyAdminStatus.ACTIVE.value)
+        .first()
+        is not None
+    )
+
+
+def _notify(db: Session, user_id: int, title: str, message: str, link: str | None = None) -> None:
+    db.add(Notification(user_id=user_id, type="COMPANY_MEMBERSHIP", title=title, message=message, link=link))
+
+
+@router.patch("/{company_id}/members/{user_id}/designation", response_model=CompanyMemberOut)
+def update_member_designation(
+    company_id: int,
+    user_id: int,
+    data: MemberDesignationUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Change a member's job title. Grants or removes no permissions."""
+    member = _managed_member(db, current_user, company_id, user_id)
+    previous = member.designation
+    if previous != data.designation:
+        member.designation = data.designation
+        record_company_event(db, company_id, current_user.id, "MEMBER_DESIGNATION_CHANGED", {
+            "user_id": member.id,
+            "from": previous,
+            "to": data.designation,
+        })
+        db.commit()
+        db.refresh(member)
+    return CompanyMemberOut.model_validate(member)
+
+
+@router.put("/{company_id}/members/{user_id}/role", response_model=CompanyMemberOut)
+def update_member_role(
+    company_id: int,
+    user_id: int,
+    data: MemberRoleUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Grant or revoke Manager access (project permissions).
+
+    Only the company's active Company Admin may call this, so nobody can
+    raise their own permissions. ADMIN (administration-only, no project
+    workspace) is allowed only for the Company Admin's own account.
+    """
+    member = _managed_member(db, current_user, company_id, user_id)
+    if member.approval_status not in (
+        ManagerApprovalStatus.APPROVED.value,
+        ManagerApprovalStatus.PENDING.value,
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"This account is {member.approval_status.lower()}; reactivate or approve it first.",
+        )
+    if data.role == UserRole.ADMIN.value and member.id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only your own Company Admin account can be administration-only.",
+        )
+
+    previous = member.role
+    if previous != data.role:
+        led_projects = (
+            db.query(func.count(Project.id)).filter(Project.manager_id == member.id).scalar()
+            if previous == UserRole.MANAGER.value
+            else 0
+        )
+        member.role = data.role
+        record_company_event(db, company_id, current_user.id, "MEMBER_ROLE_CHANGED", {
+            "user_id": member.id,
+            "from": previous,
+            "to": data.role,
+            "led_projects": led_projects,
+        })
+        if member.id != current_user.id:
+            labels = {"MANAGER": "a manager", "EMPLOYEE": "an employee"}
+            _notify(
+                db, member.id, "Your access changed",
+                f"{current_user.full_name} changed your access in {member.company.name} to "
+                f"{labels.get(data.role, data.role.lower())}.",
+                "/manager" if data.role == UserRole.MANAGER.value else "/employee",
+            )
+        db.commit()
+        db.refresh(member)
+    return CompanyMemberOut.model_validate(member)
+
+
+@router.post("/{company_id}/members/{user_id}/deactivate", response_model=CompanyMemberOut)
+def deactivate_member(
+    company_id: int,
+    user_id: int,
+    data: MemberStatusChange,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Switch an account off without deleting anything.
+
+    Every protected request re-reads the account, so existing sessions stop
+    working immediately. The company's admin can never be deactivated (that
+    would leave the company without one): transfer the role first.
+    """
+    member = _managed_member(db, current_user, company_id, user_id)
+    if member.id == current_user.id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You cannot deactivate your own account.")
+    if _is_active_admin_anywhere(db, member.id):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This account is a Company Admin. Transfer the Company Admin role before deactivating it.",
+        )
+    if member.approval_status != ManagerApprovalStatus.APPROVED.value:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Only active members can be deactivated (this account is {member.approval_status.lower()}).",
+        )
+
+    now = utcnow_naive()
+    member.approval_status = ManagerApprovalStatus.DEACTIVATED.value
+    member.approval_reviewed_by = current_user.id
+    member.approval_reviewed_at = now
+    member.approval_notes = data.notes
+
+    # A deactivated account cannot become Company Admin.
+    pending = (
+        db.query(CompanyAdminTransfer)
+        .filter(
+            CompanyAdminTransfer.to_user_id == member.id,
+            CompanyAdminTransfer.status == TransferStatus.PENDING.value,
+        )
+        .all()
+    )
+    for transfer in pending:
+        transfer.status = TransferStatus.CANCELLED.value
+        transfer.decided_at = now
+        record_company_event(db, transfer.company_id, current_user.id, "COMPANY_ADMIN_TRANSFER_CANCELLED", {
+            "transfer_id": transfer.id,
+            "reason": "RECIPIENT_DEACTIVATED",
+        })
+
+    record_company_event(db, company_id, current_user.id, "MEMBER_DEACTIVATED", {
+        "user_id": member.id,
+        "notes": data.notes,
+    })
+    db.commit()
+    db.refresh(member)
+    return CompanyMemberOut.model_validate(member)
+
+
+@router.post("/{company_id}/members/{user_id}/reactivate", response_model=CompanyMemberOut)
+def reactivate_member(
+    company_id: int,
+    user_id: int,
+    data: MemberStatusChange,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    member = _managed_member(db, current_user, company_id, user_id)
+    if member.approval_status != ManagerApprovalStatus.DEACTIVATED.value:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="This account is not deactivated.")
+    member.approval_status = ManagerApprovalStatus.APPROVED.value
+    member.approval_reviewed_by = current_user.id
+    member.approval_reviewed_at = utcnow_naive()
+    member.approval_notes = data.notes
+    record_company_event(db, company_id, current_user.id, "MEMBER_REACTIVATED", {
+        "user_id": member.id,
+        "notes": data.notes,
+    })
+    _notify(db, member.id, "Account reactivated",
+            f"{current_user.full_name} reactivated your account in {member.company.name}.")
+    db.commit()
+    db.refresh(member)
+    return CompanyMemberOut.model_validate(member)
 
 
 @router.get("/{company_id}/invitations", response_model=List[InvitationOut])

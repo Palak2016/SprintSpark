@@ -17,7 +17,7 @@ import {
 
 export const Login: React.FC = () => {
   const navigate = useNavigate();
-  const { login, user, isManager, isApproved } = useAuth();
+  const { login, user, homePath, error: authError } = useAuth();
   const reduceMotion = useReducedMotion();
 
   const [email, setEmail] = useState('');
@@ -27,15 +27,21 @@ export const Login: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Redirect authenticated users to their workspace.
+  // Redirect authenticated users to their workspace: Company Admins to the
+  // Admin console, managers and employees to their own workspace. Based on
+  // the server's /auth/me answer, not on anything stored in the browser.
   useEffect(() => {
     if (user) {
-      navigate(
-        !isApproved ? '/pending-approval' : isManager ? '/manager' : '/employee',
-        { replace: true }
-      );
+      navigate(homePath, { replace: true });
     }
-  }, [user, isManager, isApproved, navigate]);
+  }, [user, homePath, navigate]);
+
+  // Explain why the user is here after their session ran out.
+  useEffect(() => {
+    if (!user && authError) {
+      setErrorMessage(authError);
+    }
+  }, [user, authError]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -96,6 +96,13 @@ export const CompanyOwnershipView: React.FC = () => {
       ) : (
         <>
           <Panel title="Transfer Company Admin role" description="Confirm with your password. The new admin must also confirm with theirs.">
+            {user?.role === 'ADMIN' && (
+              <p className="border-b border-white/[0.07] bg-amber-400/[0.06] px-5 py-3 text-xs text-amber-100">
+                Your account is administration-only. After the transfer it has no workspace
+                until the new Company Admin gives you Manager or Employee access. To keep
+                working on projects, give yourself project access under Members first.
+              </p>
+            )}
             {pending ? (
               <div className="flex flex-wrap items-center gap-3 p-5 text-sm">
                 <span className="flex-1">

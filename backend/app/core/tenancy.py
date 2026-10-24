@@ -5,20 +5,31 @@ A user sees a project when, inside their own company, they are:
   * a member through ``project_members``, or
   * the active Company Admin of the project's company.
 Sharing a company is not enough on its own. Managing (editing the project,
-its members and tasks, recovery decisions) additionally needs the MANAGER
-role. The platform-wide ADMIN role keeps its existing full access.
+its members and tasks, recovery decisions) additionally needs a manager
+role.
+
+``users.role == "ADMIN"`` marks an administration-only account: it has no
+project role (no manager rights) and never reaches other companies. Company
+administration is granted only through ``company_admins``.
 """
 
 from typing import List
 
 from fastapi import HTTPException, status
-from sqlalchemy import and_, false, or_, true
+from sqlalchemy import and_, false, or_
 from sqlalchemy.orm import Session, object_session
 
 from app.models.company_access import CompanyAdmin, CompanyAdminStatus
 from app.models.project import Project, ProjectMember
 from app.models.task import Task
 from app.models.user import ManagerApprovalStatus, User, UserRole
+
+# Roles allowed to manage projects and review leave inside their company.
+MANAGER_ROLES = (UserRole.MANAGER.value,)
+
+
+def is_manager_role(user: User) -> bool:
+    return user.role in MANAGER_ROLES
 
 
 def _admin_company_ids(user: User, db: Session | None = None) -> List[int]:
@@ -42,8 +53,6 @@ def _admin_company_ids(user: User, db: Session | None = None) -> List[int]:
 
 def visible_projects_clause(user: User, db: Session | None = None):
     """SQL filter on ``Project`` matching exactly what ``can_access_project`` allows."""
-    if user.role == UserRole.ADMIN.value:
-        return true()
     if user.company_id is None:
         return false()
     if _admin_company_ids(user, db):
@@ -58,9 +67,6 @@ def visible_projects_clause(user: User, db: Session | None = None):
 
 
 def can_access_project(user: User, project: Project) -> bool:
-    if user.role == UserRole.ADMIN.value:
-        return True
-
     if user.company_id is None or project.company_id != user.company_id:
         return False
 
@@ -82,9 +88,7 @@ def require_project_access(user: User, project: Project) -> None:
 
 
 def can_manage_project(user: User, project: Project) -> bool:
-    if user.role == UserRole.ADMIN.value:
-        return True
-    return user.role == UserRole.MANAGER.value and can_access_project(user, project)
+    return is_manager_role(user) and can_access_project(user, project)
 
 
 def require_project_manager(user: User, project: Project) -> None:
@@ -116,10 +120,8 @@ def require_task_access(user: User, task: Task) -> None:
 
 def require_company_manager(user: User, company_id: int | None) -> None:
     """Company-level manager actions that are not tied to one project (leave review)."""
-    if user.role == UserRole.ADMIN.value:
-        return
     if (
-        user.role != UserRole.MANAGER.value
+        not is_manager_role(user)
         or user.company_id is None
         or company_id != user.company_id
     ):

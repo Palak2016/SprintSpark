@@ -71,9 +71,7 @@ def list_tasks(
     db: Session = Depends(get_db),
 ):
     query = db.query(Task)
-    if current_user.role == UserRole.ADMIN.value:
-        pass
-    elif current_user.company_id is None:
+    if current_user.company_id is None:
         query = query.filter(false())
     else:
         # Tasks in projects the user may see, plus tasks assigned to them.
@@ -284,7 +282,7 @@ def _validate_schedule_change(task: Task, data: TaskUpdate, user: User, db: Sess
     if new_start == task.start_date and new_due == task.due_date:
         return
 
-    if user.role not in (UserRole.MANAGER.value, UserRole.ADMIN.value):
+    if user.role != UserRole.MANAGER.value:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only managers can change task dates.",
@@ -356,7 +354,7 @@ def update_task(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only update tasks assigned to you.",
         )
-    if current_user.role in (UserRole.MANAGER.value, UserRole.ADMIN.value):
+    if current_user.role == UserRole.MANAGER.value:
         require_project_manager(current_user, task.project)
 
     previous_assignee_id = task.assignee_id

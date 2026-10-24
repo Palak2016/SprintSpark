@@ -7,7 +7,7 @@ from app.schemas.timestamps import UTCDateTime
 PHONE_PATTERN = re.compile(r"\+[1-9]\d{7,14}")
 
 
-class ManagerSignupDetails(BaseModel):
+class SignupDetails(BaseModel):
     # Unknown fields (for example ``is_admin``, ``company_role`` or
     # ``approval_status``) are rejected outright so that nobody can
     # self-assign privileges through the signup payload.
@@ -33,32 +33,55 @@ class ManagerSignupDetails(BaseModel):
     def strip_invitation_token(cls, value):
         return value.strip() if isinstance(value, str) else value
 
+    # Requested only on "Create a company" signups: also make the founder a
+    # manager. Without it the founder is an administration-only account.
+    also_manager: bool = False
+
     @model_validator(mode="after")
-    def validate_manager_details(self):
+    def validate_signup_path(self):
+        """Three separate signup paths; nothing else is accepted.
+
+        * ADMIN    -> creates a NEW company (company_name) and becomes its
+                      Company Admin. Never joins an existing company.
+        * MANAGER  -> joins an existing company by invitation or signup code.
+        * EMPLOYEE -> joins an existing company by invitation or signup code.
+
+        Admin rights over an existing company are never available here; they
+        come only from creating a company or an accepted ownership transfer.
+        """
+        if self.role == "ADMIN":
+            if self.company_code or self.invitation_token:
+                raise ValueError(
+                    "Creating a company cannot be combined with a company code or invitation."
+                )
+            if not self.company_name:
+                raise ValueError("Enter a company name to create your company.")
+            return self
+
+        if self.also_manager:
+            raise ValueError("Manager access can only be requested when creating a company.")
+        if self.company_name:
+            raise ValueError(
+                "Managers and employees join an existing company. To create a company, "
+                "sign up as its Company Admin."
+            )
         if self.role == "MANAGER" and not self.designation:
             raise ValueError("Designation is required for manager signup.")
         if self.invitation_token:
-            if self.company_name or self.company_code:
-                raise ValueError(
-                    "An invitation cannot be combined with a company name or company code."
-                )
+            if self.company_code:
+                raise ValueError("An invitation cannot be combined with a company code.")
             return self
-        if self.role == "MANAGER":
-            if bool(self.company_name) == bool(self.company_code):
-                raise ValueError(
-                    "Provide a company name to create a company or a company code to join one."
-                )
-        elif not self.company_code:
-            raise ValueError("A company code is required to join a company.")
+        if not self.company_code:
+            raise ValueError("Enter your company's signup code or use your invitation link.")
         return self
 
 
-class UserSignup(ManagerSignupDetails):
+class UserSignup(SignupDetails):
     full_name: str = Field(..., min_length=2, max_length=100)
     email: EmailStr
     phone_number: Optional[str] = None
     password: str = Field(..., min_length=8, max_length=128)
-    role: Literal["EMPLOYEE", "MANAGER"] = "EMPLOYEE"
+    role: Literal["EMPLOYEE", "MANAGER", "ADMIN"] = "EMPLOYEE"
     otp_code: str = Field(..., min_length=6, max_length=6, pattern=r"^\d{6}$")
 
     @field_validator("phone_number", mode="before")
@@ -91,9 +114,9 @@ def normalize_phone(value):
     return cleaned
 
 
-class SignupOtpRequest(ManagerSignupDetails):
+class SignupOtpRequest(SignupDetails):
     email: EmailStr
-    role: Literal["EMPLOYEE", "MANAGER"] = "EMPLOYEE"
+    role: Literal["EMPLOYEE", "MANAGER", "ADMIN"] = "EMPLOYEE"
 
 
 class UserLogin(BaseModel):
@@ -120,6 +143,11 @@ class UserOut(BaseModel):
     # Computed per request from ``company_admins``; informational for the UI.
     # The backend re-checks Company Admin authorization on every request.
     administered_company_ids: list[int] = Field(default_factory=list)
+    # Workspaces the server allows, in priority order; the first is where the
+    # app lands after sign-in. "admin" = Company Admin console, "manager" =
+    # project management, "employee" = personal work. Empty while the account
+    # is pending or rejected.
+    workspaces: list[Literal["admin", "manager", "employee"]] = Field(default_factory=list)
 
 
 class UserSimple(BaseModel):

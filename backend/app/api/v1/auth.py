@@ -13,6 +13,7 @@ from app.core.company_access import (
 )
 from app.core.database import get_db
 from app.core.security import verify_password, get_password_hash, create_access_token
+from app.core.tenancy import MANAGER_ROLES
 from app.core.dependencies import get_authenticated_user
 from app.models.company import Company
 from app.models.company_access import (
@@ -23,7 +24,7 @@ from app.models.company_access import (
     InvitationStatus,
 )
 from app.models.notification import Notification
-from app.models.user import User, ManagerApprovalStatus
+from app.models.user import User, ManagerApprovalStatus, UserRole
 from app.schemas.auth import (
     InvitationPreviewOut,
     InvitationPreviewRequest,
@@ -48,9 +49,28 @@ GENERIC_OTP_MESSAGE = (
 INVALID_INVITATION = "This invitation is invalid or has expired."
 
 
+def user_workspaces(user: User, admin_ids: list[int]) -> list[str]:
+    """Workspaces this account may open, most specific first."""
+    if user.approval_status != ManagerApprovalStatus.APPROVED.value:
+        return []
+    workspaces = ["admin"] if admin_ids else []
+    if user.company_id is not None:
+        if user.role in MANAGER_ROLES:
+            workspaces.append("manager")
+        elif user.role == UserRole.EMPLOYEE.value:
+            workspaces.append("employee")
+        # UserRole.ADMIN: administration-only account, no project workspace.
+    return workspaces
+
+
 def user_out(db: Session, user: User) -> UserOut:
     out = UserOut.model_validate(user)
-    out.administered_company_ids = administered_company_ids(db, user)
+    admin_ids = administered_company_ids(db, user)
+    out.administered_company_ids = admin_ids
+    out.workspaces = user_workspaces(user, admin_ids)
+    # The legacy per-user company_name can be empty; the company row is authoritative.
+    if user.company is not None:
+        out.company_name = user.company.name
     return out
 
 
@@ -163,6 +183,14 @@ def signup(data: UserSignup, request: Request, db: Session = Depends(get_db)):
         # Company Admin must approve the new member.
         approval_status = ManagerApprovalStatus.PENDING.value
     else:
+        # Only the "Create a company" path (role ADMIN, validated by the
+        # schema) gets here: a brand-new company whose creator becomes its
+        # Company Admin. Existing companies are never reachable this way.
+        if data.role != UserRole.ADMIN.value:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Managers and employees join an existing company.",
+            )
         company = Company(
             name=data.company_name.strip(),
             join_code=uuid4().hex[:8].upper(),
@@ -172,12 +200,19 @@ def signup(data: UserSignup, request: Request, db: Session = Depends(get_db)):
         creating_company = True
         approval_status = ManagerApprovalStatus.APPROVED.value
 
+    # The founder is administration-only unless they explicitly asked to
+    # manage projects too. Everyone else gets exactly the role they joined as.
+    if creating_company:
+        account_role = UserRole.MANAGER.value if data.also_manager else UserRole.ADMIN.value
+    else:
+        account_role = data.role
+
     new_user = User(
         email=email,
         phone_number=data.phone_number,
         hashed_password=get_password_hash(data.password),
         full_name=data.full_name,
-        role=data.role,
+        role=account_role,
         company_name=company.name,
         company_id=company.id,
         designation=data.designation,
@@ -226,7 +261,7 @@ def signup(data: UserSignup, request: Request, db: Session = Depends(get_db)):
                 type="COMPANY_JOIN_REQUEST",
                 title="New member awaiting approval",
                 message=f"{new_user.full_name} ({new_user.role.lower()}) asked to join {company.name}.",
-                link="/company",
+                link="/admin",
             ))
 
     db.commit()

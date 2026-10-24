@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
-from app.core.tenancy import require_project_manager, require_task_access, visible_projects_clause
+from app.core.tenancy import is_manager_role, require_project_manager, require_task_access, visible_projects_clause
 from app.models.user import User
 from app.models.project import Project
 from app.models.task import Task, TaskStatus
@@ -37,9 +37,7 @@ def list_work_logs(
     db: Session = Depends(get_db),
 ):
     query = db.query(WorkLog)
-    if current_user.role == "ADMIN":
-        query = query.join(Task, Task.id == WorkLog.task_id)
-    elif current_user.role == "MANAGER":
+    if is_manager_role(current_user):
         # Only entries for projects this manager leads, is assigned to,
         # or administers as Company Admin.
         query = query.join(Task, Task.id == WorkLog.task_id).join(
@@ -87,9 +85,9 @@ def create_work_log(
         )
 
     require_task_access(current_user, task)
-    if current_user.role == "MANAGER":
+    if is_manager_role(current_user):
         require_project_manager(current_user, task.project)
-    elif current_user.role != "ADMIN" and task.assignee_id != current_user.id:
+    elif task.assignee_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only log work for your assigned tasks.",
@@ -98,7 +96,7 @@ def create_work_log(
     if (
         task.assignee_id != current_user.id
         and not (
-            current_user.role in ("MANAGER", "ADMIN")
+            current_user.role == "MANAGER"
             and task.project.manager_id == current_user.id
         )
     ):
@@ -168,9 +166,7 @@ def list_daily_updates(
     db: Session = Depends(get_db),
 ):
     query = db.query(DailyUpdate)
-    if current_user.role == "ADMIN":
-        query = query.join(Task, Task.id == DailyUpdate.task_id)
-    elif current_user.role == "MANAGER":
+    if is_manager_role(current_user):
         # Only entries for projects this manager leads, is assigned to,
         # or administers as Company Admin.
         query = query.join(Task, Task.id == DailyUpdate.task_id).join(

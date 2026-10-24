@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
+import { adminPath } from '../../utils/workspace';
 import { useAuth } from '../../context/AuthContext';
 import { CompanyAdminTransfer } from '../../types';
 import {
@@ -44,7 +45,7 @@ export const IncomingTransfersView: React.FC = () => {
     try {
       await api.acceptCompanyTransfer(transfer.id, passwords[transfer.id] ?? '');
       await refreshUser();
-      navigate(`/company/${transfer.company_id}`, { replace: true });
+      navigate(adminPath(transfer.company_id), { replace: true });
     } catch (err) {
       setError(errorText(err, 'Could not accept the transfer.'));
       setBusyId(null);
@@ -67,6 +68,7 @@ export const IncomingTransfersView: React.FC = () => {
   return (
     <div className="space-y-7">
       <PageHeader
+        eyebrow="Company administration"
         title="Company Admin requests"
         description="Accepting makes you the designated Company Admin of that company and removes the role from the current admin."
       />

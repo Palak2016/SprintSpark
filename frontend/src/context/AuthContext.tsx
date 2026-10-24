@@ -7,15 +7,22 @@ import React, {
 } from 'react';
 
 import { User } from '../types';
-import { api } from '../services/api';
+import { api, SESSION_EXPIRED_EVENT } from '../services/api';
+import {
+  Workspace,
+  allowedWorkspaces,
+  canOpenWorkspace,
+  homePath as resolveHomePath,
+} from '../utils/workspace';
 
 interface SignupData {
   full_name: string;
   email: string;
   phone_number?: string;
   password: string;
-  role: 'EMPLOYEE' | 'MANAGER';
+  role: 'ADMIN' | 'EMPLOYEE' | 'MANAGER';
   otp_code: string;
+  also_manager?: boolean;
   company_name?: string;
   company_code?: string;
   invitation_token?: string;
@@ -39,6 +46,11 @@ interface AuthContextType {
   /** UI hint: the user is the designated Company Admin of >= 1 company.
    * The backend enforces Company Admin authorization on every request. */
   isCompanyAdmin: boolean;
+  /** Server-computed workspaces this account may open (empty if unapproved). */
+  workspaces: Workspace[];
+  canOpen: (workspace: Workspace) => boolean;
+  /** Where this user belongs right now (login, pending page or a workspace). */
+  homePath: string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -96,6 +108,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => {
       isMounted = false;
     };
+  }, []);
+
+  // The API client reports a rejected session (expired or revoked token).
+  useEffect(() => {
+    const onExpired = () => {
+      setToken(null);
+      setUser(null);
+      setError('Your session has expired. Please sign in again.');
+    };
+    window.addEventListener(SESSION_EXPIRED_EVENT, onExpired);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired);
   }, []);
 
   // Sign in an existing user.
@@ -168,10 +191,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     user?.role === 'MANAGER' || user?.role === 'ADMIN';
 
   const isEmployee = user?.role === 'EMPLOYEE';
+  // Legacy platform role; it now acts as a manager inside its own company
+  // and grants no company administration (that comes from company_admins).
   const isAdmin = user?.role === 'ADMIN';
   const isApproved = user?.approval_status === 'APPROVED';
-  const isCompanyAdmin =
-    isApproved && (user?.administered_company_ids?.length ?? 0) > 0;
+  const isCompanyAdmin = canOpenWorkspace(user, 'admin');
+  const workspaces = allowedWorkspaces(user);
+  const canOpen = (workspace: Workspace) => canOpenWorkspace(user, workspace);
+  const homePath = resolveHomePath(user);
 
   return (
     <AuthContext.Provider
@@ -189,6 +216,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         isAdmin,
         isApproved,
         isCompanyAdmin,
+        workspaces,
+        canOpen,
+        homePath,
       }}
     >
       {children}

@@ -44,6 +44,37 @@ class MemberDecision(_Strict):
     notes: Optional[str] = Field(default=None, max_length=1000)
 
 
+class MemberDesignationUpdate(_Strict):
+    """Job title only; it grants nothing. Empty clears it."""
+
+    designation: Optional[str] = Field(default=None, max_length=255)
+
+    @field_validator("designation", mode="before")
+    @classmethod
+    def clean_designation(cls, value):
+        if isinstance(value, str):
+            value = " ".join(value.split())
+            if not value:
+                return None
+            if len(value) < 2:
+                raise ValueError("Designation must be at least 2 characters.")
+        return value
+
+
+class MemberRoleUpdate(_Strict):
+    """Project role (permissions), kept separate from the designation.
+
+    ADMIN = administration-only (no project workspace); only the Company
+    Admin's own account may use it.
+    """
+
+    role: Literal["MANAGER", "EMPLOYEE", "ADMIN"]
+
+
+class MemberStatusChange(_Strict):
+    notes: Optional[str] = Field(default=None, max_length=1000)
+
+
 class InvitationCreate(_Strict):
     email: EmailStr
     intended_role: Literal["MANAGER", "EMPLOYEE"]

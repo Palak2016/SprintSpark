@@ -20,10 +20,13 @@ import { formatIndianDateTime } from '../../utils/date';
 
 interface TopbarProps {
   onToggleMobileSidebar: () => void;
+  /** Shown instead of the project picker (the Admin console's company picker). */
+  leading?: React.ReactNode;
 }
 
 export const Topbar: React.FC<TopbarProps> = ({
   onToggleMobileSidebar,
+  leading,
 }) => {
   const { logout } = useAuth();
   const { projects, activeProject, setActiveProject } = useProject();
@@ -184,7 +187,8 @@ export const Topbar: React.FC<TopbarProps> = ({
           <Menu className="h-5 w-5" />
         </button>
 
-        {/* Project Selector */}
+        {leading ?? (
+        /* Project Selector */
         <div ref={projectMenuRef} className="relative min-w-0">
           <button
             type="button"
@@ -293,6 +297,7 @@ export const Topbar: React.FC<TopbarProps> = ({
             </div>
           )}
         </div>
+        )}
       </div>
 
       {/* Right: Notifications and logout */}

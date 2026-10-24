@@ -4,6 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useProject } from '../../context/ProjectContext';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
+import { adminPath } from '../../utils/workspace';
 import {
   Task,
   CompanySummary,
@@ -281,13 +282,13 @@ export const ManagerOverview: React.FC = () => {
               company.is_company_admin ? (
                 <>
                   <p className="mt-2 text-xs text-[#B7ADC9]">
-                    Your company portal manages members and signup access.
+                    You are this company's Company Admin. Members, invitations and signup access are managed in the Admin console.
                   </p>
                   <Link
-                    to={`/company/${company.id}`}
+                    to={adminPath(company.id)}
                     className="mt-3 inline-flex items-center gap-2 rounded-lg border border-violet-300/25 bg-violet-400/10 px-3.5 py-2 text-xs font-semibold text-violet-100 transition hover:bg-violet-400/20"
                   >
-                    Open company portal
+                    Open Admin console
                     <ArrowRight className="h-3.5 w-3.5" />
                   </Link>
                 </>

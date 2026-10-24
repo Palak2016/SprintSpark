@@ -3,11 +3,62 @@ import { useParams } from 'react-router-dom';
 import { AlertCircle, LoaderCircle } from 'lucide-react';
 import { formatIndianDateTime } from '../../utils/date';
 
-/** The company being administered, taken from /company/:companyId/... */
+/** The company being administered, taken from /admin/:companyId/... */
 export const useCompanyId = (): number | null => {
   const { companyId } = useParams();
   const parsed = Number(companyId);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+};
+
+/** Readable names for recorded company audit events. */
+export const EVENT_LABELS: Record<string, string> = {
+  COMPANY_CREATED: 'Company created',
+  COMPANY_ADMIN_GRANTED: 'Company Admin assigned',
+  COMPANY_ADMIN_TRANSFER_REQUESTED: 'Admin transfer requested',
+  COMPANY_ADMIN_TRANSFERRED: 'Admin role transferred',
+  COMPANY_ADMIN_TRANSFER_DECLINED: 'Admin transfer declined',
+  COMPANY_ADMIN_TRANSFER_CANCELLED: 'Admin transfer cancelled',
+  JOIN_CODE_ROTATED: 'Signup code regenerated',
+  MEMBER_JOIN_REQUESTED: 'Member asked to join',
+  MEMBER_APPROVED: 'Member approved',
+  MEMBER_REJECTED: 'Member rejected',
+  INVITATION_CREATED: 'Invitation sent',
+  INVITATION_REVOKED: 'Invitation revoked',
+  INVITATION_ACCEPTED: 'Invitation accepted',
+  MEMBER_DESIGNATION_CHANGED: 'Designation changed',
+  MEMBER_ROLE_CHANGED: 'Project access changed',
+  MEMBER_DEACTIVATED: 'Account deactivated',
+  MEMBER_REACTIVATED: 'Account reactivated',
+};
+
+export const eventLabel = (type: string): string => EVENT_LABELS[type] ?? type;
+
+const ROLE_WORDS: Record<string, string> = {
+  MANAGER: 'Manager',
+  EMPLOYEE: 'Employee',
+  ADMIN: 'Administration only',
+};
+
+/** "by Alice · Bob · Employee → Manager", built only from what was recorded. */
+export const eventDetail = (
+  event: { actor_id?: number | null; metadata_json: Record<string, unknown> },
+  names: Record<number, string>,
+): string => {
+  const meta = event.metadata_json ?? {};
+  const who = (id: unknown) =>
+    typeof id === 'number' ? names[id] ?? `user #${id}` : null;
+  const word = (value: unknown) =>
+    value === null || value === undefined || value === ''
+      ? '—'
+      : ROLE_WORDS[String(value)] ?? String(value);
+  const parts: string[] = [];
+  const actor = who(event.actor_id);
+  if (actor) parts.push(`by ${actor}`);
+  const target = who(meta.user_id ?? meta.to_user_id);
+  if (target && meta.user_id !== event.actor_id) parts.push(target);
+  if ('from' in meta || 'to' in meta) parts.push(`${word(meta.from)} → ${word(meta.to)}`);
+  if (typeof meta.notes === 'string' && meta.notes) parts.push(`“${meta.notes}”`);
+  return parts.join(' · ');
 };
 
 export const errorText = (error: unknown, fallback: string): string =>
@@ -21,7 +72,7 @@ export const PageHeader: React.FC<{
   title: string;
   description: string;
   actions?: React.ReactNode;
-}> = ({ eyebrow = 'Company workspace', title, description, actions }) => (
+}> = ({ eyebrow = 'Admin console', title, description, actions }) => (
   <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
     <div>
       <span className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-300">
@@ -83,6 +134,8 @@ export const Panel: React.FC<{
 export const StatusPill: React.FC<{ status: string }> = ({ status }) => {
   const tone: Record<string, string> = {
     APPROVED: 'border-emerald-300/25 text-emerald-200',
+    ACTIVE: 'border-emerald-300/25 text-emerald-200',
+    DEACTIVATED: 'border-white/15 text-[#A99DBD]',
     ACCEPTED: 'border-emerald-300/25 text-emerald-200',
     PENDING: 'border-amber-300/25 text-amber-200',
     REJECTED: 'border-rose-300/25 text-rose-200',

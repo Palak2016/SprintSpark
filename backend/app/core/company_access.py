@@ -2,7 +2,9 @@
 
 Company Admin access comes only from an ACTIVE row in ``company_admins`` for
 the specific company. The platform-wide ``users.role`` (MANAGER / ADMIN) is
-never sufficient on its own.
+never sufficient on its own. A grant covers exactly one company, so one
+person may administer several companies through several grants, and every
+company-scoped request is checked against the company in its URL.
 """
 
 import hashlib

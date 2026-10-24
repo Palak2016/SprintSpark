@@ -25,18 +25,24 @@ import {
   X,
   Check,
   ArrowUpRight,
+  ArrowLeftRight,
   ShieldCheck,
 } from 'lucide-react';
 import { Logo } from '../common/Logo';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
+import { WORKSPACE_LABELS, Workspace, workspaceHome } from '../../utils/workspace';
 
 interface SidebarProps {
   collapsed: boolean;
   setCollapsed: (collapsed: boolean) => void;
+  /** Overrides the workspace navigation (used by the Admin console). */
+  navItems?: NavItem[];
+  workspaceLabel?: string;
+  isAdminConsole?: boolean;
 }
 
-interface NavItem {
+export interface NavItem {
   name: string;
   href: string;
   icon: React.ElementType;
@@ -47,8 +53,11 @@ interface NavItem {
 export const Sidebar: React.FC<SidebarProps> = ({
   collapsed,
   setCollapsed,
+  navItems: customNavItems,
+  workspaceLabel,
+  isAdminConsole = false,
 }) => {
-  const { user, isManager, isAdmin, isCompanyAdmin, logout } = useAuth();
+  const { user, isManager, logout, canOpen, workspaces } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const accountMenuRef = useRef<HTMLDivElement>(null);
@@ -138,7 +147,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { name: 'Daily Updates', href: '/manager/daily-updates', icon: Send },
     { name: 'Work Logs', href: '/manager/work-logs', icon: Clock },
     { name: 'Team & Capacity', href: '/manager/team', icon: Users },
-    { name: 'Company Portal', href: '/company', icon: Building2 },
     { name: 'Leave Requests', href: '/manager/leave', icon: CalendarDays },
     {
       name: 'Recovery Plans',
@@ -159,13 +167,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { name: 'Focus Guardian', href: '/employee/focus', icon: Eye },
   ];
 
-  // The Company Portal entry is shown only to designated Company Admins
-  // (the backend enforces this regardless of what the UI shows).
-  const companyPortalItem: NavItem = {
-    name: 'Company Portal',
-    href: '/company',
-    icon: Building2,
-  };
   const transferItem: NavItem = {
     name: 'Admin Transfer',
     href: '/company-transfer',
@@ -173,16 +174,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
     highlight: true,
     badge: String(incomingTransfers),
   };
+  // Only the workspace the server granted: an administration-only account
+  // gets no Manager/Employee links here.
+  const workspaceNav = customNavItems
+    ?? (canOpen('manager') ? managerNav : canOpen('employee') ? employeeNav : []);
   const navItems = [
     ...(incomingTransfers > 0 ? [transferItem] : []),
-    ...(isManager ? managerNav : [...employeeNav, companyPortalItem]),
-  ].filter((item) => item.href !== '/company' || isCompanyAdmin);
+    ...workspaceNav,
+  ];
 
-  const accountSettingsPath = isManager
+  // Other workspaces this account may open (server-decided).
+  const currentWorkspace: Workspace = isAdminConsole
+    ? 'admin'
+    : isManager
+      ? 'manager'
+      : 'employee';
+  const switchTargets = workspaces.filter((w) => w !== currentWorkspace);
+
+  const accountSettingsPath = canOpen('manager')
     ? '/manager/settings'
-    : '/employee/settings';
+    : canOpen('employee')
+      ? '/employee/settings'
+      : '/profile';
 
-  const quickstartLinks = isManager
+  const quickstartLinks = isAdminConsole
+    ? workspaceNav.slice(0, 3).map((item) => ({ label: `Open ${item.name}`, path: item.href }))
+    : isManager
     ? [
         { label: 'Review your overview', path: '/manager' },
         { label: 'Manage projects', path: '/manager/projects' },
@@ -267,11 +284,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
             <span className="inline-flex w-fit max-w-full items-center gap-1.5 rounded-full border border-violet-400/20 bg-violet-500/10 px-2.5 py-1 text-[11px] font-medium text-violet-200">
               <span className="h-1.5 w-1.5 rounded-full bg-violet-400" />
-              {isAdmin
-                ? 'Admin Portal'
-                : isManager
-                  ? 'Manager Portal'
-                  : 'Contributor Workspace'}
+              {workspaceLabel ?? (isManager ? 'Manager workspace' : 'My workspace')}
             </span>
           </div>
         </div>
@@ -333,6 +346,37 @@ export const Sidebar: React.FC<SidebarProps> = ({
             )}
           </NavLink>
         ))}
+
+        {/* Switch between the workspaces this account was granted (for
+            example Admin console + Manager). The backend enforces each. */}
+        {switchTargets.length > 0 && (
+          <div className="mt-5 border-t border-white/[0.07] pt-4">
+            {!collapsed && (
+              <p className="mb-3 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#76698D]">
+                Switch workspace
+              </p>
+            )}
+            {switchTargets.map((target) => {
+              const Icon = target === 'admin' ? Building2 : ArrowLeftRight;
+              return (
+                <NavLink
+                  key={target}
+                  to={workspaceHome(target)}
+                  title={collapsed ? WORKSPACE_LABELS[target] : undefined}
+                  className="group mb-1 flex items-center gap-3 rounded-xl border border-violet-400/15 bg-violet-500/[0.06] px-3 py-2.5 text-sm font-medium text-violet-100 transition-all hover:border-violet-400/30 hover:bg-violet-500/[0.12] hover:text-white"
+                >
+                  <Icon className="h-5 w-5 shrink-0 text-violet-300" />
+                  {!collapsed && (
+                    <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
+                      <span className="truncate">{WORKSPACE_LABELS[target]}</span>
+                      <ArrowUpRight className="h-4 w-4 text-violet-300/70" />
+                    </span>
+                  )}
+                </NavLink>
+              );
+            })}
+          </div>
+        )}
       </nav>
 
       {/* Account Section */}
@@ -368,11 +412,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   {user?.email}
                 </p>
                 <p className="mt-1 text-[10px] font-medium uppercase tracking-wider text-violet-300">
-                  {isAdmin
-                    ? 'Administrator'
-                    : isManager
-                      ? 'Manager'
-                      : 'Employee'}
+                  {[
+                    canOpen('admin') && 'Company Admin',
+                    canOpen('manager') && 'Manager',
+                    canOpen('employee') && 'Employee',
+                  ]
+                    .filter(Boolean)
+                    .join(' · ') || 'No workspace'}
                 </p>
               </div>
             </div>

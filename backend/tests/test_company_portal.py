@@ -199,13 +199,14 @@ def test_database_allows_only_one_active_admin_per_company(db_session, world):
     ("company_role", "ADMIN"),
     ("approval_status", "APPROVED"),
     ("administered_company_ids", [1]),
-    ("role", "ADMIN"),
+    ("role", "SUPERUSER"),
+    ("workspaces", ["admin"]),
 ])
 def test_signup_payload_cannot_self_assign_privileges(client, monkeypatch, field, value):
     _mock_email(monkeypatch)
     base = {
         "email": f"sneaky.{uuid.uuid4().hex[:6]}@x.example.com",
-        "role": "MANAGER",
+        "role": "ADMIN",
         "company_name": "Sneaky Co",
         "designation": "Boss",
     }
@@ -220,7 +221,7 @@ def test_signup_payload_cannot_self_assign_privileges(client, monkeypatch, field
 def test_new_company_gets_exactly_one_admin_in_creation_transaction(client, monkeypatch, db_session):
     _mock_email(monkeypatch)
     email = f"founder.{uuid.uuid4().hex[:6]}@new.example.com"
-    details = {"email": email, "role": "MANAGER", "company_name": "Brand New Co", "designation": "Founder"}
+    details = {"email": email, "role": "ADMIN", "company_name": "Brand New Co", "designation": "Founder"}
     assert client.post("/api/v1/auth/signup/send-otp", json=details).status_code == 202
     created = client.post("/api/v1/auth/signup", json={
         **details, "full_name": "Founder", "password": PASSWORD, "otp_code": "123456",

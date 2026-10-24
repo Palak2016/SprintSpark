@@ -7,7 +7,7 @@ from app.core.database import get_db
 from app.core.dependencies import get_current_user, require_manager
 from app.core.tenancy import require_company_manager
 from app.core.demo_data import DEMO_USER_EMAILS
-from app.models.user import User, UserRole
+from app.models.user import ManagerApprovalStatus, User, UserRole
 from app.models.leave import LeaveRequest, LeaveStatus
 from app.models.task import Task, TaskStatus
 from app.models.project import Project
@@ -26,9 +26,7 @@ def list_leave_requests(
     db: Session = Depends(get_db)
 ):
     query = db.query(LeaveRequest)
-    if current_user.role == UserRole.ADMIN.value:
-        query = query.join(User, User.id == LeaveRequest.user_id)
-    elif current_user.role == UserRole.MANAGER.value:
+    if current_user.role == UserRole.MANAGER.value:
         query = query.join(User, User.id == LeaveRequest.user_id)
         if current_user.company_id is None:
             query = query.filter(false())
@@ -69,7 +67,8 @@ def submit_leave_request(
     # Notify managers of the requester's own company only.
     managers = [] if current_user.company_id is None else db.query(User).filter(
         User.company_id == current_user.company_id,
-        User.role.in_([UserRole.MANAGER.value, UserRole.ADMIN.value]),
+        User.role == UserRole.MANAGER.value,
+        User.approval_status == ManagerApprovalStatus.APPROVED.value,
     ).all()
     for mgr in managers:
         notif = Notification(
@@ -108,10 +107,9 @@ def review_leave_request(
         Task.due_date >= leave.start_date,
         Task.start_date <= leave.end_date
     )
-    if current_user.role != UserRole.ADMIN.value:
-        affected_tasks_query = affected_tasks_query.filter(
-            Project.company_id == current_user.company_id
-        )
+    affected_tasks_query = affected_tasks_query.filter(
+        Project.company_id == current_user.company_id
+    )
     affected_tasks = affected_tasks_query.all()
 
     # Notify requester
@@ -152,10 +150,9 @@ def get_team_availability(
 ):
     """Calculates team workload, active allocations, and approved absences."""
     users_query = db.query(User).filter(~User.email.in_(DEMO_USER_EMAILS))
-    if current_user.role != UserRole.ADMIN.value:
-        if current_user.company_id is None:
-            return []
-        users_query = users_query.filter(User.company_id == current_user.company_id)
+    if current_user.company_id is None:
+        return []
+    users_query = users_query.filter(User.company_id == current_user.company_id)
     users = users_query.all()
     today = date.today()
 
@@ -166,10 +163,9 @@ def get_team_availability(
             Task.assignee_id == u.id,
             Task.status != TaskStatus.COMPLETED.value
         )
-        if current_user.role != UserRole.ADMIN.value:
-            active_tasks_query = active_tasks_query.filter(
-                Project.company_id == current_user.company_id
-            )
+        active_tasks_query = active_tasks_query.filter(
+            Project.company_id == current_user.company_id
+        )
         active_tasks = active_tasks_query.all()
 
         total_rem_hours = sum(t.estimated_hours * (1.0 - t.progress_pct / 100.0) for t in active_tasks)

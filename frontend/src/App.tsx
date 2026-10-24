@@ -11,7 +11,8 @@ import { PendingApproval } from './pages/PendingApproval';
 
 // Layout
 import { DashboardLayout } from './components/dashboard/DashboardLayout';
-import { CompanyLayout } from './components/company/CompanyLayout';
+import { AdminLayout } from './components/admin/AdminLayout';
+import { Workspace } from './utils/workspace';
 
 // Manager Views
 import { ManagerOverview } from './pages/manager/ManagerOverview';
@@ -23,10 +24,12 @@ import { RiskIntelligenceView } from './pages/manager/RiskIntelligenceView';
 import { RecoveryPlansView } from './pages/manager/RecoveryPlansView';
 import { AuditHistoryView } from './pages/manager/AuditHistoryView';
 import { SettingsView } from './pages/manager/SettingsView';
-import { CompanyPortalView } from './pages/manager/CompanyPortalView';
 
-// Company Portal Views (designated Company Admin only)
-import { CompanyIndexRedirect } from './pages/company/CompanyIndexRedirect';
+// Admin console (designated Company Admins only)
+import { AdminIndexRedirect, LegacyCompanyRedirect } from './pages/admin/AdminIndexRedirect';
+import { AdminOverview } from './pages/admin/AdminOverview';
+import { AdminMembersView } from './pages/admin/AdminMembersView';
+import { AdminSettingsView } from './pages/admin/AdminSettingsView';
 import { CompanyApprovalsView } from './pages/company/CompanyApprovalsView';
 import { CompanyInvitationsView } from './pages/company/CompanyInvitationsView';
 import { CompanyAnalyticsView } from './pages/company/CompanyAnalyticsView';
@@ -44,22 +47,16 @@ import { FocusGuardianView } from './pages/employee/FocusGuardianView';
 import { ProfileSettingsView } from './pages/employee/ProfileSettingsView';
 import { AccountSettingsView } from './pages/employee/AccountSettingsView';
 
-// Role Guard Component
-// UI routing only: every API endpoint enforces the same rules server-side.
+// Route guard. UI routing only: every API endpoint enforces the same rules
+// server-side. Workspace access comes from the server's /auth/me answer.
 const ProtectedRoute: React.FC<{
   children: React.ReactElement;
-  requiredRole?: 'MANAGER' | 'EMPLOYEE' | 'ADMIN';
-  /** Only the designated Company Admin of at least one company. */
-  requireCompanyAdmin?: boolean;
+  /** Workspace this route belongs to; omitted = any approved user. */
+  workspace?: Workspace;
   /** Allow signed-in users whose membership is not approved yet. */
   allowUnapproved?: boolean;
-}> = ({
-  children,
-  requiredRole,
-  requireCompanyAdmin,
-  allowUnapproved,
-}) => {
-  const { user, isLoading, isManager, isAdmin, isApproved, isCompanyAdmin } = useAuth();
+}> = ({ children, workspace, allowUnapproved }) => {
+  const { user, isLoading, isApproved, canOpen, workspaces, homePath } = useAuth();
 
   if (isLoading) {
     return (
@@ -77,16 +74,11 @@ const ProtectedRoute: React.FC<{
     return <Navigate to="/pending-approval" replace />;
   }
 
-  if (requireCompanyAdmin && !isCompanyAdmin) {
-    return <Navigate to={isManager ? '/manager' : '/employee'} replace />;
-  }
-
-  if (requiredRole === 'MANAGER' && !isManager) {
-    return <Navigate to="/employee" replace />;
-  }
-
-  if (requiredRole === 'ADMIN' && !isAdmin) {
-    return <Navigate to="/employee" replace />;
+  if (workspace && !canOpen(workspace)) {
+    // Prefer the user's own project workspace, so a manager or employee link
+    // (e.g. from a notification) never bounces into the Admin console.
+    const ownWorkspace = workspaces.find((w) => w !== 'admin');
+    return <Navigate to={ownWorkspace ? `/${ownWorkspace}` : homePath} replace />;
   }
 
   return children;
@@ -115,14 +107,14 @@ export const App: React.FC = () => {
             <Route
               path="/manager"
               element={
-                <ProtectedRoute requiredRole="MANAGER">
+                <ProtectedRoute workspace="manager">
                   <DashboardLayout />
                 </ProtectedRoute>
               }
             >
               <Route index element={<ManagerOverview />} />
-              {/* Legacy path: Company Portal now lives at /company */}
-              <Route path="company" element={<Navigate to="/company" replace />} />
+              {/* Legacy path: company administration lives in the Admin console */}
+              <Route path="company" element={<Navigate to="/admin" replace />} />
               <Route path="projects" element={<ProjectsView />} />
               <Route path="tasks" element={<TasksView />} />
               <Route path="my-tasks" element={<MyTasksView />} />
@@ -136,24 +128,34 @@ export const App: React.FC = () => {
               <Route path="settings" element={<SettingsView />} />
             </Route>
 
-            {/* Company Portal: designated Company Admins only. MANAGER or
-                ADMIN role alone does not open it. */}
+            {/* Admin console: designated Company Admins only. The MANAGER or
+                ADMIN role alone does not open it, and each company in the URL
+                is checked again by AdminLayout and by every API call. */}
             <Route
-              path="/company"
+              path="/admin"
               element={
-                <ProtectedRoute requireCompanyAdmin>
-                  <CompanyLayout />
+                <ProtectedRoute workspace="admin">
+                  <AdminLayout />
                 </ProtectedRoute>
               }
             >
-              <Route index element={<CompanyIndexRedirect />} />
-              <Route path=":companyId" element={<CompanyPortalView />} />
+              <Route index element={<AdminIndexRedirect />} />
+              <Route path=":companyId" element={<Navigate to="overview" replace />} />
+              <Route path=":companyId/overview" element={<AdminOverview />} />
+              <Route path=":companyId/members" element={<AdminMembersView />} />
               <Route path=":companyId/approvals" element={<CompanyApprovalsView />} />
               <Route path=":companyId/invitations" element={<CompanyInvitationsView />} />
               <Route path=":companyId/analytics" element={<CompanyAnalyticsView />} />
-              <Route path=":companyId/ownership" element={<CompanyOwnershipView />} />
               <Route path=":companyId/activity" element={<CompanyActivityView />} />
+              <Route path=":companyId/ownership" element={<CompanyOwnershipView />} />
+              <Route path=":companyId/settings" element={<AdminSettingsView />} />
+              <Route path=":companyId/*" element={<Navigate to="overview" replace />} />
             </Route>
+
+            {/* Old Company Portal links */}
+            <Route path="/company" element={<Navigate to="/admin" replace />} />
+            <Route path="/company/:companyId" element={<LegacyCompanyRedirect />} />
+            <Route path="/company/:companyId/:section" element={<LegacyCompanyRedirect />} />
 
             {/* Accept / decline an incoming Company Admin transfer */}
             <Route
@@ -171,7 +173,7 @@ export const App: React.FC = () => {
             <Route
               path="/employee"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute workspace="employee">
                   <DashboardLayout />
                 </ProtectedRoute>
               }

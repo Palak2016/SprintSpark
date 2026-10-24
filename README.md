@@ -172,7 +172,12 @@ The manager reviews the proposed changes before they are applied.
 
 ### 8. Intelligent Dashboards
 
-**Admin/Manager Dashboard**
+**Admin console (Company Admin)**
+- Company summary, membership by role and approval status.
+- Pending approvals, invitations and ownership transfers.
+- Company-wide analytics and recorded administrative activity.
+
+**Manager Dashboard**
 - Project health overview.
 - Upcoming and overdue deadlines.
 - Team workload and availability.
@@ -445,8 +450,23 @@ These endpoints define the proposed API contract. They should be implemented, va
 
 ## 👥 User Roles
 
-### Admin / Manager
+### Signing up
 
+- **Create a company:** sets up a new company; you become its Company Admin (optionally also a Manager).
+- **Manager / Employee:** join an existing company with its signup code (then wait for approval) or an invitation link.
+- One account and one password for every workspace you are given.
+
+### Company Admin (Admin console)
+
+- One designated admin per company, granted when the company is created or by an accepted ownership transfer.
+- Manages members: job designations, Manager access, and deactivating or reactivating accounts (recorded in the activity log).
+- Works in a separate Admin console (`/admin/{companyId}/...`): overview, members, approvals, invitations, company analytics, activity, ownership transfer and settings (signup code).
+- Sees every project of their own company for reporting; never another company's data.
+- Keeps their own project role: a Company Admin who is also a manager or employee switches to that workspace from the console.
+
+### Manager
+
+- Sees and manages only projects they lead or are assigned to.
 - Create and manage projects.
 - Assign tasks and define deadlines.
 - Manage project membership.

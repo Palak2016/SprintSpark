@@ -3,7 +3,7 @@ import { useOutletContext } from 'react-router-dom';
 import { Check, X } from 'lucide-react';
 import { api } from '../../services/api';
 import { CompanyMember } from '../../types';
-import { CompanyPortalContext } from '../../components/company/CompanyLayout';
+import { AdminConsoleContext } from '../../components/admin/AdminLayout';
 import {
   ErrorBanner,
   Loading,
@@ -19,7 +19,7 @@ import {
 
 export const CompanyApprovalsView: React.FC = () => {
   const companyId = useCompanyId();
-  const { refreshCompanies } = useOutletContext<CompanyPortalContext>();
+  const { refreshCompanies } = useOutletContext<AdminConsoleContext>();
   const [members, setMembers] = useState<CompanyMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

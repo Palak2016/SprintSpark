@@ -5,14 +5,27 @@ from app.core.database import Base
 
 
 class UserRole(str, enum.Enum):
+    """Project role of an account inside its company.
+
+    MANAGER and EMPLOYEE open the Manager / Employee workspace. ADMIN means an
+    administration-only account (for example a company founder who does not
+    manage projects): it has no project workspace and grants nothing by
+    itself. Company administration always comes from ``company_admins``.
+    """
+
     MANAGER = "MANAGER"
     EMPLOYEE = "EMPLOYEE"
     ADMIN = "ADMIN"
 
+
 class ManagerApprovalStatus(str, enum.Enum):
+    """Account / membership status. Only APPROVED accounts may use the app."""
+
     PENDING = "PENDING"
     APPROVED = "APPROVED"
     REJECTED = "REJECTED"
+    # Switched off by the Company Admin; reversible, keeps all history.
+    DEACTIVATED = "DEACTIVATED"
 
 
 class User(Base):

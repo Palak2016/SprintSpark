@@ -98,7 +98,7 @@ def create_project(
     current_user: User = Depends(require_manager),
     db: Session = Depends(get_db),
 ):
-    if current_user.role != "ADMIN" and current_user.company_id is None:
+    if current_user.company_id is None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Join or create a company before creating projects.",
@@ -292,9 +292,8 @@ def delete_project(
             detail="Project not found",
         )
 
-    # Only the project's manager or an admin can delete it.
-    if current_user.role != "ADMIN":
-        require_project_manager(current_user, project)
+    # Only a manager on this project (or its Company Admin, if a manager) can delete it.
+    require_project_manager(current_user, project)
 
     try:
         # Remove known records linked to this project.
@@ -379,10 +378,7 @@ def add_project_member(
     )
     if (
         assigned_user is None
-        or (
-            current_user.role != "ADMIN"
-            and assigned_user.company_id != current_user.company_id
-        )
+        or assigned_user.company_id != project.company_id
     ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -497,12 +493,11 @@ def list_all_team_users(
     db: Session = Depends(get_db),
 ):
     users_query = db.query(User).filter(~User.email.in_(DEMO_USER_EMAILS))
-    if current_user.role != "ADMIN":
-        if current_user.company_id is None:
-            # Without this guard "company_id == NULL" matched every other
-            # user who has no company.
-            return []
-        users_query = users_query.filter(User.company_id == current_user.company_id)
+    if current_user.company_id is None:
+        # Without this guard "company_id == NULL" matched every other
+        # user who has no company.
+        return []
+    users_query = users_query.filter(User.company_id == current_user.company_id)
     users = users_query.all()
 
     return [

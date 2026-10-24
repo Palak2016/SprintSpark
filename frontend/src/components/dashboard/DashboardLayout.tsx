@@ -1,10 +1,31 @@
 
 import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { Sidebar } from './Sidebar';
+import { NavItem, Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 
-export const DashboardLayout: React.FC = () => {
+/**
+ * Shell shared by every workspace (Manager, Employee and the Admin console),
+ * so they look and theme the same. The Admin console passes its own
+ * navigation, workspace label and header content.
+ */
+export interface DashboardLayoutProps {
+  navItems?: NavItem[];
+  workspaceLabel?: string;
+  /** Replaces the project picker in the top bar. */
+  topbarLeading?: React.ReactNode;
+  outletContext?: unknown;
+  isAdminConsole?: boolean;
+}
+
+export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
+  navItems,
+  workspaceLabel,
+  topbarLeading,
+  outletContext,
+  isAdminConsole = false,
+}) => {
+  const sidebarProps = { navItems, workspaceLabel, isAdminConsole };
   const [collapsed, setCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
@@ -19,6 +40,7 @@ export const DashboardLayout: React.FC = () => {
         <Sidebar
           collapsed={collapsed}
           setCollapsed={setCollapsed}
+          {...sidebarProps}
         />
       </aside>
 
@@ -36,6 +58,7 @@ export const DashboardLayout: React.FC = () => {
             <Sidebar
               collapsed={false}
               setCollapsed={() => setMobileSidebarOpen(false)}
+              {...sidebarProps}
             />
           </aside>
         </div>
@@ -51,6 +74,7 @@ export const DashboardLayout: React.FC = () => {
           onToggleMobileSidebar={() =>
             setMobileSidebarOpen((previous) => !previous)
           }
+          leading={topbarLeading}
         />
 
         
@@ -62,7 +86,7 @@ export const DashboardLayout: React.FC = () => {
 
   <div className="relative z-10 mx-auto w-full max-w-[1600px] text-[#FAF8FF]">
     <div className="[&_h1]:text-[#FAF8FF] [&_h2]:text-[#FAF8FF] [&_h3]:text-[#FAF8FF] [&_p]:text-[#B7ADC9] [&_label]:text-[#B7ADC9]">
-      <Outlet />
+      <Outlet context={outletContext} />
     </div>
   </div>
 </main>

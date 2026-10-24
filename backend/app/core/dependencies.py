@@ -23,11 +23,10 @@ def get_current_user(
     if user.approval_status != ManagerApprovalStatus.APPROVED.value:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=(
-                "Your account is awaiting approval by your company administrator."
-                if user.approval_status == ManagerApprovalStatus.PENDING.value
-                else "Your company administrator has not approved this account."
-            ),
+            detail={
+                ManagerApprovalStatus.PENDING.value: "Your account is awaiting approval by your company administrator.",
+                ManagerApprovalStatus.DEACTIVATED.value: "Your account has been deactivated by your company administrator.",
+            }.get(user.approval_status, "Your company administrator has not approved this account."),
         )
     return user
 
@@ -67,7 +66,7 @@ def get_authenticated_user(
 def require_manager(
     current_user: User = Depends(get_current_user)
 ) -> User:
-    if current_user.role not in [UserRole.MANAGER.value, UserRole.ADMIN.value]:
+    if current_user.role != UserRole.MANAGER.value:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access forbidden: Manager privileges required"

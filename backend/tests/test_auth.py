@@ -68,7 +68,8 @@ def test_manager_signup_uses_email_otp_and_needs_no_phone(client, monkeypatch, d
     email = "new.manager@example.com"
     send_response = client.post("/api/v1/auth/signup/send-otp", json={
         "email": email,
-        "role": "MANAGER",
+        "role": "ADMIN",
+        "also_manager": True,
         "company_name": "Example Corporation",
         "designation": "Engineering Team Lead",
     })
@@ -83,7 +84,8 @@ def test_manager_signup_uses_email_otp_and_needs_no_phone(client, monkeypatch, d
         "full_name": "New Manager",
         "email": email,
         "password": "Password123!",
-        "role": "MANAGER",
+        "role": "ADMIN",
+        "also_manager": True,
         "otp_code": "123456",
         "company_name": "Example Corporation",
         "designation": "Engineering Team Lead",
@@ -184,7 +186,8 @@ def test_company_manager_signup_returns_join_code(client, monkeypatch):
     _mock_email_otp(monkeypatch)
     email = "company.owner@example.com"
     company_data = {
-        "role": "MANAGER",
+        "role": "ADMIN",
+        "also_manager": True,
         "company_name": "Signup Company",
         "designation": "Company Manager",
     }

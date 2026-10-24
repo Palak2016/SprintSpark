@@ -31,6 +31,9 @@ import {
 
 const API_BASE = '/api/v1';
 
+/** Fired on `window` when the server rejects the stored session (401). */
+export const SESSION_EXPIRED_EVENT = 'workpilot:session-expired';
+
 /** Error thrown for non-2xx responses; keeps the HTTP status and any
  * structured `detail` the backend returned (e.g. 409 conflict lists). */
 export class ApiError extends Error {
@@ -78,8 +81,14 @@ class ApiService {
         endpoint !== '/auth/signup' &&
         endpoint !== '/auth/signup/send-otp'
       ) {
+        const hadSession = localStorage.getItem('workpilot_token') !== null;
         localStorage.removeItem('workpilot_token');
         localStorage.removeItem('workpilot_user');
+        // Let the app sign out and show the login page instead of leaving a
+        // half-working screen behind.
+        if (hadSession) {
+          window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT));
+        }
       }
     }
 
@@ -151,12 +160,13 @@ class ApiService {
 
   async sendSignupOtp(
     email: string,
-    role: 'EMPLOYEE' | 'MANAGER',
+    role: 'ADMIN' | 'EMPLOYEE' | 'MANAGER',
     companyDetails?: {
       company_name?: string;
       company_code?: string;
       invitation_token?: string;
       designation?: string;
+      also_manager?: boolean;
     }
   ): Promise<{ message: string }> {
     return this.request('/auth/signup/send-otp', {
@@ -174,7 +184,8 @@ class ApiService {
     email: string;
     phone_number?: string;
     password: string;
-    role: 'EMPLOYEE' | 'MANAGER';
+    role: 'ADMIN' | 'EMPLOYEE' | 'MANAGER';
+    also_manager?: boolean;
     otp_code: string;
     company_name?: string;
     company_code?: string;
@@ -229,6 +240,45 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify(notes ? { notes } : {}),
     });
+  }
+
+  /** Job title only; grants nothing. Empty string clears it. */
+  async updateMemberDesignation(
+    companyId: number,
+    userId: number,
+    designation: string
+  ): Promise<CompanyMember> {
+    return this.request(`/companies/${companyId}/members/${userId}/designation`, {
+      method: 'PATCH',
+      body: JSON.stringify({ designation }),
+    });
+  }
+
+  /** Project permissions. 'ADMIN' = administration-only (own account only). */
+  async updateMemberRole(
+    companyId: number,
+    userId: number,
+    role: 'MANAGER' | 'EMPLOYEE' | 'ADMIN'
+  ): Promise<CompanyMember> {
+    return this.request(`/companies/${companyId}/members/${userId}/role`, {
+      method: 'PUT',
+      body: JSON.stringify({ role }),
+    });
+  }
+
+  async setMemberActive(
+    companyId: number,
+    userId: number,
+    active: boolean,
+    notes?: string
+  ): Promise<CompanyMember> {
+    return this.request(
+      `/companies/${companyId}/members/${userId}/${active ? 'reactivate' : 'deactivate'}`,
+      {
+        method: 'POST',
+        body: JSON.stringify(notes ? { notes } : {}),
+      }
+    );
   }
 
   async listCompanyInvitations(companyId: number): Promise<CompanyInvitation[]> {

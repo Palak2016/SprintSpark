@@ -126,6 +126,11 @@ def _print_review(db, proposals: Dict[int, str]) -> None:
         if admin is not None:
             admin_user = db.query(User).filter(User.id == admin.user_id).first()
             print(f"  Current Company Admin : {admin_user.full_name} <{admin_user.email}>")
+            # The app ignores grants held by accounts that are not approved.
+            if admin_user.company_id != company.id:
+                print("  NOTE                  : this admin belongs to another company (multi-company admin)")
+            if admin_user.approval_status != ManagerApprovalStatus.APPROVED.value:
+                print(f"  WARNING               : this admin is {admin_user.approval_status}; the grant has no effect")
         else:
             print("  Current Company Admin : (none - Company Portal administration disabled)")
         proposed = proposals.get(company.id)

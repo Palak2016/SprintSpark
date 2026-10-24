@@ -6,11 +6,14 @@ import { Logo } from '../components/common/Logo';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { InvitationPreview } from '../types';
+import { homePath } from '../utils/workspace';
+import { SignupRole, buildSignupDetails } from '../utils/signup';
 import {
   AlertCircle,
   ArrowLeft,
   ArrowRight,
   BriefcaseBusiness,
+  Building2,
   CheckCircle2,
   Eye,
   EyeOff,
@@ -21,8 +24,13 @@ import {
   UserRound,
 } from 'lucide-react';
 
-type SignupRole = 'EMPLOYEE' | 'MANAGER';
-type ManagerSignupMode = 'CREATE' | 'JOIN';
+/**
+ * Three separate signup paths:
+ *  - ADMIN:    create a NEW company and become its Company Admin.
+ *  - MANAGER:  join an existing company (signup code or invitation).
+ *  - EMPLOYEE: join an existing company (signup code or invitation).
+ * The backend enforces the same rules; this form only guides the user.
+ */
 
 export const Signup: React.FC = () => {
   const navigate = useNavigate();
@@ -40,11 +48,13 @@ export const Signup: React.FC = () => {
   const [companyName, setCompanyName] = useState('');
   const [companyCode, setCompanyCode] = useState('');
   const [designation, setDesignation] = useState('');
-  const [managerSignupMode, setManagerSignupMode] =
-    useState<ManagerSignupMode>('CREATE');
+  const [alsoManager, setAlsoManager] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState<SignupRole>('EMPLOYEE');
+  // /signup?type=admin opens the "Create a company" path directly.
+  const [role, setRole] = useState<SignupRole>(() =>
+    searchParams.get('type') === 'admin' ? 'ADMIN' : 'EMPLOYEE'
+  );
   const [otpCode, setOtpCode] = useState('');
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -75,25 +85,16 @@ export const Signup: React.FC = () => {
   }, [inviteToken]);
 
   const isInvited = Boolean(invite && inviteToken);
-  const isCreatingCompany =
-    !isInvited && role === 'MANAGER' && managerSignupMode === 'CREATE';
+  const isCreatingCompany = !isInvited && role === 'ADMIN';
 
-  const companySignupDetails = isInvited
-    ? {
-        invitation_token: inviteToken as string,
-        ...(role === 'MANAGER' ? { designation: designation.trim() } : {}),
-      }
-    : role === 'MANAGER'
-      ? managerSignupMode === 'CREATE'
-        ? {
-            company_name: companyName.trim(),
-            designation: designation.trim(),
-          }
-        : {
-            company_code: companyCode.trim().toUpperCase(),
-            designation: designation.trim(),
-          }
-      : { company_code: companyCode.trim().toUpperCase() };
+  const companySignupDetails = buildSignupDetails({
+    role,
+    inviteToken: isInvited ? inviteToken : null,
+    companyName,
+    companyCode,
+    designation,
+    alsoManager,
+  });
 
   // Mirrors the backend: "98765 43210" or "+91-98765-43210" -> "+919876543210".
   // Returns '' when empty and null when the number can't be valid.
@@ -216,25 +217,14 @@ export const Signup: React.FC = () => {
         password,
         role,
         otp_code: otpCode,
-        ...(isInvited
-          ? { invitation_token: inviteToken as string }
-          : isCreatingCompany
-            ? { company_name: companyName.trim() }
-            : { company_code: companyCode.trim().toUpperCase() }),
-        ...(role === 'MANAGER'
-          ? { designation: designation.trim() }
-          : {}),
+        ...companySignupDetails,
       });
 
       // People who joined with a company code wait for their Company
       // Admin's approval before they can use their workspace.
-      if (createdUser.approval_status !== 'APPROVED') {
-        navigate('/pending-approval', { replace: true });
-      } else if (role === 'MANAGER') {
-        navigate('/manager', { replace: true });
-      } else {
-        navigate('/employee', { replace: true });
-      }
+      // Company creators are its Company Admin and land in the Admin console;
+      // everyone else goes to their workspace or waits for approval.
+      navigate(homePath(createdUser), { replace: true });
     } catch (err) {
       setErrorMessage(
         err instanceof Error
@@ -254,16 +244,22 @@ export const Signup: React.FC = () => {
 
   const roleOptions = [
     {
-      value: 'EMPLOYEE' as const,
-      label: 'Employee',
-      description: 'Manage your tasks and daily work.',
-      Icon: UserRound,
+      value: 'ADMIN' as const,
+      label: 'Create a company',
+      description: 'New company. You become its Company Admin.',
+      Icon: Building2,
     },
     {
       value: 'MANAGER' as const,
-      label: 'Manager / Team Lead',
-      description: 'Coordinate projects and your team.',
+      label: 'Manager',
+      description: 'Join your company to run projects.',
       Icon: BriefcaseBusiness,
+    },
+    {
+      value: 'EMPLOYEE' as const,
+      label: 'Employee',
+      description: 'Join your company for your daily work.',
+      Icon: UserRound,
     },
   ];
 
@@ -387,10 +383,10 @@ export const Signup: React.FC = () => {
                 {/* Role selection */}
                 <fieldset>
                   <legend className="mb-3 text-xs font-bold uppercase tracking-[0.14em] text-[#BFC3C7]">
-                    Choose your workspace
+                    How are you joining?
                   </legend>
 
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                     {roleOptions.map(
                       ({ value, label, description, Icon }) => {
                         const selected = role === value;
@@ -456,54 +452,28 @@ export const Signup: React.FC = () => {
                   </div>
                 </fieldset>
 
-                {/* Company registration and membership */}
-                {role === 'MANAGER' && (
+                {/* A. Create a company: the creator becomes its Company Admin */}
+                {role === 'ADMIN' && !isInvited && (
                   <motion.div
                     initial={reduceMotion ? false : { opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="space-y-4 rounded-2xl border border-white/[0.1] bg-white/[0.025] p-4"
                   >
-                    <div className="flex items-center gap-2 text-xs font-semibold text-[#D1D3D6]">
-                      <BriefcaseBusiness className="h-4 w-4" />
-                      Company workspace
+                    <div className="flex items-start gap-2 text-xs leading-5 text-[#D1D3D6]">
+                      <Building2 className="mt-0.5 h-4 w-4 shrink-0" />
+                      <span>
+                        This creates a <strong className="text-white">new company</strong> and
+                        makes you its <strong className="text-white">Company Admin</strong>: you
+                        approve members, send invitations and manage access from the Admin
+                        console. To join a company that already uses WorkPilot, choose
+                        Manager or Employee instead.
+                      </span>
                     </div>
 
-                    {!isInvited && (
-                    <div className="grid grid-cols-2 gap-2">
-                      {([
-                        ['CREATE', 'Create company'],
-                        ['JOIN', 'Join company'],
-                      ] as const).map(([mode, label]) => (
-                        <button
-                          key={mode}
-                          type="button"
-                          aria-pressed={managerSignupMode === mode}
-                          onClick={() => {
-                            setManagerSignupMode(mode);
-                            setErrorMessage(null);
-                          }}
-                          className={`rounded-lg border px-3 py-2 text-xs font-semibold transition ${
-                            managerSignupMode === mode
-                              ? 'border-white/40 bg-white/10 text-white'
-                              : 'border-white/10 text-[#AEB4BA] hover:border-white/25'
-                          }`}
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-
-                    )}
-
-                    {isInvited ? null : isCreatingCompany ? (
                     <div>
-                      <label
-                        htmlFor="companyName"
-                        className={labelClass}
-                      >
+                      <label htmlFor="companyName" className={labelClass}>
                         Company name *
                       </label>
-
                       <input
                         id="companyName"
                         type="text"
@@ -515,10 +485,55 @@ export const Signup: React.FC = () => {
                         className={inputClass}
                       />
                     </div>
-                    ) : (
+
+                    <div>
+                      <label htmlFor="designation" className={labelClass}>
+                        Your designation{' '}
+                        <span className="font-normal text-[#92979D]">(optional)</span>
+                      </label>
+                      <input
+                        id="designation"
+                        type="text"
+                        autoComplete="organization-title"
+                        placeholder="Founder, HR Head, ..."
+                        value={designation}
+                        onChange={(e) => setDesignation(e.target.value)}
+                        className={inputClass}
+                      />
+                    </div>
+
+                    <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/[0.08] bg-white/[0.02] p-3 text-xs leading-5 text-[#D1D3D6]">
+                      <input
+                        type="checkbox"
+                        checked={alsoManager}
+                        onChange={(e) => setAlsoManager(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 accent-white"
+                      />
+                      <span>
+                        <span className="block font-semibold text-white">I will also manage projects</span>
+                        Adds Manager access so you can switch between the Admin console
+                        and the Manager workspace. You can change this later in Members.
+                      </span>
+                    </label>
+                  </motion.div>
+                )}
+
+                {/* B. Manager: joins an existing company */}
+                {role === 'MANAGER' && (
+                  <motion.div
+                    initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="space-y-4 rounded-2xl border border-white/[0.1] bg-white/[0.025] p-4"
+                  >
+                    <div className="flex items-center gap-2 text-xs font-semibold text-[#D1D3D6]">
+                      <BriefcaseBusiness className="h-4 w-4" />
+                      Join your company as a manager
+                    </div>
+
+                    {!isInvited && (
                       <div>
                         <label htmlFor="companyCode" className={labelClass}>
-                          Company code *
+                          Company signup code *
                         </label>
                         <input
                           id="companyCode"
@@ -530,17 +545,17 @@ export const Signup: React.FC = () => {
                           onChange={(e) => setCompanyCode(e.target.value)}
                           className={inputClass}
                         />
+                        <p className="mt-2 text-[11px] text-[#92979D]">
+                          Ask your Company Admin for the code, or use the invitation link
+                          they sent you. Accounts that join with a code wait for approval.
+                        </p>
                       </div>
                     )}
 
                     <div>
-                      <label
-                        htmlFor="designation"
-                        className={labelClass}
-                      >
+                      <label htmlFor="designation" className={labelClass}>
                         Designation *
                       </label>
-
                       <input
                         id="designation"
                         type="text"
@@ -555,10 +570,11 @@ export const Signup: React.FC = () => {
                   </motion.div>
                 )}
 
+                {/* C. Employee: joins an existing company */}
                 {role === 'EMPLOYEE' && !isInvited && (
                   <div>
                     <label htmlFor="companyCode" className={labelClass}>
-                      Company code *
+                      Company signup code *
                     </label>
                     <input
                       id="companyCode"
@@ -571,8 +587,8 @@ export const Signup: React.FC = () => {
                       className={inputClass}
                     />
                     <p className="mt-2 text-[11px] text-[#92979D]">
-                      Ask your Company Admin for its signup code. You can use
-                      WorkPilot once they approve your account.
+                      Ask your Company Admin for its signup code, or use the invitation
+                      link they sent you. You can use WorkPilot once they approve your account.
                     </p>
                   </div>
                 )}
@@ -598,9 +614,9 @@ export const Signup: React.FC = () => {
                 {/* Email */}
                 <div>
                   <label htmlFor="email" className={labelClass}>
-                    {role === 'MANAGER'
-                      ? 'Official work email *'
-                      : 'Email address *'}
+                    {role === 'EMPLOYEE'
+                      ? 'Email address *'
+                      : 'Official work email *'}
                   </label>
 
                   <div className="relative">
@@ -612,9 +628,9 @@ export const Signup: React.FC = () => {
                       required
                       autoComplete="email"
                       placeholder={
-                        role === 'MANAGER'
-                          ? 'name@company.com'
-                          : 'name@example.com'
+                        role === 'EMPLOYEE'
+                          ? 'name@example.com'
+                          : 'name@company.com'
                       }
                       value={email}
                       readOnly={isInvited}

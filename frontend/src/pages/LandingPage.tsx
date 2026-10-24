@@ -412,8 +412,9 @@ export const LandingPage = () => {
   const [activeTab, setActiveTab] = useState<PreviewTab>('overview');
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const reduceMotion = useReducedMotion();
-  const { user, isManager } = useAuth();
-  const workspacePath = isManager ? '/manager' : '/employee';
+  const { user, homePath } = useAuth();
+  // Server-decided home: Admin console, Manager or Employee workspace.
+  const workspacePath = homePath;
 
   return (
     <main className="landing-page min-h-screen overflow-hidden bg-[#100B1D] text-[#FAF8FF] selection:bg-violet-400/30">

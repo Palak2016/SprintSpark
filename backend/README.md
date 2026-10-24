@@ -97,15 +97,100 @@ employee blocker notes; it does not receive email addresses or leave reasons.
 Run `alembic upgrade head` after pulling: migration `e3f7a1c9b250` adds
 `recovery_proposals.generation_trace` and `proposal_decisions.execution_report`.
 
-## Company Portal administration (multi-company)
+## Roles, workspaces and the Admin console
+
+One account per person, one password. Three separate things decide what it can do:
+
+| Concept | Stored in | Grants |
+|---|---|---|
+| Account status | `users.approval_status`: `PENDING`, `APPROVED`, `REJECTED`, `DEACTIVATED` | Nothing unless `APPROVED` (checked on every request) |
+| Project role | `users.role`: `MANAGER`, `EMPLOYEE`, or `ADMIN` (administration-only, no project workspace) | Manager or Employee workspace, inside the account's own company |
+| Company Admin | ACTIVE row in `company_admins` (one per company) | Admin console and `/api/v1/companies/{id}/...` for that company only |
+| Designation | `users.designation` | Nothing. A job title such as "HR Head" |
+
+Workspaces follow from these (`/auth/me`, `/auth/login` and `/auth/signup`
+return them as `workspaces`, most specific first):
+
+| Account | `workspaces` | Lands on |
+|---|---|---|
+| Company Admin, role `ADMIN` | `["admin"]` | Admin console |
+| Company Admin, role `MANAGER` | `["admin", "manager"]` | Admin console (switch to Manager in the sidebar) |
+| Company Admin, role `EMPLOYEE` | `["admin", "employee"]` | Admin console |
+| Manager | `["manager"]` | `/manager` |
+| Employee | `["employee"]` | `/employee` |
+| Pending, rejected or deactivated | `[]` | Status page |
+| Approved, no admin grant, role `ADMIN` | `[]` | "No workspace available" page |
+
+- `workspaces` is a routing hint only; every endpoint re-checks on the server.
+- `users.role = "ADMIN"` never means company administration and never crosses
+  companies: on its own it grants nothing.
+- Managers see and manage only projects they lead (`projects.manager_id`) or are
+  assigned to (`project_members`); Company Admins see all projects of their own
+  company (see `app/core/tenancy.py`). Manager rights (creating projects,
+  editing tasks, reviewing leave) need `role = MANAGER`.
+- One account belongs to one company. A person can administer several companies
+  (one `company_admins` grant each, checked per company in the URL), but
+  belonging to several companies with different project roles needs separate
+  accounts for now.
+
+## Signup paths
+
+`POST /api/v1/auth/signup/send-otp` then `POST /api/v1/auth/signup`, with
+`role` choosing one of three paths (anything else is rejected with 422):
+
+| Path | `role` | Required | Result |
+|---|---|---|---|
+| Create a company | `ADMIN` | `company_name`; optional `designation`, `also_manager` | New company and an ACTIVE `company_admins` grant for the creator, in one transaction. Role `ADMIN`, or `MANAGER` when `also_manager` is true |
+| Manager | `MANAGER` | `designation` + `company_code` or `invitation_token` | Joins that company; `PENDING` with a code, `APPROVED` with an invitation |
+| Employee | `EMPLOYEE` | `company_code` or `invitation_token` | Same as manager |
+
+- Managers and employees can no longer create companies, and the Admin path
+  cannot join an existing company, so admin rights over an existing company are
+  only ever obtained through an accepted ownership transfer.
+- Unknown fields (`is_admin`, `workspaces`, `approval_status`, ...) are rejected.
+- Frontend: `/signup` (or `/signup?type=admin` to open "Create a company").
+
+## Account lifecycle and member management
+
+Company Admins manage members of their own company from Admin console → Members.
+Every action is recorded in `company_audit_events` with the actor, the affected
+user, the change and the time (shown under Activity).
+
+| Endpoint | Does | Rules |
+|---|---|---|
+| `PATCH /companies/{id}/members/{user_id}/designation` | Set or clear the job title | Grants nothing; 2-255 characters |
+| `PUT /companies/{id}/members/{user_id}/role` | Grant or revoke Manager access (`MANAGER` / `EMPLOYEE`) | `ADMIN` (administration-only) only for the Company Admin's own account; not for deactivated or rejected accounts |
+| `POST /companies/{id}/members/{user_id}/deactivate` | Switch the account off (`DEACTIVATED`) | Not yourself; never a Company Admin (transfer the role first); only active accounts; cancels pending admin transfers to that person |
+| `POST /companies/{id}/members/{user_id}/reactivate` | Switch it back on (`APPROVED`) | Only deactivated accounts |
+
+- All four require the caller to be the active Company Admin of `{id}`, and the
+  member must belong to `{id}` (404 otherwise), so IDs from another company
+  cannot be managed.
+- Deactivation deletes nothing (projects, tasks, logs and history stay). Tokens
+  are stateless JWTs with no refresh tokens; every protected request re-reads
+  the account, so existing and new sessions of a deactivated account get 403
+  immediately. `/auth/me` still answers so the app can show the status page.
+
+**Migration:** none needed. `users.role` and `users.approval_status` are plain
+text columns, so `ADMIN` (administration-only) and `DEACTIVATED` are new values
+only. No existing account used `ADMIN`; existing managers and employees keep
+their access, and no one is promoted.
+
+## Company administration (Admin console)
 
 Each company has exactly one designated **Company Admin**, stored in
 `company_admins` and enforced by a partial unique index. The platform roles
-`MANAGER` and `ADMIN` do **not** grant Company Portal access on their own; every
-`/api/v1/companies/{company_id}/...` endpoint checks for an ACTIVE grant for that
-specific company.
+`MANAGER` and `ADMIN` do **not** grant company administration on their own;
+every `/api/v1/companies/{company_id}/...` endpoint checks for an ACTIVE grant
+for that specific company.
 
-- Creating a company at signup makes the verified creator its Company Admin.
+The Admin console (frontend `/admin/{companyId}/...`) has Overview, Members,
+Approvals, Invitations, Analytics, Activity, Ownership and Settings. Old
+`/company/...` links redirect there.
+
+- Creating a company at signup ("Create a company" path) makes the verified
+  creator its Company Admin (same transaction as the company) and sends them
+  to the Admin console.
 - Joining with a company code creates a `PENDING` account that the company's
   admin must approve. `PENDING`/`REJECTED` users can sign in but cannot use any
   business endpoint.
@@ -132,3 +217,7 @@ python -m scripts.company_admins apply  --assign 1=alice@acme.com   # asks for a
 ```
 
 Rollback: `alembic downgrade f7a4c2d19b61` drops only the four new tables.
+
+The Admin console and workspace changes need no further migration. The review
+command also flags admin grants held by accounts that are not `APPROVED` (the
+app ignores those grants) and admins who belong to another company.

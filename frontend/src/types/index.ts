@@ -13,13 +13,15 @@ export interface User extends UserSimple {
   phone_number?: string;
   company_name?: string;
   designation?: string;
-  approval_status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  approval_status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'DEACTIVATED';
   approval_reviewed_at?: string;
   approval_notes?: string;
   company_id?: number;
   /** Companies this user is the designated Company Admin of (UI hint only;
    * the backend re-checks authorization on every request). */
   administered_company_ids?: number[];
+  /** Server-computed workspaces this account may open, most specific first. */
+  workspaces?: ('admin' | 'manager' | 'employee')[];
 }
 
 /** Company Admin-only portal data (includes the join code and members). */
