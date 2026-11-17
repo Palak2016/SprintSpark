@@ -23,6 +23,9 @@ from app.schemas.task import (
     TaskDependencyOut,
 )
 
+from app.models.risk import RiskTrigger
+from app.services.risk_service import safe_recompute
+
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
 
@@ -241,6 +244,8 @@ def create_task(
     )
 
     db.add(audit)
+    db.flush()
+    safe_recompute(db, new_task.project_id, RiskTrigger.TASK_CHANGE.value, new_task.id, current_user.id)
     db.commit()
     db.refresh(new_task)
 
@@ -458,6 +463,7 @@ def update_task(
             )
         )
 
+    safe_recompute(db, task.project_id, RiskTrigger.TASK_CHANGE.value, task.id, current_user.id)
     db.commit()
     db.refresh(task)
 
@@ -483,7 +489,10 @@ def delete_task(
         )
 
     require_project_manager(current_user, task.project)
+    deleted_project_id = task.project_id
     db.delete(task)
+    db.flush()
+    safe_recompute(db, deleted_project_id, RiskTrigger.TASK_CHANGE.value, None, current_user.id)
     db.commit()
 
     return {"message": "Task deleted successfully"}
@@ -561,6 +570,7 @@ def update_task_progress(
             )
         )
 
+    safe_recompute(db, task.project_id, RiskTrigger.TASK_CHANGE.value, task.id, current_user.id)
     db.commit()
     db.refresh(task)
 
@@ -648,6 +658,7 @@ def report_or_resolve_blocker(
     )
 
     db.add(audit)
+    safe_recompute(db, task.project_id, RiskTrigger.BLOCKER_CHANGE.value, task.id, current_user.id)
     db.commit()
     db.refresh(task)
 
@@ -729,6 +740,8 @@ def add_task_dependency(
     )
 
     db.add(dependency)
+    db.flush()
+    safe_recompute(db, task.project_id, RiskTrigger.DEPENDENCY_CHANGE.value, task.id, current_user.id)
     db.commit()
     db.refresh(dependency)
 
@@ -775,6 +788,7 @@ def remove_task_dependency(
     require_project_manager(current_user, prerequisite.project)
 
     db.delete(dependency)
+    safe_recompute(db, task.project_id, RiskTrigger.DEPENDENCY_CHANGE.value, task.id, current_user.id)
     db.commit()
 
     return {"message": "Dependency removed successfully"}

@@ -56,6 +56,9 @@ def project_analytics(
             "created_at": normalize_utc(a.created_at).isoformat(),
             "score": a.score,
             "risk_level": a.risk_level,
+            "score_delta": a.score_delta,
+            "trigger_type": a.trigger_type,
+            "headline": (a.change_explanation or {}).get("headline"),
         }
         for a in db.query(RiskAnalysis).filter(RiskAnalysis.project_id == project.id).all()
     ]

@@ -29,6 +29,9 @@ from app.models.user import User, UserRole
 from app.core.tenancy import can_access_project, can_manage_project
 from app.services.recovery_validation import stale_fields, validate_plan
 
+from app.models.risk import RiskTrigger
+from app.services.risk_service import safe_recompute
+
 
 def ensure_can_manage_project(user: User, project: Project) -> None:
     if not can_manage_project(user, project):
@@ -280,6 +283,14 @@ def apply_recovery_decision(
         }
     ))
 
+    if applied_changes:
+        safe_recompute(
+            db,
+            proposal.project_id,
+            RiskTrigger.RECOVERY_APPLIED.value,
+            trigger_ref_id=proposal.id,
+            actor_id=decider.id,
+        )
     db.commit()
     db.refresh(decision_record)
     return decision_record

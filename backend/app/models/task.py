@@ -1,6 +1,6 @@
 import enum
 from datetime import date
-from sqlalchemy import Column, Integer, String, Text, Float, Boolean, DateTime, Date, ForeignKey, UniqueConstraint, func
+from sqlalchemy import Column, Integer, String, Text, Float, Boolean, DateTime, Date, ForeignKey, UniqueConstraint, event, func
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
@@ -36,6 +36,9 @@ class Task(Base):
     due_date = Column(Date, nullable=False, index=True)
     is_blocked = Column(Boolean, default=False, nullable=False)
     blocker_reason = Column(Text, nullable=True)
+    # Set automatically whenever is_blocked turns on (see the listener below);
+    # the risk engine ages blockers from this date.
+    blocked_since = Column(Date, nullable=True)
     created_at = Column(DateTime, default=func.now(), nullable=False)
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
 
@@ -75,3 +78,14 @@ class TaskDependency(Base):
     __table_args__ = (
         UniqueConstraint("task_id", "prerequisite_task_id", name="uq_task_prerequisite"),
     )
+
+
+# active_history loads the stored value first, so re-saving a task that is
+# already blocked never resets the date its blocker started.
+@event.listens_for(Task.is_blocked, "set", active_history=True)
+def _track_blocked_since(target, value, oldvalue, _initiator):
+    """Keep blocked_since in step with is_blocked on every code path."""
+    if value and oldvalue is not True:
+        target.blocked_since = date.today()
+    elif not value:
+        target.blocked_since = None

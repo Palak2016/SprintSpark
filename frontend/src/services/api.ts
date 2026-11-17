@@ -7,6 +7,11 @@ import {
   DailyUpdate,
   LeaveRequest,
   RiskAnalysis,
+  RiskHistoryItem,
+  RiskConfig,
+  RiskFactorKey,
+  RiskSuggestion,
+  ExtractedSignal,
   RecoveryProposal,
   ProposalDecision,
   AuditEvent,
@@ -46,6 +51,15 @@ export class ApiError extends Error {
     this.status = status;
     this.detail = detail;
   }
+}
+
+export interface ExportParams {
+  task_id?: number;
+  user_id?: number;
+  /** YYYY-MM-DD */
+  date_from?: string;
+  /** YYYY-MM-DD */
+  date_to?: string;
 }
 
 class ApiService {
@@ -145,6 +159,75 @@ class ApiService {
         'The server returned an invalid response.'
       );
     }
+  }
+
+  // --- File downloads ---
+  /** GET a file with the session token and save it in the browser. A plain
+   * link cannot send the Authorization header, so the response is fetched
+   * and saved from memory. */
+  private async downloadFile(
+    endpoint: string,
+    fallbackName: string
+  ): Promise<void> {
+    const res = await fetch(`${API_BASE}${endpoint}`, {
+      headers: this.getAuthHeader(),
+      cache: 'no-store',
+    });
+
+    if (!res.ok) {
+      let message = 'Download failed. Please try again.';
+      try {
+        const data = await res.json();
+        if (typeof data.detail === 'string') message = data.detail;
+      } catch {
+        // Non-JSON error body: keep the generic message.
+      }
+      if (res.status === 401) {
+        localStorage.removeItem('workpilot_token');
+        localStorage.removeItem('workpilot_user');
+        window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT));
+      }
+      throw new ApiError(message, res.status, null);
+    }
+
+    const disposition = res.headers.get('Content-Disposition') ?? '';
+    const match = /filename="?([^";]+)"?/i.exec(disposition);
+    const filename = match?.[1] ?? fallbackName;
+
+    const url = URL.createObjectURL(await res.blob());
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  private exportQuery(params?: ExportParams): string {
+    const search = new URLSearchParams();
+    if (params?.task_id != null) search.append('task_id', params.task_id.toString());
+    if (params?.user_id != null) search.append('user_id', params.user_id.toString());
+    if (params?.date_from) search.append('date_from', params.date_from);
+    if (params?.date_to) search.append('date_to', params.date_to);
+    const query = search.toString();
+    return query ? `?${query}` : '';
+  }
+
+  /** Excel file of the work logs the user can see (same rules as the list). */
+  async downloadWorkLogs(params?: ExportParams): Promise<void> {
+    return this.downloadFile(
+      `/work-logs/export${this.exportQuery(params)}`,
+      'workpilot-work-logs.xlsx'
+    );
+  }
+
+  /** Excel file of the daily updates the user can see (same rules as the list). */
+  async downloadDailyUpdates(params?: ExportParams): Promise<void> {
+    return this.downloadFile(
+      `/daily-updates/export${this.exportQuery(params)}`,
+      'workpilot-daily-updates.xlsx'
+    );
   }
 
   // --- Authentication ---
@@ -629,7 +712,12 @@ class ApiService {
   async analyzeDailyUpdateProgress(data: {
     task_id: number;
     update_notes: string;
-  }): Promise<{ progress_pct: number; explanation: string; analysis_token: string }> {
+  }): Promise<{
+    progress_pct: number;
+    explanation: string;
+    analysis_token: string;
+    signals?: ExtractedSignal[];
+  }> {
     return this.request('/daily-updates/analyze-progress', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -639,6 +727,7 @@ class ApiService {
   async submitDailyUpdate(data: {
     task_id: number;
     analysis_token: string;
+    rejected_signal_indexes?: number[];
     is_blocked: boolean;
     blocker_notes?: string;
     update_notes?: string;
@@ -732,6 +821,52 @@ class ApiService {
         method: 'POST',
       }
     );
+  }
+
+  async getRiskHistory(
+    projectId: number,
+    limit = 30
+  ): Promise<RiskHistoryItem[]> {
+    return this.request(
+      `/projects/${projectId}/risk-history?limit=${limit}`
+    );
+  }
+
+  async getRiskConfig(projectId: number): Promise<RiskConfig> {
+    return this.request(`/projects/${projectId}/risk-config`);
+  }
+
+  async saveRiskConfig(
+    projectId: number,
+    data: {
+      weights: Record<RiskFactorKey, number>;
+      thresholds?: { medium: number; high: number };
+      notes?: string;
+    }
+  ): Promise<RiskConfig> {
+    return this.request(`/projects/${projectId}/risk-config`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getRiskSuggestions(
+    projectId: number
+  ): Promise<RiskSuggestion[]> {
+    return this.request(
+      `/projects/${projectId}/risk-suggestions`
+    );
+  }
+
+  async reviewRiskSuggestion(
+    suggestionId: number,
+    decision: 'ACCEPT' | 'REJECT',
+    notes?: string
+  ): Promise<RiskSuggestion> {
+    return this.request(`/risk-suggestions/${suggestionId}/review`, {
+      method: 'POST',
+      body: JSON.stringify({ decision, notes }),
+    });
   }
 
   // --- AI Recovery Proposals ---

@@ -15,7 +15,7 @@ from app.models.user import User
 from app.models.project import Project, ProjectMember
 from app.models.task import Task, TaskStatus
 from app.models.focus_context import FocusContext
-from app.models.risk import RiskAnalysis
+from app.models.risk import DailyUpdateSignal, RiskAnalysis, RiskConfig
 from app.models.audit import AuditEvent
 from app.models.notification import Notification
 
@@ -297,6 +297,12 @@ def delete_project(
 
     try:
         # Remove known records linked to this project.
+        db.query(DailyUpdateSignal).filter(
+            DailyUpdateSignal.project_id == project_id
+        ).delete(synchronize_session=False)
+        db.query(RiskConfig).filter(
+            RiskConfig.project_id == project_id
+        ).delete(synchronize_session=False)
         db.query(RiskAnalysis).filter(
             RiskAnalysis.project_id == project_id
         ).delete(synchronize_session=False)

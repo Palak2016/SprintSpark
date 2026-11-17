@@ -236,6 +236,39 @@ export interface TriggeredRule {
   description: string;
   evidence: Record<string, any>;
   affected_task_ids: number[];
+  factor?: RiskFactorKey | null;
+}
+
+export type RiskFactorKey =
+  | 'schedule_variance'
+  | 'delivery_forecast'
+  | 'blockers'
+  | 'dependencies'
+  | 'update_freshness';
+
+export interface RiskFactor {
+  key: RiskFactorKey;
+  label: string;
+  weight: number;
+  value: number;
+  contribution: number;
+  summary: string;
+  details: Record<string, any>;
+  contributors: { task_id: number; task_title: string; detail: string }[];
+}
+
+export interface RiskChange {
+  key: RiskFactorKey;
+  label: string;
+  delta: number;
+  text: string;
+}
+
+export interface RiskChangeExplanation {
+  score_delta?: number | null;
+  headline?: string;
+  changes?: RiskChange[];
+  level_changed?: boolean;
 }
 
 export interface MissingDataFlag {
@@ -253,6 +286,74 @@ export interface RiskAnalysis {
   evidence_json: Record<string, any>;
   missing_data_flags: MissingDataFlag[];
   created_at: string;
+  engine_version?: string | null;
+  config_version?: string | null;
+  as_of_date?: string | null;
+  input_hash?: string | null;
+  factor_breakdown?: RiskFactor[];
+  confidence?: { value?: number; label?: 'HIGH' | 'MEDIUM' | 'LOW' };
+  trigger_type?: string | null;
+  trigger_ref_id?: number | null;
+  previous_analysis_id?: number | null;
+  score_delta?: number | null;
+  change_explanation?: RiskChangeExplanation;
+}
+
+export interface RiskHistoryItem {
+  id: number;
+  risk_level: RiskAnalysis['risk_level'];
+  score: number;
+  score_delta?: number | null;
+  trigger_type?: string | null;
+  trigger_ref_id?: number | null;
+  as_of_date?: string | null;
+  config_version?: string | null;
+  change_explanation?: RiskChangeExplanation;
+  created_at: string;
+}
+
+export type UpdateSignalKind =
+  | 'PLANNED'
+  | 'UNPLANNED_PROJECT'
+  | 'UNPLANNED_OTHER'
+  | 'REWORK'
+  | 'BLOCKER'
+  | 'DEPENDENCY'
+  | 'SCOPE_CHANGE';
+
+export interface ExtractedSignal {
+  index: number;
+  kind: UpdateSignalKind;
+  related_task_id?: number | null;
+  related_task_title?: string | null;
+  effort_share?: number | null;
+  evidence: string;
+}
+
+export interface RiskSuggestion {
+  id: number;
+  project_id: number;
+  task_id: number;
+  task_title: string;
+  related_task_id?: number | null;
+  related_task_title?: string | null;
+  user_id: number;
+  employee_name?: string | null;
+  kind: 'BLOCKER' | 'DEPENDENCY' | 'SCOPE_CHANGE';
+  evidence: string;
+  status: 'PENDING_REVIEW' | 'ACCEPTED' | 'REJECTED' | 'CONFIRMED';
+  update_date: string;
+  created_at: string;
+}
+
+export interface RiskConfig {
+  version: string;
+  scope: 'default' | 'company' | 'project';
+  weights: Record<RiskFactorKey, number>;
+  thresholds: { medium: number; high: number };
+  params: Record<string, number>;
+  notes?: string | null;
+  created_at?: string | null;
 }
 
 export type ProposedActionType =
@@ -506,7 +607,14 @@ export interface ProjectAnalytics {
   risk_history: {
     available: boolean;
     reason: string | null;
-    points: { created_at: string; score: number; risk_level: string }[];
+    points: {
+      created_at: string;
+      score: number;
+      risk_level: string;
+      score_delta?: number | null;
+      trigger_type?: string | null;
+      headline?: string | null;
+    }[];
   };
 }
 

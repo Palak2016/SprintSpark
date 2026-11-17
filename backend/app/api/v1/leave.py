@@ -15,6 +15,9 @@ from app.models.audit import AuditEvent
 from app.models.notification import Notification
 from app.schemas.leave import LeaveRequestCreate, LeaveReviewRequest, LeaveRequestOut
 
+from app.models.risk import RiskTrigger
+from app.services.risk_service import project_ids_for_user, recompute_many
+
 router = APIRouter(tags=["Leave Management & Availability"])
 
 
@@ -138,6 +141,15 @@ def review_leave_request(
             )
             db.add(audit)
 
+    # Availability changed: rescore every project this person works on.
+    db.flush()
+    recompute_many(
+        db,
+        project_ids_for_user(db, leave.user_id),
+        RiskTrigger.LEAVE_CHANGE.value,
+        trigger_ref_id=leave.id,
+        actor_id=current_user.id,
+    )
     db.commit()
     db.refresh(leave)
     return LeaveRequestOut.model_validate(leave)

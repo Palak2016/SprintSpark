@@ -60,7 +60,7 @@ context_collector -> risk_analyzer -> leave_impact -> schedule_analyzer
 
 | Step | What it does | Uses an LLM? |
 | --- | --- | --- |
-| risk_analyzer | Rule-based risk score (`risk_engine.py`) | No |
+| risk_analyzer | Deterministic risk score; reuses the latest history row when nothing changed (`risk_service.py`) | No |
 | schedule_analyzer | Remaining work, capacity, leave, projected completion (`recovery_scheduler.py`) | No |
 | recovery_planner | Asks the model for 2-3 recovery strategies; also builds the rule-based plan as a baseline | **Yes**, when recovery is needed and a key is set |
 | output_validator | Checks every action against project data, re-simulates each strategy, picks one (`recovery_validation.py`) | No |
@@ -104,6 +104,62 @@ progress fallback.
 
 Run `alembic upgrade head` after pulling: migration `e3f7a1c9b250` adds
 `recovery_proposals.generation_trace` and `proposal_decisions.execution_report`.
+
+## Project risk scoring (engine v2)
+
+Risk is scored per project by a deterministic engine
+(`app/services/risk_scoring.py`, pure functions, no database or AI). The same
+project data, scoring config and date always give the same score, and every
+history row stores `input_hash`, `config_version` and `as_of_date` to prove it.
+
+The score (0-100) is the sum of five bounded factors, one per cause, so a fact
+is never charged twice:
+
+| Factor | Default weight | Measures |
+| --- | --- | --- |
+| schedule_variance | 30 | Started work behind its planned progress (hours-weighted). Past approved leave is not expected work; future leave is ignored here. |
+| delivery_forecast | 30 | Whether remaining work fits each assignee's capacity before due dates and the target date. Prerequisites must finish before dependents start, and approved leave and recent focus reduce capacity. Covers overdue, velocity, overload, leave and target-date checks. Assumes blocked work resumes today. |
+| blockers | 20 | The blockage itself: days blocked, urgency and dependents waiting. |
+| dependencies | 10 | Plan errors only: a prerequisite due after the task that needs it. |
+| update_freshness | 10 | Started work with no daily update for 2+ working days (leave days excluded). |
+
+Levels: MEDIUM from 20, HIGH from 50, so one problem at full strength is
+MEDIUM and two together are HIGH. Weights and thresholds are a versioned
+config per project (`GET/PUT /api/v1/projects/{id}/risk-config`, managers
+only; each save adds a version).
+
+**Approved leave** only reduces capacity. It never makes anyone look behind,
+and a leave conflict is reported only when leave is what makes work late.
+
+**Daily updates.** The existing Gemini progress call also returns where the
+effort went (planned work, unplanned project work, other work or rework) and
+any blocker, dependency or new-scope mentions. `progress_estimator.validate_signals`
+keeps only items that quote the update word for word and refer to real tasks
+in the project. The employee sees them before submitting and can remove any.
+Effort items feed the assignee's focus ratio over the last 7 days, which
+reduces forecast capacity. Blocker, dependency and scope items wait for the
+manager (`GET /projects/{id}/risk-suggestions`,
+`POST /risk-suggestions/{id}/review`) and change nothing until accepted.
+
+**Automatic recalculation** happens after daily updates, task create, edit,
+delete and progress, blocker and dependency changes, leave decisions, accepted
+suggestions, applied recovery plans and config changes. A new
+`risk_analyses` row is stored only when the result changes, with
+`score_delta` and a templated `change_explanation`. A project that becomes
+HIGH notifies its manager. Recovery plans are never generated or applied
+automatically.
+
+**Daily job.** Risk also changes as deadlines get closer, so schedule this
+once a day (for example 06:30 in `RISK_TIMEZONE`, default `Asia/Kolkata`):
+
+```bash
+python -m scripts.recalculate_risk
+```
+
+Run `alembic upgrade head` after pulling. Migration `a6e2c8f41d07` adds the
+history columns, `tasks.blocked_since`, `risk_configs` and
+`daily_update_signals`. Existing SQLite databases need it too, because
+`create_all` does not add columns to existing tables.
 
 ## Roles, workspaces and the Admin console
 

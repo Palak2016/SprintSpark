@@ -5,7 +5,7 @@ from app.models.project import Project, ProjectMember, ProjectStatus
 from app.models.task import Task, TaskDependency, TaskPriority, TaskStatus
 from app.models.work_log import WorkLog, DailyUpdate
 from app.models.leave import LeaveRequest, LeaveStatus
-from app.models.risk import RiskAnalysis, RiskLevel
+from app.models.risk import RiskAnalysis, RiskLevel, RiskConfig, DailyUpdateSignal
 from app.models.recovery import RecoveryProposal, ProposalDecision, ProposalStatus
 from app.models.audit import AuditEvent
 from app.models.notification import Notification
@@ -36,6 +36,8 @@ __all__ = [
     "LeaveStatus",
     "RiskAnalysis",
     "RiskLevel",
+    "RiskConfig",
+    "DailyUpdateSignal",
     "RecoveryProposal",
     "ProposalDecision",
     "ProposalStatus",

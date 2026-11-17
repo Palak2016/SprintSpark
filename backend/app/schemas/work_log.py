@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Optional
+from typing import List, Optional
 from pydantic import BaseModel, Field, ConfigDict
 from app.schemas.auth import UserSimple
 from app.schemas.timestamps import UTCDateTime
@@ -28,6 +28,8 @@ class WorkLogOut(BaseModel):
 class DailyUpdateCreate(BaseModel):
     task_id: int
     analysis_token: Optional[str] = None
+    # Indexes of previewed signals the employee removed before submitting.
+    rejected_signal_indexes: List[int] = Field(default_factory=list, max_length=20)
     is_blocked: bool = False
     blocker_notes: Optional[str] = None
     update_notes: str = Field(..., min_length=5, max_length=4000)
@@ -39,10 +41,21 @@ class DailyUpdateProgressAnalysisRequest(BaseModel):
     update_notes: str = Field(..., min_length=5, max_length=4000)
 
 
+class ExtractedSignalOut(BaseModel):
+    """One validated item extracted from the update, shown for review."""
+    index: int
+    kind: str
+    related_task_id: Optional[int] = None
+    related_task_title: Optional[str] = None
+    effort_share: Optional[float] = None
+    evidence: str
+
+
 class DailyUpdateProgressAnalysisOut(BaseModel):
     progress_pct: int = Field(..., ge=0, le=100)
     explanation: str = Field(..., min_length=1, max_length=500)
     analysis_token: str = Field(..., min_length=1)
+    signals: List[ExtractedSignalOut] = []
 
 
 class DailyUpdateOut(BaseModel):

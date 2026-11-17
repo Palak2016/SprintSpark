@@ -6,6 +6,7 @@ import { api } from '../../services/api';
 import { RiskAnalysis, RecoveryProposal } from '../../types';
 import { RiskDetailCard } from '../../components/risk/RiskDetailCard';
 import { RecoveryReviewModal } from '../../components/risk/RecoveryReviewModal';
+import { RiskHistoryPanel, RiskSuggestionsPanel } from '../../components/risk/RiskReviewPanels';
 import {
   AlertTriangle,
   RefreshCw,
@@ -29,6 +30,7 @@ export const RiskIntelligenceView: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [generatedProposal, setGeneratedProposal] =
     useState<RecoveryProposal | null>(null);
+  const [historyKey, setHistoryKey] = useState(0);
 
   const loadRiskData = useCallback(async () => {
     if (!activeProject) {
@@ -42,6 +44,7 @@ export const RiskIntelligenceView: React.FC = () => {
     try {
       const data = await api.getRiskAnalysis(activeProject.id);
       setAnalysis(data);
+      setHistoryKey((key) => key + 1);
     } catch (err) {
       console.error('Failed to load risk analysis:', err);
       setError('Unable to load risk analysis. Please try again.');
@@ -63,6 +66,7 @@ export const RiskIntelligenceView: React.FC = () => {
     try {
       const data = await api.runRiskAnalysis(activeProject.id);
       setAnalysis(data);
+      setHistoryKey((key) => key + 1);
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : 'An unexpected error occurred.';
@@ -188,10 +192,10 @@ export const RiskIntelligenceView: React.FC = () => {
                 Risk Evaluation
               </p>
               <h3 className="mt-2 text-sm font-semibold text-[#FAF8FF]">
-                Rule-Based Analysis
+                Deterministic Scoring
               </h3>
               <p className="mt-1 text-xs leading-5 text-[#A99DBD]">
-                Evaluates project delivery signals and task conditions.
+                Five bounded factors; same data and config give the same score.
               </p>
             </div>
             <div className="rounded-xl bg-violet-500/10 p-2.5">
@@ -326,6 +330,14 @@ export const RiskIntelligenceView: React.FC = () => {
               </div>
             )
           )}
+
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <RiskSuggestionsPanel
+              projectId={activeProject.id}
+              onChanged={() => void loadRiskData()}
+            />
+            <RiskHistoryPanel projectId={activeProject.id} refreshKey={historyKey} />
+          </div>
         </section>
       )}
 
@@ -337,10 +349,11 @@ export const RiskIntelligenceView: React.FC = () => {
             About risk intelligence
           </h3>
           <p className="mt-1 text-xs leading-5 text-[#A99DBD]">
-            Risk results are based on the analysis returned by your backend.
-            Review the contributing factors before deciding on a recovery plan.
-            Re-running the engine refreshes the analysis for the selected
-            project.
+            Risk is recalculated automatically after daily updates, task,
+            dependency, blocker and leave changes, and once a day. AI only
+            reads daily updates; every extracted item quotes the update, and
+            anything that would change project data waits for your approval.
+            Recovery plans are applied only when you approve them.
           </p>
         </div>
       </div>

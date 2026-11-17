@@ -13,6 +13,7 @@ import {
   Timer,
   X,
   LoaderCircle,
+  Download,
 } from 'lucide-react';
 import { Modal } from '../../components/common/Modal';
 import {
@@ -33,6 +34,8 @@ export const WorkLogsView: React.FC = () => {
   const [logDate, setLogDate] = useState(getTodayInIndia());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   function getTodayInIndia(): string {
     const parts = new Intl.DateTimeFormat('en-CA', {
@@ -73,6 +76,24 @@ export const WorkLogsView: React.FC = () => {
       console.error('Failed to load work logs:', err);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDownload = async () => {
+    if (!user || isDownloading) return;
+
+    setIsDownloading(true);
+    setDownloadError(null);
+
+    try {
+      // Same records as the list on this page.
+      await api.downloadWorkLogs(isManager ? undefined : { user_id: user.id });
+    } catch (err) {
+      setDownloadError(
+        err instanceof Error ? err.message : 'Download failed. Please try again.',
+      );
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -156,15 +177,40 @@ export const WorkLogsView: React.FC = () => {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setIsLogModalOpen(true)}
-          disabled={myTasks.length === 0}
-          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-violet-400/30 bg-violet-500/15 px-4 py-3 text-sm font-semibold text-violet-200 transition-all hover:border-violet-300/60 hover:bg-violet-500/25 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <Plus className="h-4 w-4" />
-          Log Work Session
-        </button>
+        <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => void handleDownload()}
+              disabled={isDownloading || logs.length === 0}
+              title={logs.length === 0 ? 'No work logs to download yet' : 'Download as Excel'}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-[#19112B] px-4 py-3 text-sm font-semibold text-[#D5CBE5] transition-all hover:border-violet-300/40 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isDownloading ? (
+                <LoaderCircle className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              {isDownloading ? 'Preparing…' : 'Download Excel'}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsLogModalOpen(true)}
+              disabled={myTasks.length === 0}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-violet-400/30 bg-violet-500/15 px-4 py-3 text-sm font-semibold text-violet-200 transition-all hover:border-violet-300/60 hover:bg-violet-500/25 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Plus className="h-4 w-4" />
+              Log Work Session
+            </button>
+          </div>
+
+          {downloadError && (
+            <p role="alert" className="text-xs text-rose-300">
+              {downloadError}
+            </p>
+          )}
+        </div>
       </section>
 
       {/* Summary Cards */}

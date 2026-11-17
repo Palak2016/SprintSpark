@@ -2,9 +2,10 @@
 from datetime import date
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import Response
 from sqlalchemy import false
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
@@ -16,11 +17,28 @@ from app.models.work_log import WorkLog, DailyUpdate
 from app.models.notification import Notification
 from app.services.llm_client import LLMError
 from app.services.progress_estimator import (
+    PROMPT_VERSION,
     ProgressAnalysisTokenError,
     create_progress_analysis_token,
     estimate_task_progress,
-    verify_progress_analysis_token,
+    verify_progress_analysis_claims,
 )
+from app.models.risk import (
+    DailyUpdateSignal,
+    EFFORT_KINDS,
+    RiskTrigger,
+    SignalKind,
+    SignalStatus,
+)
+from app.models.task import TaskDependency
+from app.services.risk_service import project_today, safe_recompute
+from app.services.excel_export import (
+    XLSX_MEDIA_TYPE,
+    daily_updates_workbook,
+    export_filename,
+    work_logs_workbook,
+)
+from app.core.config import settings
 from app.models.audit import AuditEvent
 from app.schemas.work_log import (
     WorkLogCreate,
@@ -29,18 +47,21 @@ from app.schemas.work_log import (
     DailyUpdateOut,
     DailyUpdateProgressAnalysisRequest,
     DailyUpdateProgressAnalysisOut,
+    ExtractedSignalOut,
 )
 
 router = APIRouter(tags=["Work Logs & Daily Updates"])
 
 
-@router.get("/work-logs", response_model=List[WorkLogOut])
-def list_work_logs(
+def _visible_work_logs(
+    current_user: User,
+    db: Session,
     task_id: Optional[int] = None,
     user_id: Optional[int] = None,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
 ):
+    """Work logs this user may see; shared by the list and the Excel export."""
     query = db.query(WorkLog)
     if is_manager_role(current_user):
         # Only entries for projects this manager leads, is assigned to,
@@ -56,15 +77,104 @@ def list_work_logs(
 
     if user_id:
         query = query.filter(WorkLog.user_id == user_id)
-    logs = query.order_by(
+    if date_from:
+        query = query.filter(WorkLog.log_date >= date_from)
+    if date_to:
+        query = query.filter(WorkLog.log_date <= date_to)
+    return query.order_by(
         WorkLog.log_date.desc(),
         WorkLog.created_at.desc(),
-    ).all()
+    )
+
+
+def _visible_daily_updates(
+    current_user: User,
+    db: Session,
+    task_id: Optional[int] = None,
+    user_id: Optional[int] = None,
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
+):
+    """Daily updates this user may see; shared by the list and the Excel export."""
+    query = db.query(DailyUpdate)
+    if is_manager_role(current_user):
+        # Only entries for projects this manager leads, is assigned to,
+        # or administers as Company Admin.
+        query = query.join(Task, Task.id == DailyUpdate.task_id).join(
+            Project, Project.id == Task.project_id
+        ).filter(visible_projects_clause(current_user, db))
+    else:
+        query = query.filter(DailyUpdate.user_id == current_user.id)
+
+    if task_id:
+        query = query.filter(DailyUpdate.task_id == task_id)
+
+    if user_id:
+        query = query.filter(DailyUpdate.user_id == user_id)
+    if date_from:
+        query = query.filter(DailyUpdate.date >= date_from)
+    if date_to:
+        query = query.filter(DailyUpdate.date <= date_to)
+    return query.order_by(
+        DailyUpdate.date.desc(),
+        DailyUpdate.created_at.desc(),
+    )
+
+
+def _check_range(date_from: Optional[date], date_to: Optional[date]) -> None:
+    if date_from and date_to and date_from > date_to:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The start date must be on or before the end date.",
+        )
+
+
+def _xlsx_response(content: bytes, kind: str) -> Response:
+    return Response(
+        content=content,
+        media_type=XLSX_MEDIA_TYPE,
+        headers={
+            "Content-Disposition": f'attachment; filename="{export_filename(kind, project_today())}"',
+            "Cache-Control": "no-store",
+        },
+    )
+
+
+@router.get("/work-logs", response_model=List[WorkLogOut])
+def list_work_logs(
+    task_id: Optional[int] = None,
+    user_id: Optional[int] = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    logs = _visible_work_logs(current_user, db, task_id, user_id).all()
 
     return [
         WorkLogOut.model_validate(log)
         for log in logs
     ]
+
+
+@router.get("/work-logs/export")
+def export_work_logs(
+    task_id: Optional[int] = None,
+    user_id: Optional[int] = None,
+    date_from: Optional[date] = Query(None),
+    date_to: Optional[date] = Query(None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Excel download of the same work logs the list returns for this user."""
+    _check_range(date_from, date_to)
+    logs = (
+        _visible_work_logs(current_user, db, task_id, user_id, date_from, date_to)
+        .options(
+            joinedload(WorkLog.task).joinedload(Task.project),
+            joinedload(WorkLog.user),
+        )
+        .all()
+    )
+    return _xlsx_response(work_logs_workbook(logs, settings.RISK_TIMEZONE), "work-logs")
 
 
 @router.post(
@@ -170,30 +280,34 @@ def list_daily_updates(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    query = db.query(DailyUpdate)
-    if is_manager_role(current_user):
-        # Only entries for projects this manager leads, is assigned to,
-        # or administers as Company Admin.
-        query = query.join(Task, Task.id == DailyUpdate.task_id).join(
-            Project, Project.id == Task.project_id
-        ).filter(visible_projects_clause(current_user, db))
-    else:
-        query = query.filter(DailyUpdate.user_id == current_user.id)
-
-    if task_id:
-        query = query.filter(DailyUpdate.task_id == task_id)
-
-    if user_id:
-        query = query.filter(DailyUpdate.user_id == user_id)
-    updates = query.order_by(
-        DailyUpdate.date.desc(),
-        DailyUpdate.created_at.desc(),
-    ).all()
+    updates = _visible_daily_updates(current_user, db, task_id, user_id).all()
 
     return [
         DailyUpdateOut.model_validate(update)
         for update in updates
     ]
+
+
+@router.get("/daily-updates/export")
+def export_daily_updates(
+    task_id: Optional[int] = None,
+    user_id: Optional[int] = None,
+    date_from: Optional[date] = Query(None),
+    date_to: Optional[date] = Query(None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Excel download of the same daily updates the list returns for this user."""
+    _check_range(date_from, date_to)
+    updates = (
+        _visible_daily_updates(current_user, db, task_id, user_id, date_from, date_to)
+        .options(
+            joinedload(DailyUpdate.task).joinedload(Task.project),
+            joinedload(DailyUpdate.user),
+        )
+        .all()
+    )
+    return _xlsx_response(daily_updates_workbook(updates, settings.RISK_TIMEZONE), "daily-updates")
 
 
 @router.post(
@@ -227,25 +341,15 @@ def analyze_daily_update_progress(
         )
 
     try:
-        progress_pct, explanation = estimate_task_progress(
+        estimate = estimate_task_progress(
             task,
             data.update_notes,
         )
     except LLMError as error:
-        response_status = (
-            status.HTTP_503_SERVICE_UNAVAILABLE
-            if error.category != "INVALID_RESPONSE"
-            else status.HTTP_502_BAD_GATEWAY
-        )
-        if error.category == "RATE_LIMITED":
-            response_status = status.HTTP_429_TOO_MANY_REQUESTS
-        elif error.category == "PAYMENT_REQUIRED":
-            response_status = status.HTTP_402_PAYMENT_REQUIRED
-        raise HTTPException(
-            status_code=response_status,
-            detail=error.message,
-        ) from error
+        raise _llm_http_error(error) from error
 
+    progress_pct, explanation = estimate[0], estimate[1]
+    signals = list(getattr(estimate, "signals", []) or [])
     return DailyUpdateProgressAnalysisOut(
         progress_pct=progress_pct,
         explanation=explanation,
@@ -255,7 +359,10 @@ def analyze_daily_update_progress(
             update_notes=data.update_notes,
             current_progress=task.progress_pct or 0,
             progress_pct=progress_pct,
+            signals=signals,
+            model=getattr(estimate, "model", None),
         ),
+        signals=[ExtractedSignalOut(**s) for s in signals],
     )
 
 
@@ -292,7 +399,7 @@ def submit_daily_update(
 
     if data.analysis_token:
         try:
-            progress_pct = verify_progress_analysis_token(
+            progress_pct, signals, model = verify_progress_analysis_claims(
                 token=data.analysis_token,
                 task_id=task.id,
                 user_id=current_user.id,
@@ -306,25 +413,18 @@ def submit_daily_update(
             ) from error
     else:
         try:
-            progress_pct, _explanation = estimate_task_progress(
+            estimate = estimate_task_progress(
                 task,
                 data.update_notes,
             )
         except LLMError as error:
-            response_status = (
-                status.HTTP_503_SERVICE_UNAVAILABLE
-                if error.category != "INVALID_RESPONSE"
-                else status.HTTP_502_BAD_GATEWAY
-            )
-            if error.category == "RATE_LIMITED":
-                response_status = status.HTTP_429_TOO_MANY_REQUESTS
-            elif error.category == "PAYMENT_REQUIRED":
-                response_status = status.HTTP_402_PAYMENT_REQUIRED
-            raise HTTPException(
-                status_code=response_status,
-                detail=error.message,
-            ) from error
+            raise _llm_http_error(error) from error
+        progress_pct = estimate[0]
+        signals = list(getattr(estimate, "signals", []) or [])
+        model = getattr(estimate, "model", None)
     progress_pct = max(task.progress_pct or 0, progress_pct)
+    rejected = set(data.rejected_signal_indexes)
+    kept_signals = [s for s in signals if s.get("index") not in rejected]
 
     update = DailyUpdate(
         task_id=data.task_id,
@@ -337,6 +437,8 @@ def submit_daily_update(
     )
 
     db.add(update)
+    db.flush()
+    _store_signals(db, update, task, kept_signals, data.is_blocked, model)
 
     # Synchronize the task's progress with the daily update.
     task.progress_pct = progress_pct
@@ -384,6 +486,8 @@ def submit_daily_update(
         metadata_json={
             "task_id": task.id,
             "is_blocked": data.is_blocked,
+            "signals_kept": len(kept_signals),
+            "signals_removed_by_employee": len(signals) - len(kept_signals),
         },
     )
 
@@ -418,7 +522,82 @@ def submit_daily_update(
             )
         )
 
+    safe_recompute(
+        db,
+        task.project_id,
+        RiskTrigger.DAILY_UPDATE.value,
+        trigger_ref_id=update.id,
+        actor_id=current_user.id,
+    )
     db.commit()
     db.refresh(update)
 
     return DailyUpdateOut.model_validate(update)
+
+
+def _llm_http_error(error: LLMError) -> HTTPException:
+    response_status = (
+        status.HTTP_503_SERVICE_UNAVAILABLE
+        if error.category != "INVALID_RESPONSE"
+        else status.HTTP_502_BAD_GATEWAY
+    )
+    if error.category == "RATE_LIMITED":
+        response_status = status.HTTP_429_TOO_MANY_REQUESTS
+    elif error.category == "PAYMENT_REQUIRED":
+        response_status = status.HTTP_402_PAYMENT_REQUIRED
+    return HTTPException(status_code=response_status, detail=error.message)
+
+
+def _store_signals(
+    db: Session,
+    update: DailyUpdate,
+    task: Task,
+    signals: list,
+    explicitly_blocked: bool,
+    model: Optional[str],
+) -> None:
+    """Persist the signals the employee kept.
+
+    Effort signals are confirmed by submitting. Blocker, dependency and scope
+    mentions wait for the manager, except when they are already true.
+    """
+    project_task_ids = {
+        row[0] for row in db.query(Task.id).filter(Task.project_id == task.project_id).all()
+    }
+    for signal in signals:
+        kind = signal.get("kind")
+        related = signal.get("related_task_id")
+        if related is not None and related not in project_task_ids:
+            continue  # task removed since the analysis
+        if kind in EFFORT_KINDS:
+            status_value = SignalStatus.CONFIRMED.value
+        elif kind == SignalKind.BLOCKER.value:
+            if explicitly_blocked or task.is_blocked:
+                continue
+            status_value = SignalStatus.PENDING_REVIEW.value
+        elif kind == SignalKind.DEPENDENCY.value:
+            exists = db.query(TaskDependency).filter(
+                TaskDependency.task_id == task.id,
+                TaskDependency.prerequisite_task_id == related,
+            ).first()
+            if exists:
+                continue
+            status_value = SignalStatus.PENDING_REVIEW.value
+        elif kind == SignalKind.SCOPE_CHANGE.value:
+            status_value = SignalStatus.PENDING_REVIEW.value
+        else:
+            continue
+        db.add(DailyUpdateSignal(
+            daily_update_id=update.id,
+            project_id=task.project_id,
+            task_id=task.id,
+            user_id=update.user_id,
+            kind=kind,
+            related_task_id=related,
+            effort_share=signal.get("effort_share"),
+            evidence=str(signal.get("evidence") or "")[:300],
+            status=status_value,
+            update_date=update.date,
+            model=model,
+            prompt_version=PROMPT_VERSION,
+        ))

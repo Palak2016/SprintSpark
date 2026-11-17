@@ -3,6 +3,7 @@ import React from 'react';
 import type { RiskAnalysis } from '../../types';
 import { RiskBadge } from '../common/RiskBadge';
 import { formatIndianDateTime } from '../../utils/date';
+import { RiskChangePanel, RiskFactorBreakdown } from './RiskExplanation';
 import {
   AlertTriangle,
   AlertOctagon,
@@ -228,6 +229,10 @@ export const RiskDetailCard: React.FC<RiskDetailCardProps> = ({
           </div>
         </div>
       </section>
+
+      {/* Why the score is what it is, and what moved it */}
+      <RiskChangePanel analysis={analysis} />
+      <RiskFactorBreakdown analysis={analysis} />
 
       {/* Missing Data Warnings */}
       {missingFlags.length > 0 && (
@@ -517,9 +522,11 @@ export const RiskDetailCard: React.FC<RiskDetailCardProps> = ({
           <span className="font-semibold text-[#D5CBE5]">
             Explainable assessment:
           </span>{' '}
-          Risk levels, triggered rules, and evidence metrics reflect the
-          backend analysis. Review the contributing factors before approving
-          any recovery proposal.
+          The score is calculated by a deterministic engine from project data
+          and confirmed daily-update signals; AI never sets the score or its
+          weights. Approved leave only reduces capacity and is never treated as
+          falling behind. Review the contributing factors before approving any
+          recovery proposal.
         </p>
       </div>
     </div>

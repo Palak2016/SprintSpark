@@ -16,13 +16,24 @@ import {
   CircleAlert,
   MessageSquare,
   LoaderCircle,
+  Download,
 } from 'lucide-react';
 
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
-import type { DailyUpdate, Task } from '../../types';
+import type { DailyUpdate, ExtractedSignal, Task } from '../../types';
 import { formatIndianDate } from '../../utils/date';
 import { useVisibleInterval } from '../../hooks/useVisibleInterval';
+
+const SIGNAL_LABELS: Record<ExtractedSignal['kind'], string> = {
+  PLANNED: 'Planned work',
+  UNPLANNED_PROJECT: 'Unplanned project work',
+  UNPLANNED_OTHER: 'Other work',
+  REWORK: 'Rework',
+  BLOCKER: 'Possible blocker',
+  DEPENDENCY: 'Waiting on another task',
+  SCOPE_CHANGE: 'New scope found',
+};
 
 const C = {
   bg: 'var(--ui-canvas)',
@@ -36,7 +47,7 @@ const C = {
 };
 
 export const DailyUpdatesView: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isManager } = useAuth();
 
   const [updates, setUpdates] = useState<DailyUpdate[]>([]);
   const [myTasks, setMyTasks] = useState<Task[]>([]);
@@ -53,6 +64,9 @@ export const DailyUpdatesView: React.FC = () => {
   const [analysisToken, setAnalysisToken] = useState<string | null>(null);
   const [progressAnalysis, setProgressAnalysis] = useState<string | null>(null);
   const [progressAnalysisError, setProgressAnalysisError] = useState(false);
+  const [signals, setSignals] = useState<ExtractedSignal[]>([]);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [removedSignals, setRemovedSignals] = useState<number[]>([]);
 
   const loadUpdates = useCallback(async () => {
     if (!user) return;
@@ -166,12 +180,33 @@ export const DailyUpdatesView: React.FC = () => {
     };
   }, [user]);
 
+  const handleDownload = async () => {
+    if (!user || isDownloading) return;
+
+    setIsDownloading(true);
+    setErrorMsg(null);
+
+    try {
+      // Managers get every employee's updates on the projects they can see;
+      // employees get only their own (the server enforces both).
+      await api.downloadDailyUpdates(isManager ? undefined : { user_id: user.id });
+    } catch (error: unknown) {
+      setErrorMsg(
+        error instanceof Error ? error.message : 'Download failed. Please try again.',
+      );
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   const handleTaskSelect = (taskId: number) => {
     setSelectedTaskId(taskId);
     setSuccessMsg(null);
     setErrorMsg(null);
     setAnalysisToken(null);
     setProgressAnalysis(null);
+    setSignals([]);
+    setRemovedSignals([]);
 
     const task = myTasks.find((item) => item.id === taskId);
 
@@ -189,6 +224,8 @@ export const DailyUpdatesView: React.FC = () => {
     setAnalysisToken(null);
     setProgressAnalysis(null);
     setProgressAnalysisError(false);
+    setSignals([]);
+    setRemovedSignals([]);
 
     try {
       const estimate = await api.analyzeDailyUpdateProgress({
@@ -197,6 +234,7 @@ export const DailyUpdatesView: React.FC = () => {
       });
       setProgressPct(estimate.progress_pct);
       setAnalysisToken(estimate.analysis_token);
+      setSignals(estimate.signals ?? []);
       setProgressAnalysis(
         `AI estimates ${estimate.progress_pct}%. ${estimate.explanation}`,
       );
@@ -236,12 +274,15 @@ export const DailyUpdatesView: React.FC = () => {
       const submittedUpdate = await api.submitDailyUpdate({
         task_id: selectedTaskId,
         analysis_token: analysisToken,
+        rejected_signal_indexes: removedSignals,
         is_blocked: isBlocked,
         blocker_notes: isBlocked ? blockerNotes.trim() : undefined,
         update_notes: updateNotes.trim(),
       });
       setProgressPct(submittedUpdate.progress_pct);
       setAnalysisToken(null);
+      setSignals([]);
+      setRemovedSignals([]);
       setMyTasks((tasks) =>
         tasks.map((task) =>
           task.id === submittedUpdate.task_id
@@ -368,19 +409,47 @@ export const DailyUpdatesView: React.FC = () => {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={handleRefresh}
-            disabled={isLoading}
-            className="inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-xl border px-4 py-3 text-xs font-semibold transition hover:bg-white/5 disabled:opacity-50 sm:self-auto"
-            style={{ borderColor: C.border, color: C.lilac }}
-          >
-            <RefreshCw
-              size={15}
-              className={isLoading ? 'animate-spin' : ''}
-            />
-            Refresh data
-          </button>
+          <div className="flex shrink-0 flex-wrap gap-2 self-start sm:self-auto">
+            <button
+              type="button"
+              onClick={() => void handleDownload()}
+              disabled={isDownloading || (!isManager && updates.length === 0)}
+              title={
+                isManager
+                  ? "Download all employees' daily updates for your projects"
+                  : updates.length === 0
+                    ? 'No daily updates to download yet'
+                    : 'Download your daily updates as Excel'
+              }
+              className="inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-xs font-semibold transition hover:bg-white/5 disabled:opacity-50"
+              style={{ borderColor: C.border, color: C.lilac }}
+            >
+              {isDownloading ? (
+                <LoaderCircle size={15} className="animate-spin" />
+              ) : (
+                <Download size={15} />
+              )}
+              {isDownloading
+                ? 'Preparing…'
+                : isManager
+                  ? 'Download team updates'
+                  : 'Download Excel'}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleRefresh}
+              disabled={isLoading}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-xs font-semibold transition hover:bg-white/5 disabled:opacity-50"
+              style={{ borderColor: C.border, color: C.lilac }}
+            >
+              <RefreshCw
+                size={15}
+                className={isLoading ? 'animate-spin' : ''}
+              />
+              Refresh data
+            </button>
+          </div>
         </header>
 
         {/* Respectful AI principle */}
@@ -792,6 +861,8 @@ export const DailyUpdatesView: React.FC = () => {
                       setUpdateNotes(event.target.value);
                       setAnalysisToken(null);
                       setProgressAnalysis(null);
+                      setSignals([]);
+                      setRemovedSignals([]);
                       setProgressPct(
                         myTasks.find((task) => task.id === selectedTaskId)?.progress_pct ?? 0,
                       );
@@ -847,6 +918,59 @@ export const DailyUpdatesView: React.FC = () => {
                       </p>
                     )}
                   </div>
+
+                  {signals.length > 0 && (
+                    <div
+                      className="mt-3 rounded-xl border p-3"
+                      style={{ borderColor: C.border }}
+                    >
+                      <p className="text-xs font-semibold" style={{ color: C.white }}>
+                        What the AI read in your update
+                      </p>
+                      <p className="mt-0.5 text-[11px] leading-5" style={{ color: C.muted }}>
+                        Remove anything that is wrong before submitting. Blockers, dependencies and
+                        new scope are sent to your manager to confirm; nothing changes until they do.
+                      </p>
+                      <ul className="mt-2 space-y-1.5">
+                        {signals.map((signal) => {
+                          const removed = removedSignals.includes(signal.index);
+                          return (
+                            <li
+                              key={signal.index}
+                              className="flex items-start justify-between gap-3 text-xs leading-5"
+                              style={{ color: C.muted, opacity: removed ? 0.45 : 1 }}
+                            >
+                              <span className={removed ? 'line-through' : ''}>
+                                <span className="font-semibold" style={{ color: C.white }}>
+                                  {SIGNAL_LABELS[signal.kind]}
+                                  {signal.related_task_title ? ` (${signal.related_task_title})` : ''}
+                                  {signal.effort_share != null
+                                    ? ` · about ${Math.round(signal.effort_share * 100)}% of effort`
+                                    : ''}
+                                  :
+                                </span>{' '}
+                                “{signal.evidence}”
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setRemovedSignals((current) =>
+                                    removed
+                                      ? current.filter((i) => i !== signal.index)
+                                      : [...current, signal.index],
+                                  )
+                                }
+                                className="shrink-0 text-[11px] font-semibold underline"
+                                style={{ color: C.muted }}
+                              >
+                                {removed ? 'Undo' : 'Remove'}
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  )}
                 </div>
 
                 {/* Submit button */}

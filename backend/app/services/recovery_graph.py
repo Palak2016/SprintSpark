@@ -35,7 +35,6 @@ from app.models.focus_context import FocusContext
 from app.models.leave import LeaveRequest, LeaveStatus
 from app.models.project import Project
 from app.models.recovery import ProposalStatus, RecoveryProposal
-from app.models.risk import RiskAnalysis
 from app.models.task import Task
 from app.models.user import User
 from app.services.llm_client import LLMError, resolve_config
@@ -54,7 +53,9 @@ from app.services.recovery_scheduler import (
     to_date,
 )
 from app.services.recovery_validation import validate_plan
-from app.services.risk_engine import analyze_project_risk, calculate_business_days
+from app.services.risk_engine import calculate_business_days
+from app.services.risk_service import analysis_to_result, project_today, recompute_project_risk
+from app.models.risk import RiskTrigger
 
 RULE_BASED_TITLE = "Sprint Recovery & Critical Path Realignment Plan"
 
@@ -160,9 +161,19 @@ def context_collector_node(state: RecoveryWorkflowState, db: Session) -> Dict[st
 
 
 def risk_analyzer_node(state: RecoveryWorkflowState, db: Session) -> Dict[str, Any]:
-    project = db.query(Project).filter(Project.id == state["project_id"]).first()
-    risk_result = analyze_project_risk(project, db)
-    return {"risk_analysis": risk_result}
+    """Score the project once and reuse that history row for the proposal.
+
+    An unchanged result returns the existing row, so generating a plan does
+    not add duplicate risk history.
+    """
+    record = recompute_project_risk(
+        db,
+        state["project_id"],
+        RiskTrigger.RECOVERY_WORKFLOW.value,
+        actor_id=state.get("actor_id"),
+        as_of=_today(state),
+    )
+    return {"risk_analysis": analysis_to_result(record)}
 
 
 def leave_impact_node(state: RecoveryWorkflowState, db: Session) -> Dict[str, Any]:
@@ -192,7 +203,7 @@ def _executed(state: RecoveryWorkflowState, name: str) -> List[str]:
 
 
 def _today(state: RecoveryWorkflowState) -> date:
-    return to_date(state.get("today")) or date.today()
+    return to_date(state.get("today")) or project_today()
 
 
 def _pick_reassignment_candidate(
@@ -236,10 +247,12 @@ def _blocker_impact_text(task: Dict[str, Any], tasks: List[Dict[str, Any]]) -> s
     )
 
 
-def _extension_impact_text(task: Dict[str, Any], new_due: date) -> str:
-    start = max(date.today(), to_date(task.get("start_date")) or date.today())
-    days = calculate_business_days(start, new_due)
+def _extension_impact_text(task: Dict[str, Any], new_due: date, today: date) -> str:
+    start = max(today, to_date(task.get("start_date")) or today)
+    days = calculate_business_days(start, new_due) if new_due >= start else 0
     hours = remaining_hours(task)
+    if days <= 0:
+        return f"Leaves {hours:.1f}h of remaining work; the new date gives no working days to absorb it."
     return (
         f"Spreads the remaining {hours:.1f}h over {days} working day(s) "
         f"(about {hours / days:.1f}h/day)."
@@ -279,7 +292,7 @@ def rule_based_planner_node(state: RecoveryWorkflowState) -> Dict[str, Any]:
     )
 
     # If risk is low or insufficient data, state why
-    if risk_analysis["risk_level"] == "LOW":
+    if risk_analysis["risk_level"] == "LOW" and not _actionable_rules(risk_analysis):
         return {
             "raw_proposal": {
                 "title": "On-Track Maintenance Plan",
@@ -465,7 +478,11 @@ def rule_based_planner_node(state: RecoveryWorkflowState) -> Dict[str, Any]:
                         else ""
                     )
                     cur_due = date.fromisoformat(task["due_date"])
-                    new_due = cur_due + timedelta(days=4)
+                    today = _today(state)
+                    # An overdue task gets 4 days from today; +4 on a date
+                    # already well past would still be in the past.
+                    overdue = cur_due < today
+                    new_due = max(cur_due, today) + timedelta(days=4)
                     proposed_actions.append({
                         "action_id": str(uuid.uuid4())[:8],
                         "action_type": "EXTEND_DEADLINE",
@@ -478,14 +495,21 @@ def rule_based_planner_node(state: RecoveryWorkflowState) -> Dict[str, Any]:
                             "due_date": str(new_due)
                         },
                         "reason": (
-                            "Adjust scheduled due date by +4 calendar days to absorb current "
-                            f"velocity deficit.{context_suffix}"
+                            (
+                                f"Task is overdue (was due {cur_due.isoformat()}); set a new due date "
+                                f"4 calendar days from today.{context_suffix}"
+                            )
+                            if overdue
+                            else (
+                                "Adjust scheduled due date by +4 calendar days to absorb current "
+                                f"velocity deficit.{context_suffix}"
+                            )
                         ),
                         "expected_impact": (
                             "Adds a schedule buffer informed by the "
                             f"employee's technical context.{context_suffix}"
                             if context_note
-                            else _extension_impact_text(task, new_due)
+                            else _extension_impact_text(task, new_due, today)
                         )
                     })
                     rationale_points.append(f"Extend Task #{task['id']} deadline by 4 days to add a delivery buffer.")
@@ -522,14 +546,33 @@ def schedule_analyzer_node(state: RecoveryWorkflowState) -> Dict[str, Any]:
     return {"findings": findings, "executed_nodes": _executed(state, "schedule_analyzer")}
 
 
+# Rules that point at a concrete problem a recovery action can address, even
+# when the overall project score is still LOW (for example a blocker reported
+# today on work that is not yet late).
+ACTIONABLE_RULE_IDS = {
+    "RULE_ACTIVE_BLOCKER",
+    "RULE_LEAVE_CONFLICT",
+    "RULE_OVERDUE_TASKS",
+    "RULE_VELOCITY_STRETCH",
+    "RULE_TARGET_END_EXCEEDED",
+}
+
+
+def _actionable_rules(risk_analysis: Dict[str, Any]) -> List[Dict[str, Any]]:
+    return [
+        rule for rule in risk_analysis.get("triggered_rules", [])
+        if rule.get("rule_id") in ACTIONABLE_RULE_IDS
+    ]
+
+
 def _recovery_needed(state: RecoveryWorkflowState) -> Optional[str]:
     """Returns a reason the LLM is skipped, or None when planning is needed."""
     level = state["risk_analysis"].get("risk_level")
     feasible = state["findings"]["schedule"].get("feasible", True)
     if level == "INSUFFICIENT_DATA":
         return "Risk could not be computed because task estimates or assignees are missing."
-    if level == "LOW" and feasible:
-        return "Risk is low and the simulated schedule meets the target date."
+    if level == "LOW" and feasible and not _actionable_rules(state["risk_analysis"]):
+        return "Risk is low, nothing needs action and the simulated schedule meets the target date."
     return None
 
 
@@ -849,7 +892,8 @@ def output_validator_node(state: RecoveryWorkflowState) -> Dict[str, Any]:
 
 
 def approval_queue_node(state: RecoveryWorkflowState, db: Session) -> Dict[str, Any]:
-    """Persists the risk analysis and the proposal as PENDING_APPROVAL.
+    """Persists the proposal as PENDING_APPROVAL, linked to the risk analysis
+    recorded by risk_analyzer_node.
 
     Earlier pending proposals for the project are marked SUPERSEDED so only
     the newest analysis can be approved.
@@ -858,17 +902,7 @@ def approval_queue_node(state: RecoveryWorkflowState, db: Session) -> Dict[str, 
     if not proposal_data:
         return {"status": "FAILED", "proposal_record_id": None}
 
-    risk_info = state["risk_analysis"]
-    risk_record = RiskAnalysis(
-        project_id=state["project_id"],
-        risk_level=risk_info["risk_level"],
-        score=risk_info["score"],
-        triggered_rules=risk_info["triggered_rules"],
-        evidence_json=risk_info["evidence"],
-        missing_data_flags=risk_info["missing_data_flags"],
-    )
-    db.add(risk_record)
-    db.flush()
+    risk_analysis_id = state["risk_analysis"].get("id")
 
     db.query(RecoveryProposal).filter(
         RecoveryProposal.project_id == state["project_id"],
@@ -889,7 +923,7 @@ def approval_queue_node(state: RecoveryWorkflowState, db: Session) -> Dict[str, 
 
     proposal_record = RecoveryProposal(
         project_id=state["project_id"],
-        risk_analysis_id=risk_record.id,
+        risk_analysis_id=risk_analysis_id,
         title=proposal_data["title"],
         summary=proposal_data["summary"],
         proposed_actions=proposal_data["proposed_actions"],
@@ -1004,7 +1038,7 @@ def run_recovery_workflow(
         "validation_errors": [],
         "proposal_record_id": None,
         "executed_nodes": [],
-        "today": (today or date.today()).isoformat(),
+        "today": (today or project_today()).isoformat(),
         "run_id": str(uuid.uuid4()),
         "started_at": datetime.now(timezone.utc).isoformat(),
         "status": "INITIALIZED",

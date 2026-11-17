@@ -33,6 +33,10 @@ class Settings(BaseSettings):
     # if the model cannot be called.
     RECOVERY_REQUIRE_LLM: bool = False
 
+    # Business timezone for "today" in risk scoring (due dates, overdue,
+    # daily recalculation). Use an IANA name such as "Asia/Kolkata".
+    RISK_TIMEZONE: str = "Asia/Kolkata"
+
     # SMTP email verification
     SMTP_HOST: Optional[str] = None
     SMTP_PORT: int = 587

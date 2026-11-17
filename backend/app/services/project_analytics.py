@@ -170,6 +170,9 @@ def risk_history(analyses: Iterable[Dict[str, Any]]) -> Dict[str, Any]:
             "created_at": a["created_at"],
             "score": a["score"],
             "risk_level": a["risk_level"],
+            "score_delta": a.get("score_delta"),
+            "trigger_type": a.get("trigger_type"),
+            "headline": a.get("headline"),
         }
         for a in analyses
     ]
