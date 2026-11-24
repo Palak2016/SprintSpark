@@ -1,6 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Check, X } from 'lucide-react';
+import {
+  MdCheck as Check,
+  MdClose as X
+} from 'react-icons/md';
 import { api } from '../../services/api';
 import { CompanyMember } from '../../types';
 import { AdminConsoleContext } from '../../components/admin/AdminLayout';

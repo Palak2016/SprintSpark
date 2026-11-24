@@ -39,6 +39,7 @@ class DailyUpdateCreate(BaseModel):
 class DailyUpdateProgressAnalysisRequest(BaseModel):
     task_id: int
     update_notes: str = Field(..., min_length=5, max_length=4000)
+    manual_progress_pct: Optional[int] = Field(None, ge=0, le=100)
 
 
 class ExtractedSignalOut(BaseModel):
@@ -56,6 +57,18 @@ class DailyUpdateProgressAnalysisOut(BaseModel):
     explanation: str = Field(..., min_length=1, max_length=500)
     analysis_token: str = Field(..., min_length=1)
     signals: List[ExtractedSignalOut] = []
+    ai_available: bool = True
+
+
+class DailyUpdateAgendaDriftOut(BaseModel):
+    alignment_status: str
+    alignment_score: int = Field(..., ge=0, le=100)
+    confidence_score: int = Field(..., ge=0, le=100)
+    drift_explanation: str
+    recommended_actions: List[str] = Field(default_factory=list)
+    manager_notified: bool = False
+    recovery_proposal_id: Optional[int] = None
+    recovery_proposal_status: Optional[str] = None
 
 
 class DailyUpdateOut(BaseModel):
@@ -71,3 +84,8 @@ class DailyUpdateOut(BaseModel):
     date: date
     created_at: UTCDateTime
     user: Optional[UserSimple] = None
+
+
+class DailyUpdateSubmissionOut(DailyUpdateOut):
+    agenda_drift: Optional[DailyUpdateAgendaDriftOut] = None
+    agenda_drift_note: Optional[str] = None

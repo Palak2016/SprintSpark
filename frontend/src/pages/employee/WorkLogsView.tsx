@@ -4,17 +4,17 @@ import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import { WorkLog, Task } from '../../types';
 import {
-  Clock,
-  Plus,
-  CalendarDays,
-  FileText,
-  CheckCircle2,
-  ClipboardList,
-  Timer,
-  X,
-  LoaderCircle,
-  Download,
-} from 'lucide-react';
+  MdAccessTime as Clock,
+  MdAdd as Plus,
+  MdCalendarMonth as CalendarDays,
+  MdDescription as FileText,
+  MdCheckCircle as CheckCircle2,
+  MdAssignment as ClipboardList,
+  MdTimer as Timer,
+  MdClose as X,
+  MdRefresh as LoaderCircle,
+  MdDownload as Download
+} from 'react-icons/md';
 import { Modal } from '../../components/common/Modal';
 import {
   formatIndianDate,

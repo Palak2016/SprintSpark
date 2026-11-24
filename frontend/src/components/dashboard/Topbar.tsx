@@ -2,16 +2,16 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Bell,
-  Check,
-  FolderKanban,
-  LogOut,
-  ChevronDown,
-  Menu,
-  CheckCheck,
-  Layers3,
-  ArrowUpRight,
-} from 'lucide-react';
+  MdNotifications as Bell,
+  MdCheck as Check,
+  MdViewKanban as FolderKanban,
+  MdLogout as LogOut,
+  MdExpandMore as ChevronDown,
+  MdMenu as Menu,
+  MdDoneAll as CheckCheck,
+  MdLayers as Layers3,
+  MdArrowOutward as ArrowUpRight
+} from 'react-icons/md';
 import { useAuth } from '../../context/AuthContext';
 import { useProject } from '../../context/ProjectContext';
 import { api } from '../../services/api';

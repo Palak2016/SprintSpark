@@ -1,5 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { AlertTriangle, CalendarClock, CheckCircle2, RefreshCw } from 'lucide-react';
+import {
+  MdWarningAmber as AlertTriangle,
+  MdEvent as CalendarClock,
+  MdCheckCircle as CheckCircle2,
+  MdRefresh as RefreshCw
+} from 'react-icons/md';
 import { api } from '../../services/api';
 import type { PortfolioHealth, ProjectAnalytics } from '../../types';
 import { formatIndianDate, formatIndianDateTime } from '../../utils/date';

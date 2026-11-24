@@ -98,12 +98,48 @@ def test_progress_estimator_uses_gemini_model(
     assert explanation == "AI estimate: One milestone is complete."
 
 
+def test_progress_analysis_accepts_configured_openai_provider(
+    client,
+    employee_token,
+    monkeypatch,
+):
+    from app.services import progress_estimator
+
+    config = SimpleNamespace(provider="openai", model="openai-test")
+
+    def fake_model(_system_prompt, _user_prompt, config=None):
+        assert config.provider == "openai"
+        return SimpleNamespace(
+            content={"progress_pct": 36, "explanation": "The first milestone is complete."},
+            provider="openai",
+            model="openai-test",
+            latency_ms=1,
+        )
+
+    monkeypatch.setattr(progress_estimator, "resolve_config", lambda: config)
+    monkeypatch.setattr(progress_estimator, "call_json_model", fake_model)
+    task = _employee_task(client, employee_token)
+
+    response = client.post(
+        "/api/v1/daily-updates/analyze-progress",
+        headers=_auth(employee_token),
+        json={
+            "task_id": task["id"],
+            "update_notes": "Completed the first API milestone and verified the endpoint.",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["progress_pct"] >= 36
+
+
 def test_analyzed_estimate_is_the_value_saved_on_submit(
     client,
     employee_token,
     monkeypatch,
 ):
     from app.api.v1 import work_logs
+    from app.services import drift_analysis_service
 
     task = _employee_task(client, employee_token)
     calls = []
@@ -113,6 +149,7 @@ def test_analyzed_estimate_is_the_value_saved_on_submit(
         return 74, "AI estimate: the reported work covers most requirements."
 
     monkeypatch.setattr(work_logs, "estimate_task_progress", fake_estimate)
+    monkeypatch.setattr(drift_analysis_service, "resolve_config", lambda: None)
     notes = "Completed the task's main workflow and verified it."
     analysis = client.post(
         "/api/v1/daily-updates/analyze-progress",
@@ -134,7 +171,63 @@ def test_analyzed_estimate_is_the_value_saved_on_submit(
 
     assert submission.status_code == 201
     assert submission.json()["progress_pct"] == estimate["progress_pct"] == 74
+    assert submission.json()["agenda_drift"]["alignment_status"] == "NEEDS_CLARIFICATION"
+    assert submission.json()["agenda_drift"]["confidence_score"] < 60
     assert calls == [notes]
+
+    history = client.get(
+        "/api/v1/agenda-drift/my-drift",
+        headers=_auth(employee_token),
+    )
+    assert history.status_code == 200
+    assert any(
+        record["daily_update_id"] == submission.json()["id"]
+        for record in history.json()
+    )
+
+
+def test_daily_update_is_saved_if_agenda_analysis_persistence_fails(
+    client,
+    employee_token,
+    monkeypatch,
+):
+    from app.api.v1 import work_logs
+    from sqlalchemy.exc import SQLAlchemyError
+
+    task = _employee_task(client, employee_token)
+    monkeypatch.setattr(
+        work_logs,
+        "estimate_task_progress",
+        lambda _task, _notes: (42, "AI estimate: progress is underway."),
+    )
+
+    def fail_agenda_persistence(*_args, **_kwargs):
+        raise SQLAlchemyError("agenda persistence unavailable")
+
+    monkeypatch.setattr(
+        work_logs,
+        "analyze_and_persist_daily_update",
+        fail_agenda_persistence,
+    )
+    response = client.post(
+        "/api/v1/daily-updates",
+        headers=_auth(employee_token),
+        json={
+            "task_id": task["id"],
+            "update_notes": "Completed the first implementation milestone.",
+        },
+    )
+
+    assert response.status_code == 201
+    result = response.json()
+    assert result["agenda_drift"] is None
+    assert "daily update was saved" in result["agenda_drift_note"].lower()
+    history = client.get(
+        "/api/v1/daily-updates?user_id=2",
+        headers=_auth(employee_token),
+    )
+    assert history.status_code == 200
+    assert any(update["id"] == result["id"] for update in history.json())
 
 
 def test_analyzed_estimate_rejects_changed_notes(
@@ -214,7 +307,7 @@ def test_full_task_completion_language_can_set_progress_to_100(
     assert submission.json()["progress_pct"] == 100
 
 
-def test_progress_analysis_requires_openai_configuration(
+def test_progress_analysis_falls_back_to_current_progress_without_ai(
     client,
     employee_token,
     monkeypatch,
@@ -233,8 +326,80 @@ def test_progress_analysis_requires_openai_configuration(
         },
     )
 
-    assert response.status_code == 503
-    assert "GEMINI_API_KEY" in response.json()["detail"]
+    assert response.status_code == 200
+    result = response.json()
+    assert result["ai_available"] is False
+    assert result["progress_pct"] == task["progress_pct"]
+    assert result["analysis_token"]
+    assert "You can still submit" in result["explanation"]
+
+
+def test_gemini_503_still_allows_daily_update_and_agenda_record(
+    client,
+    employee_token,
+    monkeypatch,
+):
+    from app.api.v1 import work_logs
+    from app.services import drift_analysis_service
+    from app.services.llm_client import LLMError
+
+    task = _employee_task(client, employee_token)
+
+    def unavailable_estimate(*_args, **_kwargs):
+        raise LLMError("HTTP_ERROR", "Gemini returned HTTP 503.")
+
+    monkeypatch.setattr(
+        work_logs,
+        "estimate_task_progress",
+        unavailable_estimate,
+    )
+    monkeypatch.setattr(drift_analysis_service, "resolve_config", lambda: None)
+    notes = "Implemented the first backend endpoint and tested its validation."
+    requested_progress = min(100, task["progress_pct"] + 10)
+
+    analysis = client.post(
+        "/api/v1/daily-updates/analyze-progress",
+        headers=_auth(employee_token),
+        json={"task_id": task["id"], "update_notes": notes},
+    )
+    assert analysis.status_code == 200
+    assert analysis.json()["ai_available"] is False
+    manual = client.post(
+        "/api/v1/daily-updates/analyze-progress",
+        headers=_auth(employee_token),
+        json={
+            "task_id": task["id"],
+            "update_notes": notes,
+            "manual_progress_pct": requested_progress,
+        },
+    )
+    assert manual.status_code == 200
+    assert manual.json()["progress_pct"] == requested_progress
+    assert manual.json()["ai_available"] is False
+    assert f"Manual progress set to {requested_progress}%" in manual.json()["explanation"]
+
+    submission = client.post(
+        "/api/v1/daily-updates",
+        headers=_auth(employee_token),
+        json={
+            "task_id": task["id"],
+            "analysis_token": manual.json()["analysis_token"],
+            "update_notes": notes,
+        },
+    )
+    assert submission.status_code == 201
+    assert submission.json()["progress_pct"] == requested_progress
+    assert submission.json()["agenda_drift"]["alignment_status"] == "NEEDS_CLARIFICATION"
+
+    drift_records = client.get(
+        "/api/v1/agenda-drift/my-drift",
+        headers=_auth(employee_token),
+    )
+    assert drift_records.status_code == 200
+    assert any(
+        record["daily_update_id"] == submission.json()["id"]
+        for record in drift_records.json()
+    )
 
 
 def test_daily_update_submission_returns_openai_rate_limit_to_client(

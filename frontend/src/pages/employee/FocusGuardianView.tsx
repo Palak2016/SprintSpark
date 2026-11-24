@@ -5,18 +5,18 @@ import type { Task } from '../../types';
 import { useVisibleInterval } from '../../hooks/useVisibleInterval';
 
 import {
-  Eye,
-  ShieldCheck,
-  CheckCircle2,
-  MessageSquare,
-  AlertCircle,
-  LoaderCircle,
-  RefreshCw,
-  ChevronDown,
-  ClipboardCheck,
-  CalendarDays,
-  Sparkles,
-} from 'lucide-react';
+  MdVisibility as Eye,
+  MdVerifiedUser as ShieldCheck,
+  MdCheckCircle as CheckCircle2,
+  MdMessage as MessageSquare,
+  MdError as AlertCircle,
+  MdRefresh as LoaderCircle,
+  MdRefresh as RefreshCw,
+  MdExpandMore as ChevronDown,
+  MdFactCheck as ClipboardCheck,
+  MdCalendarMonth as CalendarDays,
+  MdInfo as Info
+} from 'react-icons/md';
 
 const REASON_TAGS = [
   'Refactoring Legacy Architecture',
@@ -491,7 +491,7 @@ export const FocusGuardianView: React.FC = () => {
           {/* AI and manager workflow information */}
           <div className="rounded-xl border border-violet-400/15 bg-violet-500/[0.05] p-4">
             <div className="flex items-start gap-3">
-              <Sparkles
+              <Info
                 size={18}
                 className="mt-0.5 shrink-0 text-violet-300"
               />

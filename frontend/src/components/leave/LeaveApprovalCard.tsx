@@ -4,13 +4,13 @@ import type { LeaveRequest } from '../../types';
 import { api } from '../../services/api';
 import { formatIndianDate } from '../../utils/date';
 import {
-  CalendarDays,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  LoaderCircle,
-  MessageSquareText,
-} from 'lucide-react';
+  MdCalendarMonth as CalendarDays,
+  MdCheckCircle as CheckCircle2,
+  MdCancel as XCircle,
+  MdAccessTime as Clock,
+  MdRefresh as LoaderCircle,
+  MdChat as MessageSquareText
+} from 'react-icons/md';
 
 interface LeaveApprovalCardProps {
   request: LeaveRequest;

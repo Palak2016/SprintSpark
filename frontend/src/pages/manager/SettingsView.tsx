@@ -6,28 +6,28 @@ import { api } from '../../services/api';
 import type { UserSimple } from '../../types';
 import { formatIndianDate } from '../../utils/date';
 import {
-  FolderKanban,
-  Users,
-  Trash2,
-  CheckCircle2,
-  Cpu,
-  Save,
-  UserPlus,
-  ShieldCheck,
-  RefreshCw,
-  Settings,
-  Crown,
-  Mail,
-  CircleCheck,
-  AlertCircle,
-  Sparkles,
-  CalendarDays,
-  Clock3,
-  ChevronRight,
-  LockKeyhole,
-  Activity,
-  X,
-} from 'lucide-react';
+  MdViewKanban as FolderKanban,
+  MdGroup as Users,
+  MdDelete as Trash2,
+  MdCheckCircle as CheckCircle2,
+  MdHub as Network,
+  MdSave as Save,
+  MdPersonAdd as UserPlus,
+  MdVerifiedUser as ShieldCheck,
+  MdRefresh as RefreshCw,
+  MdSettings as Settings,
+  MdWorkspacePremium as Crown,
+  MdMail as Mail,
+  MdCheckCircle as CircleCheck,
+  MdError as AlertCircle,
+  MdCalendarMonth as CalendarDays,
+  MdSchedule as Clock3,
+  MdChevronRight as ChevronRight,
+  MdLock as LockKeyhole,
+  MdInsights as Activity,
+  MdAccountTree as Workflow,
+  MdClose as X
+} from 'react-icons/md';
 
 const PROJECT_STATUSES = [
   'ACTIVE',
@@ -283,7 +283,7 @@ export const SettingsView: React.FC = () => {
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-violet-400/20 bg-violet-500/[0.08] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-violet-300">
-              <Sparkles className="h-3.5 w-3.5" />
+              <Settings className="h-3.5 w-3.5" />
               Workspace Management
             </div>
 
@@ -726,7 +726,7 @@ export const SettingsView: React.FC = () => {
         {/* Platform architecture */}
         <section className={cardClass}>
           <SectionHeader
-            icon={<Cpu className="h-5 w-5" />}
+            icon={<Network className="h-5 w-5" />}
             title="Platform Architecture"
             description="A quick overview of the systems powering WorkPilot."
             tag="System overview"
@@ -742,7 +742,7 @@ export const SettingsView: React.FC = () => {
             />
 
             <ArchitectureCard
-              icon={<Sparkles className="h-4 w-4" />}
+              icon={<Workflow className="h-4 w-4" />}
               label="Workflow Orchestrator"
               title="LangGraph Multi-Node State Machine"
               description="Coordinates workflow, decision-making, and recovery steps."

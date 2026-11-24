@@ -20,17 +20,17 @@ import { ProjectAnalyticsPanel } from '../../components/analytics/ProjectAnalyti
 import { ProvenanceBadge } from '../../components/risk/RecoveryInsights';
 import { formatIndianTime } from '../../utils/date';
 import {
-  CheckSquare,
-  AlertOctagon,
-  CalendarDays,
-  Sparkles,
-  ArrowRight,
-  Clock,
-  ArrowUpRight,
-  RefreshCw,
-  Building2,
-  UsersRound,
-} from 'lucide-react';
+  MdCheckBox as CheckSquare,
+  MdReportProblem as AlertOctagon,
+  MdCalendarMonth as CalendarDays,
+  MdFactCheck as ClipboardCheck,
+  MdArrowForward as ArrowRight,
+  MdAccessTime as Clock,
+  MdArrowOutward as ArrowUpRight,
+  MdRefresh as RefreshCw,
+  MdBusiness as Building2,
+  MdGroups as UsersRound
+} from 'react-icons/md';
 
 export const ManagerOverview: React.FC = () => {
   const navigate = useNavigate();
@@ -165,7 +165,7 @@ export const ManagerOverview: React.FC = () => {
 
     const intervalId = window.setInterval(() => {
       void loadOverviewData(false);
-    }, 5000);
+    }, 15000);
 
     // Refresh immediately when the manager returns to this tab.
     const handleVisibilityChange = () => {
@@ -317,7 +317,7 @@ export const ManagerOverview: React.FC = () => {
         <section className="manager-recovery-proposal flex flex-col justify-between gap-5 rounded-2xl border border-violet-400/20 bg-gradient-to-r from-[#291849] via-[#211638] to-[#19112B] p-5 shadow-xl md:flex-row md:items-center">
           <div className="flex items-start gap-4">
             <div className="mt-0.5 rounded-xl border border-violet-300/20 bg-violet-500/15 p-3">
-              <Sparkles className="h-6 w-6 text-violet-300" />
+              <ClipboardCheck className="h-6 w-6 text-violet-300" />
             </div>
 
             <div className="min-w-0">

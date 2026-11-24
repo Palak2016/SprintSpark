@@ -11,17 +11,17 @@ import type { LeaveRequest } from '../../types';
 import { LeaveApprovalCard } from '../../components/leave/LeaveApprovalCard';
 
 import {
-  CalendarDays,
-  Filter,
-  RefreshCw,
-  CheckCircle2,
-  Clock,
-  XCircle,
-  Users,
-  AlertCircle,
-  LoaderCircle,
-  ClipboardCheck,
-} from 'lucide-react';
+  MdCalendarMonth as CalendarDays,
+  MdFilterList as Filter,
+  MdRefresh as RefreshCw,
+  MdCheckCircle as CheckCircle2,
+  MdAccessTime as Clock,
+  MdCancel as XCircle,
+  MdGroup as Users,
+  MdError as AlertCircle,
+  MdRefresh as LoaderCircle,
+  MdFactCheck as ClipboardCheck
+} from 'react-icons/md';
 
 type LeaveFilter = 'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED';
 

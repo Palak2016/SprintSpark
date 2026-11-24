@@ -6,22 +6,22 @@ import { RiskBadge } from '../../components/common/RiskBadge';
 import { Modal } from '../../components/common/Modal';
 import type { Project, UserSimple } from '../../types';
 import {
-  FolderKanban,
-  Plus,
-  Search,
-  Calendar,
-  Users,
-  Check,
-  ArrowRight,
-  RefreshCw,
-  AlertCircle,
-  X,
-  UserRound,
-  Pencil,
-  Trash2,
-  Save,
-  ShieldAlert,
-} from 'lucide-react';
+  MdViewKanban as FolderKanban,
+  MdAdd as Plus,
+  MdSearch as Search,
+  MdCalendarMonth as Calendar,
+  MdGroup as Users,
+  MdCheck as Check,
+  MdArrowForward as ArrowRight,
+  MdRefresh as RefreshCw,
+  MdError as AlertCircle,
+  MdClose as X,
+  MdPerson as UserRound,
+  MdEdit as Pencil,
+  MdDelete as Trash2,
+  MdSave as Save,
+  MdGppMaybe as ShieldAlert
+} from 'react-icons/md';
 
 const getCurrentUserId = (): number | null => {
   if (typeof window === 'undefined') return null;

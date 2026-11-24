@@ -1,5 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Check, Clipboard, Send, XCircle } from 'lucide-react';
+import {
+  MdCheck as Check,
+  MdContentPaste as Clipboard,
+  MdSend as Send,
+  MdCancel as XCircle
+} from 'react-icons/md';
 import { api } from '../../services/api';
 import { CompanyInvitation, CompanyInvitationCreated } from '../../types';
 import {

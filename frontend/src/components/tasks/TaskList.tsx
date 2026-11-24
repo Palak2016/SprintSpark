@@ -3,19 +3,19 @@ import React, { useState } from 'react';
 import { Task } from '../../types';
 import { formatIndianDate } from '../../utils/date';
 import {
-  Search,
-  AlertOctagon,
-  Link2,
-  Edit2,
-  ChevronDown,
-  SlidersHorizontal,
-  CalendarDays,
-  Clock,
-  CheckCircle2,
-  Circle,
-  PlayCircle,
-  AlertCircle,
-} from 'lucide-react';
+  MdSearch as Search,
+  MdReportProblem as AlertOctagon,
+  MdLink as Link2,
+  MdEdit as Edit2,
+  MdExpandMore as ChevronDown,
+  MdTune as SlidersHorizontal,
+  MdCalendarMonth as CalendarDays,
+  MdAccessTime as Clock,
+  MdCheckCircle as CheckCircle2,
+  MdCircle as Circle,
+  MdPlayCircle as PlayCircle,
+  MdError as AlertCircle
+} from 'react-icons/md';
 
 interface TaskListProps {
   tasks: Task[];

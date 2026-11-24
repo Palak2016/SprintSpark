@@ -2,7 +2,10 @@
 import React, { useState } from 'react';
 import { Modal } from '../common/Modal';
 import { api } from '../../services/api';
-import { CalendarDays, AlertCircle } from 'lucide-react';
+import {
+  MdCalendarMonth as CalendarDays,
+  MdError as AlertCircle
+} from 'react-icons/md';
 
 interface LeaveRequestModalProps {
   isOpen: boolean;

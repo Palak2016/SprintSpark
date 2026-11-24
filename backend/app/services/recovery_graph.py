@@ -8,10 +8,9 @@ Graph (every node runs on each generation request):
 * Deterministic: context_collector, risk_analyzer (app.services.risk_engine),
   leave_impact, schedule_analyzer (app.services.recovery_scheduler) and
   output_validator (app.services.recovery_validation + re-simulation).
-* LLM: recovery_planner calls the configured model through
-  app.services.recovery_ai_planner when recovery is needed and a key is
-  configured. It always also builds the rule-based plan as a baseline and
-  as the documented fallback.
+* LLM: recovery_planner generates recovery strategies from project data.
+  If a configured model fails, the rule-based planner can provide a clearly
+  labeled fallback, which is still checked by the output validator.
 * approval_queue stores the proposal as PENDING_APPROVAL. Nothing is applied
   until a manager approves it (app.services.approval_service), which
   re-validates against current data first.
@@ -21,6 +20,7 @@ was really invoked, which one, the deterministic findings, validation
 results and the before/after schedule simulation.
 """
 
+import logging
 import uuid
 from datetime import date, datetime, timedelta, timezone
 from functools import partial
@@ -29,7 +29,6 @@ from typing import Any, Callable, Dict, List, Optional, TypedDict
 from langgraph.graph import END, StateGraph
 from sqlalchemy.orm import Session
 
-from app.core.config import settings
 from app.models.audit import AuditEvent
 from app.models.focus_context import FocusContext
 from app.models.leave import LeaveRequest, LeaveStatus
@@ -37,6 +36,7 @@ from app.models.project import Project
 from app.models.recovery import ProposalStatus, RecoveryProposal
 from app.models.task import Task
 from app.models.user import User
+from app.models.work_log import DailyUpdate
 from app.services.llm_client import LLMError, resolve_config
 from app.services.recovery_ai_planner import (
     LLMCaller,
@@ -56,6 +56,8 @@ from app.services.recovery_validation import validate_plan
 from app.services.risk_engine import calculate_business_days
 from app.services.risk_service import analysis_to_result, project_today, recompute_project_risk
 from app.models.risk import RiskTrigger
+
+logger = logging.getLogger(__name__)
 
 RULE_BASED_TITLE = "Sprint Recovery & Critical Path Realignment Plan"
 
@@ -95,6 +97,7 @@ def context_collector_node(state: RecoveryWorkflowState, db: Session) -> Dict[st
         tasks_data.append({
             "id": t.id,
             "title": t.title,
+            "description": t.description,
             "assignee_id": t.assignee_id,
             "assignee_name": t.assignee.full_name if t.assignee else "Unassigned",
             "priority": t.priority,
@@ -129,6 +132,25 @@ def context_collector_node(state: RecoveryWorkflowState, db: Session) -> Dict[st
             .all()
         )
     ]
+    recent_daily_updates = [
+        {
+            "task_id": update.task_id,
+            "user_id": update.user_id,
+            "date": update.date.isoformat(),
+            "progress_pct": update.progress_pct,
+            "is_blocked": update.is_blocked,
+            "update_notes": update.update_notes,
+            "blocker_notes": update.blocker_notes,
+        }
+        for update in (
+            db.query(DailyUpdate)
+            .join(Task, Task.id == DailyUpdate.task_id)
+            .filter(Task.project_id == project.id)
+            .order_by(DailyUpdate.date.desc(), DailyUpdate.created_at.desc())
+            .limit(30)
+            .all()
+        )
+    ]
 
     members_data = []
     for m in project.members:
@@ -151,11 +173,13 @@ def context_collector_node(state: RecoveryWorkflowState, db: Session) -> Dict[st
         "project_context": {
             "project_id": project.id,
             "project_name": project.name,
+            "project_description": project.description,
             "start_date": str(project.start_date),
             "target_end_date": str(project.target_end_date),
             "tasks": tasks_data,
             "members": members_data,
             "focus_contexts": focus_contexts,
+            "recent_daily_updates": recent_daily_updates,
         }
     }
 
@@ -262,9 +286,8 @@ def _extension_impact_text(task: Dict[str, Any], new_due: date, today: date) -> 
 def rule_based_planner_node(state: RecoveryWorkflowState) -> Dict[str, Any]:
     """Rule-based planner: maps triggered risk rules to fixed recovery actions.
 
-    No language model is involved. It is the fallback when no LLM is
-    configured or the model call fails, and the baseline every AI strategy
-    is compared against.
+    No language model is involved. It can provide a fallback when a configured
+    model call fails, and is the baseline every AI strategy is compared against.
     """
     risk_analysis = state["risk_analysis"]
     context = state["project_context"]
@@ -464,7 +487,11 @@ def rule_based_planner_node(state: RecoveryWorkflowState) -> Dict[str, Any]:
 
     # Action 3: Overdue or Velocity Stretch -> Extend deadline or resequence
     for rule in risk_analysis["triggered_rules"]:
-        if rule["rule_id"] in ["RULE_OVERDUE_TASKS", "RULE_VELOCITY_STRETCH"]:
+        if rule["rule_id"] in [
+            "RULE_OVERDUE_TASKS",
+            "RULE_VELOCITY_STRETCH",
+            "RULE_TARGET_END_EXCEEDED",
+        ]:
             for t_id in rule["affected_task_ids"]:
                 # If we haven't already modified this task
                 if any(a["task_id"] == t_id and a["action_type"] == "EXTEND_DEADLINE" for a in proposed_actions):
@@ -566,11 +593,9 @@ def _actionable_rules(risk_analysis: Dict[str, Any]) -> List[Dict[str, Any]]:
 
 
 def _recovery_needed(state: RecoveryWorkflowState) -> Optional[str]:
-    """Returns a reason the LLM is skipped, or None when planning is needed."""
+    """Return a reason when deterministic facts show no recovery is needed."""
     level = state["risk_analysis"].get("risk_level")
     feasible = state["findings"]["schedule"].get("feasible", True)
-    if level == "INSUFFICIENT_DATA":
-        return "Risk could not be computed because task estimates or assignees are missing."
     if level == "LOW" and feasible and not _actionable_rules(state["risk_analysis"]):
         return "Risk is low, nothing needs action and the simulated schedule meets the target date."
     return None
@@ -580,24 +605,7 @@ def recovery_planner_node(
     state: RecoveryWorkflowState,
     llm: Optional[LLMCaller] = None,
 ) -> Dict[str, Any]:
-    """Builds candidate strategies: the rule-based baseline plus, when
-    recovery is needed and a model is available, AI-generated strategies."""
-    rule_output = rule_based_planner_node(state)["raw_proposal"]
-    candidates = [{
-        "strategy_id": "R1",
-        "name": "Rule-based plan",
-        "approach": "MIXED",
-        "summary": rule_output["summary"],
-        "benefits": [],
-        "trade_offs": [],
-        "assumptions": rule_output.get("assumptions", []),
-        "risks": [],
-        "actions": [dict(a, source="RULE") for a in rule_output["proposed_actions"]],
-        "source": "RULE",
-        "title": rule_output["title"],
-        "rationale": rule_output["rationale"],
-    }]
-
+    """Generate AI strategies; deterministic checks remain validation only."""
     config = resolve_config()
     llm_trace: Dict[str, Any] = {
         "invoked": False,
@@ -610,23 +618,37 @@ def recovery_planner_node(
         "skip_reason": None,
         "prompt_version": None,
     }
-    ai_analysis = None
-
     skip_reason = _recovery_needed(state)
     if skip_reason:
         llm_trace["skip_reason"] = skip_reason
+        llm_trace["status"] = "SKIPPED"
+        return {
+            "status": "NO_ACTION_NEEDED",
+            "error": skip_reason,
+            "llm_trace": llm_trace,
+            "executed_nodes": _executed(state, "recovery_planner"),
+        }
     elif llm is None and config is None:
         llm_trace["status"] = "NOT_CONFIGURED"
-        llm_trace["skip_reason"] = (
-            "No LLM key is configured (OPENAI_API_KEY or GEMINI_API_KEY), so the "
-            "rule-based planner was used."
+        error = (
+            "AI recovery planning is unavailable: configure an LLM provider "
+            "and API key before generating recovery plans."
         )
+        llm_trace["error"] = error
+        llm_trace["error_category"] = "NOT_CONFIGURED"
+        return {
+            "status": "FAILED",
+            "error": error,
+            "llm_trace": llm_trace,
+            "executed_nodes": _executed(state, "recovery_planner"),
+        }
     else:
         facts = build_facts(
             state["project_context"],
             state["leave_impact"]["approved_leaves"],
             state["findings"],
             _today(state),
+            state["risk_analysis"],
         )
         llm_trace["invoked"] = True
         try:
@@ -644,10 +666,27 @@ def recovery_planner_node(
                 "recommended_strategy_id": result["recommended_strategy_id"],
                 "recommendation_reason": result["recommendation_reason"],
             }
-            candidates = result["strategies"] + candidates
             if not result["strategies"]:
-                llm_trace["status"] = "SUCCEEDED_NO_STRATEGIES"
+                error = "AI recovery planning returned no usable strategies."
+                llm_trace.update({
+                    "status": "FAILED",
+                    "error": error,
+                    "error_category": "INVALID_RESPONSE",
+                })
+                return {
+                    "status": "FAILED",
+                    "error": error,
+                    "llm_trace": llm_trace,
+                    "executed_nodes": _executed(state, "recovery_planner"),
+                }
         except LLMError as exc:
+            logger.error(
+                "Recovery planner LLM failed: provider=%s model=%s category=%s latency_ms=%s",
+                exc.provider or llm_trace["provider"],
+                exc.model or llm_trace["model"],
+                exc.category,
+                exc.latency_ms,
+            )
             llm_trace.update({
                 "status": "FAILED",
                 "error": exc.message,
@@ -656,17 +695,52 @@ def recovery_planner_node(
                 "provider": exc.provider or llm_trace["provider"],
                 "model": exc.model or llm_trace["model"],
             })
-            if settings.RECOVERY_REQUIRE_LLM:
+            fallback_proposal = rule_based_planner_node(state)["raw_proposal"]
+            fallback_actions = [
+                {
+                    "action_id": action.get("action_id"),
+                    "action_type": action.get("action_type"),
+                    "task_id": action.get("task_id"),
+                    "original_values": action.get("original_values"),
+                    "proposed_values": action.get("proposed_values") or {},
+                    "reason": action.get("reason"),
+                    "expected_impact": action.get("expected_impact"),
+                    "source": "RULE",
+                }
+                for action in fallback_proposal.get("proposed_actions", [])
+                if isinstance(action, dict)
+            ]
+            if fallback_actions:
+                fallback_strategy = {
+                    "strategy_id": "RULE-1",
+                    "name": fallback_proposal["title"],
+                    "approach": "MIXED",
+                    "summary": fallback_proposal["summary"],
+                    "benefits": [],
+                    "trade_offs": [],
+                    "assumptions": fallback_proposal.get("assumptions") or [],
+                    "risks": [],
+                    "actions": fallback_actions,
+                    "source": "RULE",
+                }
                 return {
-                    "status": "FAILED",
-                    "error": f"AI recovery planning failed: {exc.message}",
+                    "raw_proposal": fallback_proposal,
+                    "candidate_strategies": [fallback_strategy],
                     "llm_trace": llm_trace,
                     "executed_nodes": _executed(state, "recovery_planner"),
                 }
+            return {
+                "status": "FAILED",
+                "error": (
+                    f"AI recovery planning failed: {exc.message} "
+                    "The rule-based fallback could not produce any actions."
+                ),
+                "llm_trace": llm_trace,
+                "executed_nodes": _executed(state, "recovery_planner"),
+            }
 
     return {
-        "raw_proposal": rule_output,
-        "candidate_strategies": candidates,
+        "candidate_strategies": result["strategies"],
         "ai_analysis": ai_analysis,
         "llm_trace": llm_trace,
         "executed_nodes": _executed(state, "recovery_planner"),
@@ -721,70 +795,93 @@ def output_validator_node(state: RecoveryWorkflowState) -> Dict[str, Any]:
             "comparison": comparison,
         })
 
-    def usable(item):
-        return any(a["validation"]["status"] == "VALID" for a in item["validation"]["accepted"])
-
     ai_items = [e for e in evaluated if e["strategy"]["source"] == "AI"]
-    rule_item = next((e for e in evaluated if e["strategy"]["source"] == "RULE"), None)
+    rule_items = [e for e in evaluated if e["strategy"]["source"] == "RULE"]
+    def usable(item):
+        return any(
+            a["validation"]["status"] in {"VALID", "ADVISORY"}
+            for a in item["validation"]["accepted"]
+        )
+
     ai_analysis = state.get("ai_analysis") or {}
-    chosen = None
-    selection_reason = None
     recommended_id = ai_analysis.get("recommended_strategy_id")
-    if ai_items:
-        preferred = next((e for e in ai_items if e["strategy"]["strategy_id"] == recommended_id), None)
-        if preferred and usable(preferred):
-            chosen = preferred
-            selection_reason = "Recommended by the AI planner and passed validation."
+    preferred = next(
+        (e for e in ai_items if e["strategy"]["strategy_id"] == recommended_id),
+        None,
+    )
+    if preferred and usable(preferred):
+        chosen = preferred
+        selection_reason = "Recommended by the AI planner and passed validation."
+    else:
+        valid_ai = [e for e in ai_items if usable(e)]
+        if valid_ai:
+            chosen = sorted(
+                valid_ai,
+                key=lambda e: (
+                    -(e["comparison"]["business_days_saved"] or 0),
+                    e["comparison"]["late_tasks_after"],
+                ),
+            )[0]
+            selection_reason = (
+                "The AI's recommended strategy failed validation; the valid AI "
+                "strategy with the best simulated completion date was selected."
+            )
         else:
-            valid_ai = [e for e in ai_items if usable(e)]
-            if valid_ai:
-                chosen = sorted(
-                    valid_ai,
-                    key=lambda e: (
-                        -(e["comparison"]["business_days_saved"] or 0),
-                        e["comparison"]["late_tasks_after"],
+            valid_rules = [e for e in rule_items if usable(e)]
+            if not valid_rules:
+                validation_errors = [
+                    error
+                    for item in evaluated
+                    for error in item["validation"]["errors"]
+                ]
+                return {
+                    "status": "FAILED",
+                    "error": (
+                        "No recovery strategy produced actions that passed "
+                        "project-data validation. No proposal was saved."
                     ),
-                )[0]
-                selection_reason = (
-                    "The AI's recommended strategy failed validation; the valid AI "
-                    "strategy with the best simulated completion date was selected."
-                )
-    if chosen is None:
-        chosen = rule_item
-        if ai_items:
-            selection_reason = "No AI strategy passed validation; the rule-based plan was used."
-        else:
-            selection_reason = "Rule-based plan (no AI strategies were generated)."
+                    "validation_errors": validation_errors,
+                    "llm_trace": state.get("llm_trace") or {},
+                    "executed_nodes": _executed(state, "output_validator"),
+                }
+            chosen = sorted(
+                valid_rules,
+                key=lambda e: (
+                    -(e["comparison"]["business_days_saved"] or 0),
+                    e["comparison"]["late_tasks_after"],
+                ),
+            )[0]
+            selection_reason = (
+                "The configured AI model failed; this rule-based fallback "
+                "passed project-data validation."
+            )
 
     llm_trace = state.get("llm_trace") or {}
-    if chosen and chosen["strategy"]["source"] == "AI":
-        generation_mode = "AI_HYBRID"
-    elif llm_trace.get("skip_reason") and not llm_trace.get("invoked") and llm_trace.get("status") == "SKIPPED":
-        generation_mode = "RULE_BASED"
-    else:
-        generation_mode = "RULE_BASED_FALLBACK"
-
     strategy = chosen["strategy"]
+    is_ai_strategy = strategy["source"] == "AI"
+    generation_mode = "AI_HYBRID" if is_ai_strategy else "RULE_BASED_FALLBACK"
     accepted = chosen["validation"]["accepted"]
-    if strategy["source"] == "AI":
-        title = f"AI recovery plan: {strategy['name']}"
-        summary = strategy["summary"] or ai_analysis.get("delay_explanation") or ""
-        rationale = " ".join(
+    title = (
+        f"AI recovery plan: {strategy['name']}"
+        if is_ai_strategy
+        else state.get("raw_proposal", {}).get("title") or RULE_BASED_TITLE
+    )
+    summary = strategy["summary"] or ai_analysis.get("delay_explanation") or ""
+    rationale = (
+        " ".join(
             part for part in (
                 ai_analysis.get("delay_explanation"),
                 ai_analysis.get("recommendation_reason"),
             ) if part
         ) or strategy["summary"]
-        assumptions = strategy["assumptions"]
-    else:
-        title = strategy.get("title") or RULE_BASED_TITLE
-        summary = strategy["summary"]
-        if accepted and strategy["actions"]:
-            summary = summary.replace(
-                f"Identified {len(strategy['actions'])} ", f"Identified {len(accepted)} "
-            )
-        rationale = strategy.get("rationale") or ""
-        assumptions = strategy.get("assumptions", [])
+        if is_ai_strategy
+        else state.get("raw_proposal", {}).get("rationale") or selection_reason
+    )
+    assumptions = (
+        strategy["assumptions"]
+        or state.get("raw_proposal", {}).get("assumptions")
+        or []
+    )
 
     target_date = to_date(target) or today
     workload_before = member_workload(context["tasks"], members, leaves, today, target_date)
@@ -942,13 +1039,8 @@ def approval_queue_node(state: RecoveryWorkflowState, db: Session) -> Dict[str, 
         actor_id=state.get("actor_id"),
         event_type="RECOVERY_PROPOSAL_GENERATED",
         description=(
-            f"Recovery proposal '{proposal_data['title']}' generated "
-            + (
-                f"with {llm.get('provider')} model {llm.get('model')}."
-                if trace.get("generation_mode") == "AI_HYBRID"
-                else "by the rule-based planner"
-                + (f" (LLM {llm.get('status', '').lower()})." if llm.get("invoked") else ".")
-            )
+            f"{'AI' if trace.get('generation_mode') == 'AI_HYBRID' else 'Rule-based fallback'} "
+            f"recovery proposal '{proposal_data['title']}' generated."
         ),
         metadata_json={
             "proposal_id": proposal_record.id,
@@ -983,7 +1075,7 @@ def _track(name: str, fn: Callable[..., Dict[str, Any]]) -> Callable[[RecoveryWo
 
 
 def _continue_unless_failed(state: RecoveryWorkflowState) -> str:
-    return "stop" if state.get("status") == "FAILED" else "continue"
+    return "stop" if state.get("status") in {"FAILED", "NO_ACTION_NEEDED"} else "continue"
 
 
 def build_recovery_workflow(db: Session, llm: Optional[LLMCaller] = None):
@@ -1009,7 +1101,10 @@ def build_recovery_workflow(db: Session, llm: Optional[LLMCaller] = None):
         "recovery_planner", _continue_unless_failed,
         {"continue": "output_validator", "stop": END},
     )
-    workflow.add_edge("output_validator", "approval_queue")
+    workflow.add_conditional_edges(
+        "output_validator", _continue_unless_failed,
+        {"continue": "approval_queue", "stop": END},
+    )
     workflow.add_edge("approval_queue", END)
     return workflow.compile()
 

@@ -1,5 +1,12 @@
 import React, { useId, useMemo, useRef, useState } from 'react';
-import { AlertCircle, AlertTriangle, CheckCircle2, Circle, LoaderCircle, Table2 } from 'lucide-react';
+import {
+  MdError as AlertCircle,
+  MdWarningAmber as AlertTriangle,
+  MdCheckCircle as CheckCircle2,
+  MdCircle as Circle,
+  MdRefresh as LoaderCircle,
+  MdTableChart as Table2
+} from 'react-icons/md';
 import { niceTicks } from '../../utils/planning';
 
 /*

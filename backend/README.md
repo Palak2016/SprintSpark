@@ -45,8 +45,8 @@ alembic upgrade head
 ```
 
 Start the WorkPilot API from `backend` with `python run_server.py`; it listens
-on `127.0.0.1:8001`. The frontend Vite server proxies `/api` to this port so
-the API does not collide with other local services using port `8000`.
+on `127.0.0.1:8002`. The frontend Vite server proxies `/api` to this port to
+avoid stale or conflicting backend processes on port `8001`.
 
 ## AI recovery planner
 
@@ -62,7 +62,7 @@ context_collector -> risk_analyzer -> leave_impact -> schedule_analyzer
 | --- | --- | --- |
 | risk_analyzer | Deterministic risk score; reuses the latest history row when nothing changed (`risk_service.py`) | No |
 | schedule_analyzer | Remaining work, capacity, leave, projected completion (`recovery_scheduler.py`) | No |
-| recovery_planner | Asks the model for 2-3 recovery strategies; also builds the rule-based plan as a baseline | **Yes**, when recovery is needed and a key is set |
+| recovery_planner | Generates project-grounded recovery strategies from task details and recent updates | **Yes**, with validated rule-based fallback on provider errors |
 | output_validator | Checks every action against project data, re-simulates each strategy, picks one (`recovery_validation.py`) | No |
 | approval_queue | Saves the proposal as `PENDING_APPROVAL` with a `generation_trace` | No |
 
@@ -78,9 +78,8 @@ needed):
 ```dotenv
 GEMINI_API_KEY=...
 LLM_PROVIDER=gemini
-GEMINI_MODEL=gemini-2.0-flash
-LLM_TIMEOUT_SECONDS=45
-RECOVERY_REQUIRE_LLM=false
+GEMINI_MODEL=gemini-3.6-flash
+LLM_TIMEOUT_SECONDS=20
 
 # Optional
 OPENAI_API_KEY=...
@@ -89,21 +88,74 @@ WAYJET_API_KEY=...
 LLM_PROVIDER=openai       # gemini | openai | wayjet
 ```
 
-**Fallback:** with no key, or if the model call fails, the rule-based planner
-is used and the proposal is labelled `RULE_BASED_FALLBACK` with
-`generation_trace.llm.invoked` and `llm.status` showing exactly what happened.
-Set `RECOVERY_REQUIRE_LLM=true` to return HTTP 503 instead of falling back.
+Recovery proposals require a configured LLM. If a configured provider call
+times out, is rate-limited, or returns a 5xx, WorkPilot tries other configured
+providers in order, starting with `LLM_PROVIDER`. If all configured providers
+fail, its deterministic rule-based planner can save a proposal only if its
+actions pass the same project-data validation and schedule simulation as AI
+suggestions. With no configured LLM, or if no fallback action passes
+validation, the API returns an error. Project/task facts may be sent to each
+configured provider during failover, so configure only providers approved for
+that data. Risk scoring, schedule simulation, action validation, and manager
+approval remain deterministic safeguards. A manager must approve a proposal
+before any task changes are applied.
 
 `GET /api/v1/recovery-planner/status` shows which provider and model will be
-used (never the key). The model receives task, capacity and risk facts and
-employee blocker notes; it does not receive email addresses or leave reasons.
+used (never the key). The model receives project and task descriptions,
+recent daily updates, capacity and risk facts, and employee blocker notes; it
+does not receive email addresses or leave reasons.
 
-Daily task progress is estimated from submitted work notes by Gemini. Progress
-updates are not saved if the model is unavailable, and there is no rule-based
-progress fallback.
+Daily task progress is estimated with the selected LLM provider. If estimation
+is unavailable, the analyze endpoint keeps the task's current progress and
+returns a token so the update can still be submitted; it also offers a manual
+progress control. Applying a manual value returns a signed token, and that
+value is saved only when the update is submitted. The response clearly marks
+manual progress as not AI-estimated. Agenda analysis then requests
+clarification instead of guessing.
+
+Gemini requests retry once on HTTP 503 and then try `gemini-3.5-flash-lite` if
+the configured Gemini model returns 503 or times out. This low-latency fallback
+uses a shorter timeout to keep the progress workflow responsive.
 
 Run `alembic upgrade head` after pulling: migration `e3f7a1c9b250` adds
 `recovery_proposals.generation_trace` and `proposal_decisions.execution_report`.
+
+## Agenda drift detection and smart recovery
+
+Every employee daily update for a task assigned to that employee receives one
+persisted agenda check. The check compares the report with the task description,
+priority, deadline, dependencies, current status, recent updates, blockers,
+other assigned tasks, and manager-approved scope changes. A unique constraint
+on `daily_update_id` prevents duplicate analysis. Unassigned and manager-authored
+updates do not create employee drift records.
+
+The existing configured model (`GEMINI_API_KEY`, `OPENAI_API_KEY`, or
+`WAYJET_API_KEY` with `LLM_PROVIDER`) supplies semantic relevance, explanation,
+and concrete next steps. The backend applies the score thresholds and treats
+blockers, manager-approved scope changes, stalled progress, and vague updates
+separately. If no provider is configured or a model call fails, the result asks
+for clarification instead of generating an unsupported drift flag.
+
+Initial thresholds are configurable with `AGENDA_DRIFT_ALIGNED_THRESHOLD`
+(default `80`) and `AGENDA_DRIFT_PARTIAL_THRESHOLD` (default `50`). They are
+starting points, not employee-performance scores. `AGENDA_DRIFT_MIN_CONFIDENCE`
+(default `60`) sets the minimum confidence for a drift classification and
+manager notification. Scores and confidence are shown with the evidence.
+
+Managers can review project records at `GET /api/v1/agenda-drift/projects/{id}`
+and acknowledge or dismiss them with `PATCH /api/v1/agenda-drift/{id}/review`.
+Employees can view their own results at `GET /api/v1/agenda-drift/my-drift` and
+provide additional context through `POST /api/v1/agenda-drift/{id}/clarify`.
+The shared Agenda Alignment dashboard exposes these workflows.
+
+Potential drift also creates a pending, advisory `RecoveryProposal` for the
+existing Recovery Plans workflow. Its action is explicitly non-mutating:
+approving it records manager approval but never changes assignment, priority,
+or deadlines. Managers continue to make any actual project changes through
+the existing validated recovery approval process.
+
+Apply the new persistent table with `alembic upgrade head` after pulling; the
+agenda drift table is introduced by migration `2a7d61c4e903`.
 
 ## Project risk scoring (engine v2)
 

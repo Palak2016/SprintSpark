@@ -8,23 +8,23 @@ import { BlockerModal } from '../../components/tasks/BlockerModal';
 import { Modal } from '../../components/common/Modal';
 import { formatIndianDate } from '../../utils/date';
 import {
-  CheckSquare,
-  Clock,
-  AlertOctagon,
-  CheckCircle2,
-  CalendarDays,
-  Link2,
-  Send,
-  Edit3,
-  PlayCircle,
-  LoaderCircle,
-  AlertCircle,
-  RefreshCw,
-  Timer,
-  Target,
-  ShieldCheck,
-  FileText,
-} from 'lucide-react';
+  MdCheckBox as CheckSquare,
+  MdAccessTime as Clock,
+  MdReportProblem as AlertOctagon,
+  MdCheckCircle as CheckCircle2,
+  MdCalendarMonth as CalendarDays,
+  MdLink as Link2,
+  MdSend as Send,
+  MdEdit as Edit3,
+  MdPlayCircle as PlayCircle,
+  MdRefresh as LoaderCircle,
+  MdError as AlertCircle,
+  MdRefresh as RefreshCw,
+  MdTimer as Timer,
+  MdGpsFixed as Target,
+  MdVerifiedUser as ShieldCheck,
+  MdDescription as FileText
+} from 'react-icons/md';
 
 type TaskWithBlockerStatus = Task & {
   blocker_status?: 'OPEN' | 'RESOLVED' | null;

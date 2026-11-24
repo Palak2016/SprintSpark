@@ -1,5 +1,11 @@
 import React from 'react';
-import { Settings, ShieldCheck, Bell, Palette, UserRound } from 'lucide-react';
+import {
+  MdSettings as Settings,
+  MdVerifiedUser as ShieldCheck,
+  MdNotifications as Bell,
+  MdPalette as Palette,
+  MdPerson as UserRound
+} from 'react-icons/md';
 import { useAuth } from '../../context/AuthContext';
 
 export const AccountSettingsView: React.FC = () => {

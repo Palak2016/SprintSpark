@@ -4,12 +4,12 @@ import { Modal } from '../common/Modal';
 import { Task } from '../../types';
 import { api } from '../../services/api';
 import {
-  AlertOctagon,
-  CheckCircle2,
-  ShieldAlert,
-  LoaderCircle,
-  Info,
-} from 'lucide-react';
+  MdReportProblem as AlertOctagon,
+  MdCheckCircle as CheckCircle2,
+  MdGppMaybe as ShieldAlert,
+  MdRefresh as LoaderCircle,
+  MdInfo as Info
+} from 'react-icons/md';
 
 interface BlockerModalProps {
   isOpen: boolean;

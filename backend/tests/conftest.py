@@ -28,21 +28,31 @@ def reset_rate_limits():
 def no_real_llm(monkeypatch):
     """Tests never call a hosted model, even if backend/.env has a key.
 
-    Tests that exercise the AI path inject a fake model explicitly.
+    Recovery planning tests use a deterministic fake model.
     """
     from app.core.config import settings
 
     monkeypatch.setattr(settings, "OPENAI_API_KEY", None)
     monkeypatch.setattr(settings, "WAYJET_API_KEY", None)
     monkeypatch.setattr(settings, "GEMINI_API_KEY", None)
-    monkeypatch.setattr(settings, "RECOVERY_REQUIRE_LLM", False)
+
+
+@pytest.fixture(autouse=True)
+def fake_recovery_ai(monkeypatch, no_real_llm):
+    from app.services import recovery_ai_planner, recovery_graph
+    from app.services.llm_client import LLMConfig
+    from tests.fake_recovery_model import fake_recovery_model
+
+    config = LLMConfig("openai", "gpt-test", "test-key", "https://api.openai.com/v1", 5)
+    monkeypatch.setattr(recovery_graph, "resolve_config", lambda: config)
+    monkeypatch.setattr(recovery_ai_planner, "call_json_model", fake_recovery_model)
 
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_db():
     from app.core.config import settings
 
-    # The seed runs the recovery workflow; keep it on the rule-based path.
+    # The seed runs recovery through a deterministic fake AI caller.
     settings.OPENAI_API_KEY = None
     settings.WAYJET_API_KEY = None
     settings.GEMINI_API_KEY = None

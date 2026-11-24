@@ -1,5 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Check, Clipboard, LoaderCircle, RefreshCw } from 'lucide-react';
+import {
+  MdCheck as Check,
+  MdContentPaste as Clipboard,
+  MdRefresh as LoaderCircle,
+  MdRefresh as RefreshCw
+} from 'react-icons/md';
 import { api } from '../../services/api';
 import { Company } from '../../types';
 import {

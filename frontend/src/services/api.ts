@@ -5,6 +5,7 @@ import {
   Task,
   WorkLog,
   DailyUpdate,
+  AgendaDrift,
   LeaveRequest,
   RiskAnalysis,
   RiskHistoryItem,
@@ -712,11 +713,13 @@ class ApiService {
   async analyzeDailyUpdateProgress(data: {
     task_id: number;
     update_notes: string;
+    manual_progress_pct?: number;
   }): Promise<{
     progress_pct: number;
     explanation: string;
     analysis_token: string;
     signals?: ExtractedSignal[];
+    ai_available: boolean;
   }> {
     return this.request('/daily-updates/analyze-progress', {
       method: 'POST',
@@ -736,6 +739,35 @@ class ApiService {
     return this.request('/daily-updates', {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+  }
+
+  async getMyAgendaDrift(): Promise<AgendaDrift[]> {
+    return this.request('/agenda-drift/my-drift');
+  }
+
+  async getProjectAgendaDrift(projectId: number): Promise<AgendaDrift[]> {
+    return this.request(`/agenda-drift/projects/${projectId}`);
+  }
+
+  async reviewAgendaDrift(
+    driftId: number,
+    decision: 'ACKNOWLEDGED' | 'DISMISSED',
+    feedback?: string,
+  ): Promise<AgendaDrift> {
+    return this.request(`/agenda-drift/${driftId}/review`, {
+      method: 'PATCH',
+      body: JSON.stringify({ decision, feedback }),
+    });
+  }
+
+  async clarifyAgendaDrift(
+    driftId: number,
+    clarification: string,
+  ): Promise<AgendaDrift> {
+    return this.request(`/agenda-drift/${driftId}/clarify`, {
+      method: 'POST',
+      body: JSON.stringify({ clarification }),
     });
   }
 

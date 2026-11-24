@@ -1,15 +1,15 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ArrowRight,
-  Building2,
-  FolderKanban,
-  KeyRound,
-  Mail,
-  ShieldCheck,
-  UserCheck,
-  UsersRound,
-} from 'lucide-react';
+  MdArrowForward as ArrowRight,
+  MdBusiness as Building2,
+  MdViewKanban as FolderKanban,
+  MdKey as KeyRound,
+  MdMail as Mail,
+  MdVerifiedUser as ShieldCheck,
+  MdHowToReg as UserCheck,
+  MdGroups as UsersRound
+} from 'react-icons/md';
 import { api } from '../../services/api';
 import {
   Company,

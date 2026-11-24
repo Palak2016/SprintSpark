@@ -1,6 +1,12 @@
 import React from 'react';
 import type { RiskAnalysis, RiskFactor } from '../../types';
-import { ArrowDownRight, ArrowUpRight, Layers, ListChecks, Minus } from 'lucide-react';
+import {
+  MdArrowDownward as ArrowDownRight,
+  MdArrowOutward as ArrowUpRight,
+  MdLayers as Layers,
+  MdChecklist as ListChecks,
+  MdRemove as Minus
+} from 'react-icons/md';
 
 const TRIGGER_LABELS: Record<string, string> = {
   INITIAL: 'First evaluation',

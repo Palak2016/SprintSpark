@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { Clock, LogOut, RefreshCw, XCircle } from 'lucide-react';
+import {
+  MdAccessTime as Clock,
+  MdLogout as LogOut,
+  MdRefresh as RefreshCw,
+  MdCancel as XCircle
+} from 'react-icons/md';
 import { Logo } from '../components/common/Logo';
 import { useAuth } from '../context/AuthContext';
 

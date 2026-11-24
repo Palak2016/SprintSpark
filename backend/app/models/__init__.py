@@ -11,6 +11,7 @@ from app.models.audit import AuditEvent
 from app.models.notification import Notification
 from app.models.email_verification import EmailVerification
 from app.models.focus_context import FocusContext
+from app.models.agenda_drift import AgendaDrift
 from app.models.company_access import (
     CompanyAdmin,
     CompanyAdminTransfer,
@@ -45,6 +46,7 @@ __all__ = [
     "Notification",
     "EmailVerification",
     "FocusContext",
+    "AgendaDrift",
     "CompanyAdmin",
     "CompanyAdminTransfer",
     "CompanyAuditEvent",

@@ -3,7 +3,13 @@ import { api } from '../../services/api';
 import type { RiskHistoryItem, RiskSuggestion } from '../../types';
 import { formatIndianDateTime } from '../../utils/date';
 import { triggerLabel } from './RiskExplanation';
-import { Check, History, Inbox, Quote, X } from 'lucide-react';
+import {
+  MdCheck as Check,
+  MdHistory as History,
+  MdInbox as Inbox,
+  MdFormatQuote as Quote,
+  MdClose as X
+} from 'react-icons/md';
 
 const SUGGESTION_TEXT: Record<RiskSuggestion['kind'], (s: RiskSuggestion) => string> = {
   DEPENDENCY: (s) =>

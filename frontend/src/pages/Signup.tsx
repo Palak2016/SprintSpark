@@ -9,20 +9,19 @@ import { InvitationPreview } from '../types';
 import { homePath } from '../utils/workspace';
 import { SignupRole, buildSignupDetails } from '../utils/signup';
 import {
-  AlertCircle,
-  ArrowLeft,
-  ArrowRight,
-  BriefcaseBusiness,
-  Building2,
-  CheckCircle2,
-  Eye,
-  EyeOff,
-  LockKeyhole,
-  Mail,
-  ShieldCheck,
-  Sparkles,
-  UserRound,
-} from 'lucide-react';
+  MdError as AlertCircle,
+  MdArrowBack as ArrowLeft,
+  MdArrowForward as ArrowRight,
+  MdBusinessCenter as BriefcaseBusiness,
+  MdBusiness as Building2,
+  MdCheckCircle as CheckCircle2,
+  MdVisibility as Eye,
+  MdVisibilityOff as EyeOff,
+  MdLock as LockKeyhole,
+  MdMail as Mail,
+  MdVerifiedUser as ShieldCheck,
+  MdPerson as UserRound
+} from 'react-icons/md';
 
 /**
  * Three separate signup paths:
@@ -441,7 +440,7 @@ export const Signup: React.FC = () => {
 
                             {selected && (
                               <span className="mt-3 inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#D1D3D6]">
-                                <Sparkles className="h-3 w-3" />
+                                <CheckCircle2 className="h-3 w-3" />
                                 Selected
                               </span>
                             )}

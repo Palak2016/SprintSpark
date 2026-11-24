@@ -7,23 +7,23 @@ import { RecoveryReviewModal } from '../../components/risk/RecoveryReviewModal';
 import { formatIndianDateTime } from '../../utils/date';
 
 import {
-  Sparkles,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  ShieldCheck,
-  ArrowRight,
-  RefreshCw,
-  AlertTriangle,
-  FileText,
-  CalendarClock,
-  MessageSquare,
-  UserRound,
-  ClipboardCheck,
-  BrainCircuit,
-  Info,
-  LoaderCircle,
-} from 'lucide-react';
+  MdAssignment as ClipboardList,
+  MdCheckCircle as CheckCircle2,
+  MdCancel as XCircle,
+  MdAccessTime as Clock,
+  MdVerifiedUser as ShieldCheck,
+  MdArrowForward as ArrowRight,
+  MdRefresh as RefreshCw,
+  MdWarningAmber as AlertTriangle,
+  MdDescription as FileText,
+  MdEvent as CalendarClock,
+  MdAccountTree as Workflow,
+  MdMessage as MessageSquare,
+  MdPerson as UserRound,
+  MdFactCheck as ClipboardCheck,
+  MdInfo as Info,
+  MdRefresh as LoaderCircle
+} from 'react-icons/md';
 
 const formatDate = (date?: string | null): string => {
   if (!date) return 'Date unavailable';
@@ -264,7 +264,7 @@ export const RecoveryPlansView: React.FC = () => {
       if (document.visibilityState === 'visible') {
         void loadProposals(true);
       }
-    }, 10000);
+    }, 30000);
 
     const handleFocus = () => {
       void loadProposals(true);
@@ -340,7 +340,7 @@ export const RecoveryPlansView: React.FC = () => {
 
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-violet-400/20 bg-violet-500/10">
-              <Sparkles
+              <ClipboardList
                 size={25}
                 className="text-violet-300"
               />
@@ -368,8 +368,8 @@ export const RecoveryPlansView: React.FC = () => {
           {plannerStatus && (
             <p className="mt-2 text-[11px] leading-5 text-[#A99DBD]">
               {plannerStatus.llm_configured
-                ? `AI planner: ${plannerStatus.provider} model ${plannerStatus.model}. Its suggestions are validated against project data and need your approval.`
-                : 'AI planner not configured (no OPENAI_API_KEY or GEMINI_API_KEY). New plans use the rule-based planner and are labelled that way.'}
+                ? `AI planner: ${plannerStatus.provider} model ${plannerStatus.model}. ${plannerStatus.fallback_providers.length ? `Provider failover: ${plannerStatus.fallback_providers.join(', ')}. ` : 'No backup AI provider is configured. '}A validated rule-based plan is used if all configured providers fail.`
+                : 'AI planner unavailable. Configure a supported LLM provider and API key before generating recovery plans; no rule-based substitute will be created.'}
             </p>
           )}
         </div>
@@ -418,7 +418,7 @@ export const RecoveryPlansView: React.FC = () => {
                 className="animate-spin"
               />
             ) : (
-              <Sparkles size={16} />
+              <ClipboardCheck size={16} />
             )}
 
             {isGenerating ? 'Generating Plan...' : 'Generate Recovery Plan'}
@@ -437,7 +437,7 @@ export const RecoveryPlansView: React.FC = () => {
       <section className="rounded-2xl border border-violet-400/20 bg-violet-500/[0.05] p-5 sm:p-6">
         <div className="flex items-start gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-violet-400/20 bg-violet-500/10">
-            <BrainCircuit
+            <Workflow
               size={21}
               className="text-violet-300"
             />
@@ -662,7 +662,7 @@ export const RecoveryPlansView: React.FC = () => {
                 <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                   <div className="flex min-w-0 items-start gap-4">
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-violet-400/15 bg-violet-500/10">
-                      <Sparkles
+                      <ClipboardCheck
                         size={22}
                         className="text-violet-300"
                       />

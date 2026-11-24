@@ -46,6 +46,7 @@ import { EmployeeLeaveView } from './pages/employee/EmployeeLeaveView';
 import { FocusGuardianView } from './pages/employee/FocusGuardianView';
 import { ProfileSettingsView } from './pages/employee/ProfileSettingsView';
 import { AccountSettingsView } from './pages/employee/AccountSettingsView';
+import { AgendaDriftView } from './pages/AgendaDriftView';
 
 // Route guard. UI routing only: every API endpoint enforces the same rules
 // server-side. Workspace access comes from the server's /auth/me answer.
@@ -119,6 +120,7 @@ export const App: React.FC = () => {
               <Route path="tasks" element={<TasksView />} />
               <Route path="my-tasks" element={<MyTasksView />} />
               <Route path="daily-updates" element={<DailyUpdatesView />} />
+              <Route path="agenda-drift" element={<AgendaDriftView />} />
               <Route path="work-logs" element={<WorkLogsView />} />
               <Route path="team" element={<TeamAvailabilityView />} />
               <Route path="leave" element={<LeaveManagementView />} />
@@ -182,6 +184,7 @@ export const App: React.FC = () => {
               <Route path="tasks" element={<MyTasksView />} />
               <Route path="work-logs" element={<WorkLogsView />} />
               <Route path="daily-updates" element={<DailyUpdatesView />} />
+              <Route path="agenda-drift" element={<AgendaDriftView />} />
               <Route path="leave" element={<EmployeeLeaveView />} />
               <Route path="focus" element={<FocusGuardianView />} />
               <Route path="settings" element={<AccountSettingsView />} />

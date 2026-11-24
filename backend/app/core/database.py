@@ -6,11 +6,20 @@ connect_args = {}
 if settings.DATABASE_URL.startswith("sqlite"):
     connect_args = {"check_same_thread": False}
 
+engine_options = {
+    "connect_args": connect_args,
+    "echo": False,
+    "future": True,
+}
+if settings.DATABASE_URL.startswith("postgresql"):
+    engine_options.update({
+        "pool_pre_ping": True,
+        "pool_recycle": 180,
+    })
+
 engine = create_engine(
     settings.DATABASE_URL,
-    connect_args=connect_args,
-    echo=False,
-    future=True
+    **engine_options,
 )
 
 # Enable foreign keys for SQLite

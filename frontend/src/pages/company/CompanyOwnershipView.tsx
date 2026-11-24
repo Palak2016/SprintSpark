@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { KeyRound } from 'lucide-react';
+import {
+  MdKey as KeyRound
+} from 'react-icons/md';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { CompanyAdminTransfer, CompanyMember } from '../../types';

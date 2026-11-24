@@ -1,6 +1,9 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
-import { AlertCircle, LoaderCircle } from 'lucide-react';
+import {
+  MdError as AlertCircle,
+  MdRefresh as LoaderCircle
+} from 'react-icons/md';
 import { formatIndianDateTime } from '../../utils/date';
 
 /** The company being administered, taken from /admin/:companyId/... */

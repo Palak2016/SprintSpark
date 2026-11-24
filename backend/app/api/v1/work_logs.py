@@ -1,10 +1,12 @@
 
+import logging
 from datetime import date
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import Response
 from sqlalchemy import false
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.database import get_db
@@ -15,6 +17,7 @@ from app.models.project import Project
 from app.models.task import Task, TaskStatus
 from app.models.work_log import WorkLog, DailyUpdate
 from app.models.notification import Notification
+from app.models.recovery import RecoveryProposal
 from app.services.llm_client import LLMError
 from app.services.progress_estimator import (
     PROMPT_VERSION,
@@ -32,6 +35,7 @@ from app.models.risk import (
 )
 from app.models.task import TaskDependency
 from app.services.risk_service import project_today, safe_recompute
+from app.services.agenda_drift_service import analyze_and_persist_daily_update
 from app.services.excel_export import (
     XLSX_MEDIA_TYPE,
     daily_updates_workbook,
@@ -47,10 +51,13 @@ from app.schemas.work_log import (
     DailyUpdateOut,
     DailyUpdateProgressAnalysisRequest,
     DailyUpdateProgressAnalysisOut,
+    DailyUpdateSubmissionOut,
+    DailyUpdateAgendaDriftOut,
     ExtractedSignalOut,
 )
 
 router = APIRouter(tags=["Work Logs & Daily Updates"])
+logger = logging.getLogger(__name__)
 
 
 def _visible_work_logs(
@@ -340,16 +347,48 @@ def analyze_daily_update_progress(
             detail="You can only analyze progress for tasks assigned to you.",
         )
 
-    try:
-        estimate = estimate_task_progress(
-            task,
-            data.update_notes,
+    current_progress = task.progress_pct or 0
+    ai_available = True
+    model = None
+    if data.manual_progress_pct is not None:
+        if data.manual_progress_pct < current_progress:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="Manual progress cannot be lower than the task's saved progress.",
+            )
+        ai_available = False
+        progress_pct = data.manual_progress_pct
+        explanation = (
+            f"Manual progress set to {progress_pct}%. No AI estimate was used; "
+            "this value will be saved when you submit the update."
         )
-    except LLMError as error:
-        raise _llm_http_error(error) from error
-
-    progress_pct, explanation = estimate[0], estimate[1]
-    signals = list(getattr(estimate, "signals", []) or [])
+        signals = []
+        model = "MANUAL"
+    else:
+        try:
+            estimate = estimate_task_progress(
+                task,
+                data.update_notes,
+            )
+        except LLMError as error:
+            ai_available = False
+            progress_pct = current_progress
+            explanation = (
+                f"AI progress analysis is unavailable: {error.message} "
+                f"Current task progress ({progress_pct}%) will be kept. "
+                "You can still submit this update or set progress manually."
+            )
+            signals = []
+            logger.warning(
+                "Progress analysis unavailable for task %s (%s): %s",
+                task.id,
+                error.category,
+                error.message,
+            )
+        else:
+            progress_pct, explanation = estimate[0], estimate[1]
+            signals = list(getattr(estimate, "signals", []) or [])
+            model = getattr(estimate, "model", None)
     return DailyUpdateProgressAnalysisOut(
         progress_pct=progress_pct,
         explanation=explanation,
@@ -357,18 +396,19 @@ def analyze_daily_update_progress(
             task_id=task.id,
             user_id=current_user.id,
             update_notes=data.update_notes,
-            current_progress=task.progress_pct or 0,
+            current_progress=current_progress,
             progress_pct=progress_pct,
             signals=signals,
-            model=getattr(estimate, "model", None),
+            model=model,
         ),
         signals=[ExtractedSignalOut(**s) for s in signals],
+        ai_available=ai_available,
     )
 
 
 @router.post(
     "/daily-updates",
-    response_model=DailyUpdateOut,
+    response_model=DailyUpdateSubmissionOut,
     status_code=status.HTTP_201_CREATED,
 )
 def submit_daily_update(
@@ -522,17 +562,67 @@ def submit_daily_update(
             )
         )
 
-    safe_recompute(
-        db,
-        task.project_id,
-        RiskTrigger.DAILY_UPDATE.value,
-        trigger_ref_id=update.id,
-        actor_id=current_user.id,
-    )
+    # Persist the employee's report before running optional analysis. An
+    # agenda-analysis database failure must not roll back the daily update.
     db.commit()
     db.refresh(update)
+    response = DailyUpdateSubmissionOut.model_validate(update)
+    try:
+        safe_recompute(
+            db,
+            task.project_id,
+            RiskTrigger.DAILY_UPDATE.value,
+            trigger_ref_id=update.id,
+            actor_id=current_user.id,
+        )
+        drift = analyze_and_persist_daily_update(db, task, update)
+        if drift is None:
+            db.commit()
+            return response.model_copy(update={
+                "agenda_drift_note": (
+                    "No employee agenda check was created because this update was not "
+                    "submitted by the task's current assignee."
+                ),
+            })
 
-    return DailyUpdateOut.model_validate(update)
+        manager_notified = (
+            drift.alignment_status == "OFF_TRACK"
+            and drift.confidence_score >= settings.AGENDA_DRIFT_MIN_CONFIDENCE
+            and not update.is_blocked
+            and task.project.manager_id is not None
+            and task.project.manager_id != current_user.id
+        )
+        recovery_proposal_status = None
+        if drift.recovery_proposal_id:
+            proposal = db.query(RecoveryProposal).filter(
+                RecoveryProposal.id == drift.recovery_proposal_id
+            ).first()
+            recovery_proposal_status = proposal.status if proposal else None
+        db.commit()
+        return response.model_copy(update={
+            "agenda_drift": DailyUpdateAgendaDriftOut(
+                alignment_status=drift.alignment_status,
+                alignment_score=drift.alignment_score,
+                confidence_score=drift.confidence_score,
+                drift_explanation=drift.drift_explanation,
+                recommended_actions=drift.recommended_actions or [],
+                manager_notified=manager_notified,
+                recovery_proposal_id=drift.recovery_proposal_id,
+                recovery_proposal_status=recovery_proposal_status,
+            ),
+        })
+    except SQLAlchemyError:
+        db.rollback()
+        logger.exception(
+            "Agenda drift processing failed for saved daily update %s",
+            update.id,
+        )
+        return response.model_copy(update={
+            "agenda_drift_note": (
+                "Your daily update was saved, but the agenda check could not be stored. "
+                "Please ask your manager or administrator to check the server logs."
+            ),
+        })
 
 
 def _llm_http_error(error: LLMError) -> HTTPException:

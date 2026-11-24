@@ -1,6 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { AlertCircle } from 'lucide-react';
+import {
+  MdError as AlertCircle
+} from 'react-icons/md';
 import { Logo } from '../common/Logo';
 
 /*

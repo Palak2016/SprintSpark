@@ -1,12 +1,15 @@
 
 import React from 'react';
-import { LucideIcon, ArrowUpRight } from 'lucide-react';
+import {
+  MdArrowOutward as ArrowUpRight
+} from 'react-icons/md';
+import type { IconType } from 'react-icons';
 
 interface StatCardProps {
   title: string;
   value: string | number;
   subtitle?: string;
-  icon: LucideIcon;
+  icon: IconType;
   variant?: 'default' | 'success' | 'warning' | 'danger' | 'forest';
   action?: {
     label: string;

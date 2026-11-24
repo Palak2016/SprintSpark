@@ -5,19 +5,19 @@ import { RiskBadge } from '../common/RiskBadge';
 import { formatIndianDateTime } from '../../utils/date';
 import { RiskChangePanel, RiskFactorBreakdown } from './RiskExplanation';
 import {
-  AlertTriangle,
-  AlertOctagon,
-  Info,
-  CheckCircle2,
-  Calendar,
-  Users,
-  Link2,
-  Sparkles,
-  HelpCircle,
-  ShieldCheck,
-  Activity,
-  Gauge,
-} from 'lucide-react';
+  MdWarningAmber as AlertTriangle,
+  MdReportProblem as AlertOctagon,
+  MdInfo as Info,
+  MdCheckCircle as CheckCircle2,
+  MdCalendarMonth as Calendar,
+  MdGroup as Users,
+  MdLink as Link2,
+  MdFactCheck as ClipboardCheck,
+  MdHelp as HelpCircle,
+  MdVerifiedUser as ShieldCheck,
+  MdInsights as Activity,
+  MdSpeed as Gauge
+} from 'react-icons/md';
 
 interface RiskDetailCardProps {
   analysis: RiskAnalysis | null;
@@ -169,7 +169,7 @@ export const RiskDetailCard: React.FC<RiskDetailCardProps> = ({
               disabled={isGenerating}
               className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-xs font-semibold text-white shadow-lg shadow-violet-950/20 transition-all hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
             >
-              <Sparkles
+              <ClipboardCheck
                 className={`h-4 w-4 ${isGenerating ? 'animate-pulse' : ''}`}
               />
               <span>

@@ -25,21 +25,21 @@ import {
 } from '../../utils/planning';
 
 import {
-  Kanban,
-  List,
-  Plus,
-  Search,
-  CheckSquare,
-  AlertCircle,
-  RefreshCw,
-  FolderKanban,
-  X,
-  ClipboardList,
-  LayoutDashboard,
-  CheckCircle2,
-  CalendarDays,
-  GanttChartSquare,
-} from 'lucide-react';
+  MdViewKanban as Kanban,
+  MdList as List,
+  MdAdd as Plus,
+  MdSearch as Search,
+  MdCheckBox as CheckSquare,
+  MdError as AlertCircle,
+  MdRefresh as RefreshCw,
+  MdViewKanban as FolderKanban,
+  MdClose as X,
+  MdAssignment as ClipboardList,
+  MdDashboard as LayoutDashboard,
+  MdCheckCircle as CheckCircle2,
+  MdCalendarMonth as CalendarDays,
+  MdViewTimeline as GanttChartSquare
+} from 'react-icons/md';
 
 type ViewMode = 'list' | 'kanban' | 'calendar' | 'timeline';
 const VIEW_STORAGE_KEY = 'workpilot_task_view';

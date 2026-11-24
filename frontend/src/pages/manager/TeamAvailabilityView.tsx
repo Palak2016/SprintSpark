@@ -3,19 +3,19 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { api } from '../../services/api';
 import type { TeamMemberAvailability } from '../../types';
 import {
-  Users,
-  Calendar,
-  Clock,
-  CheckCircle2,
-  CalendarDays,
-  RefreshCw,
-  BriefcaseBusiness,
-  AlertCircle,
-  LoaderCircle,
-  ArrowUpRight,
-  UserCheck,
-  AlertTriangle,
-} from 'lucide-react';
+  MdGroup as Users,
+  MdCalendarMonth as Calendar,
+  MdAccessTime as Clock,
+  MdCheckCircle as CheckCircle2,
+  MdCalendarMonth as CalendarDays,
+  MdRefresh as RefreshCw,
+  MdBusinessCenter as BriefcaseBusiness,
+  MdError as AlertCircle,
+  MdRefresh as LoaderCircle,
+  MdArrowOutward as ArrowUpRight,
+  MdHowToReg as UserCheck,
+  MdWarningAmber as AlertTriangle
+} from 'react-icons/md';
 
 export const TeamAvailabilityView: React.FC = () => {
   const [teamMembers, setTeamMembers] = useState<TeamMemberAvailability[]>([]);

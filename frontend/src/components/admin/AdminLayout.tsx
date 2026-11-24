@@ -1,16 +1,16 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import {
-  Activity,
-  BarChart3,
-  Building2,
-  KeyRound,
-  LayoutDashboard,
-  Mail,
-  Settings,
-  UserCheck,
-  UsersRound,
-} from 'lucide-react';
+  MdInsights as Activity,
+  MdBarChart as BarChart3,
+  MdBusiness as Building2,
+  MdKey as KeyRound,
+  MdDashboard as LayoutDashboard,
+  MdMail as Mail,
+  MdSettings as Settings,
+  MdHowToReg as UserCheck,
+  MdGroups as UsersRound
+} from 'react-icons/md';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import { AdministeredCompany } from '../../types';

@@ -70,6 +70,60 @@ def test_wayjet_configuration_is_selected_by_provider(monkeypatch):
     assert resolved.base_url == "https://api.wayjet.ai/v1"
 
 
+def test_preferred_provider_fails_over_to_configured_backup(monkeypatch):
+    from app.core import config
+    from app.services import llm_client
+
+    monkeypatch.setattr(config.settings, "OPENAI_API_KEY", "openai-test-key")
+    monkeypatch.setattr(config.settings, "OPENAI_MODEL", "gpt-backup")
+    monkeypatch.setattr(config.settings, "OPENAI_BASE_URL", "https://api.openai.com/v1")
+    monkeypatch.setattr(config.settings, "WAYJET_API_KEY", None)
+    monkeypatch.setattr(config.settings, "GEMINI_API_KEY", "gemini-test-key")
+    monkeypatch.setattr(config.settings, "GEMINI_MODEL", "gemini-primary")
+    monkeypatch.setattr(config.settings, "LLM_PROVIDER", "gemini")
+    monkeypatch.setattr(llm_client.time, "sleep", lambda _seconds: None)
+    seen_urls = []
+
+    def transport(url, _body, _headers, _timeout):
+        seen_urls.append(url)
+        if "generativelanguage.googleapis.com" in url:
+            raise urllib.error.HTTPError(
+                url,
+                503,
+                "Service Unavailable",
+                {},
+                io.BytesIO(b""),
+            )
+        return {
+            "model": "gpt-backup",
+            "choices": [{"message": {"content": json.dumps({"strategies": []})}}],
+        }
+
+    result = call_json_model("sys", "user", transport=transport)
+
+    assert result.provider == "openai"
+    assert result.model == "gpt-backup"
+    assert result.content == {"strategies": []}
+    assert seen_urls[-1] == "https://api.openai.com/v1/chat/completions"
+    assert len(seen_urls) == 5
+
+
+def test_retired_gemini_flash_setting_uses_supported_replacement(monkeypatch):
+    from app.core import config
+    from app.services import llm_client
+
+    monkeypatch.setattr(config.settings, "OPENAI_API_KEY", None)
+    monkeypatch.setattr(config.settings, "WAYJET_API_KEY", None)
+    monkeypatch.setattr(config.settings, "GEMINI_API_KEY", "test-key")
+    monkeypatch.setattr(config.settings, "GEMINI_MODEL", "gemini-2.0-flash")
+    monkeypatch.setattr(config.settings, "LLM_PROVIDER", "gemini")
+
+    resolved = llm_client.resolve_config()
+
+    assert resolved is not None
+    assert resolved.model == "gemini-3.6-flash"
+
+
 def test_gemini_request_and_response_parsing():
     def transport(url, body, headers, timeout):
         assert url.endswith("/models/gemini-test:generateContent")
@@ -80,6 +134,97 @@ def test_gemini_request_and_response_parsing():
     result = call_json_model("sys", "user", transport=transport, config=GEMINI)
     assert result.provider == "gemini"
     assert result.content == {"a": 1}
+
+
+def test_gemini_service_unavailable_is_retried_once(monkeypatch):
+    from app.services import llm_client
+
+    calls = []
+    monkeypatch.setattr(llm_client.time, "sleep", lambda _seconds: None)
+
+    def transport(*_args):
+        calls.append(True)
+        if len(calls) == 1:
+            raise urllib.error.HTTPError(
+                "https://generativelanguage.googleapis.com/",
+                503,
+                "Service Unavailable",
+                {},
+                io.BytesIO(b""),
+            )
+        return {
+            "candidates": [{
+                "content": {
+                    "parts": [{"text": json.dumps({"alignment": "ready"})}],
+                },
+            }],
+        }
+
+    result = call_json_model("sys", "user", transport=transport, config=GEMINI)
+
+    assert len(calls) == 2
+    assert result.content == {"alignment": "ready"}
+
+
+def test_gemini_503_uses_supported_fallback_model(monkeypatch):
+    from app.services import llm_client
+
+    calls = []
+    monkeypatch.setattr(llm_client.time, "sleep", lambda _seconds: None)
+
+    def transport(url, _body, _headers, _timeout):
+        calls.append(url)
+        if "gemini-test" in url:
+            raise urllib.error.HTTPError(
+                url,
+                503,
+                "Service Unavailable",
+                {},
+                io.BytesIO(b""),
+            )
+        return {
+            "modelVersion": "gemini-3.5-flash-lite",
+            "candidates": [{
+                "content": {
+                    "parts": [{"text": json.dumps({"alignment": "ready"})}],
+                },
+            }],
+        }
+
+    result = call_json_model("sys", "user", transport=transport, config=GEMINI)
+
+    assert len(calls) == 3
+    assert calls[-1].endswith("/models/gemini-3.5-flash-lite:generateContent")
+    assert result.model == "gemini-3.5-flash-lite"
+
+
+def test_gemini_timeout_uses_supported_fallback_model(monkeypatch):
+    from app.services import llm_client
+
+    calls = []
+
+    def transport(url, _body, _headers, timeout):
+        calls.append((url, timeout))
+        if "gemini-test" in url:
+            raise TimeoutError("provider timeout")
+        return {
+            "modelVersion": "gemini-3.5-flash-lite",
+            "candidates": [{
+                "content": {
+                    "parts": [{"text": json.dumps({"alignment": "ready"})}],
+                },
+            }],
+        }
+
+    result = call_json_model("sys", "user", transport=transport, config=GEMINI)
+
+    assert len(calls) == 2
+    assert calls[-1][0].endswith("/models/gemini-3.5-flash-lite:generateContent")
+    assert calls[-1][1] == min(
+        GEMINI.timeout,
+        llm_client.GEMINI_FALLBACK_TIMEOUT_SECONDS,
+    )
+    assert result.model == "gemini-3.5-flash-lite"
 
 
 def test_errors_are_categorised_and_never_include_the_key():
@@ -165,7 +310,7 @@ def test_wayjet_402_error_explains_balance_action():
 def test_not_configured_raises(monkeypatch):
     from app.services import llm_client
 
-    monkeypatch.setattr(llm_client, "resolve_config", lambda: None)
+    monkeypatch.setattr(llm_client, "resolve_configs", lambda: [])
     with pytest.raises(LLMError) as exc:
         call_json_model("s", "u")
     assert exc.value.category == "NOT_CONFIGURED"

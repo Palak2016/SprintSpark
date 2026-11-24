@@ -12,17 +12,17 @@ import { LeaveRequestModal } from '../../components/leave/LeaveRequestModal';
 import { formatIndianDate } from '../../utils/date';
 
 import {
-  CalendarDays,
-  Plus,
-  Clock,
-  CheckCircle2,
-  XCircle,
-  LoaderCircle,
-  RefreshCw,
-  AlertCircle,
-  CalendarCheck,
-  MessageSquareText,
-} from 'lucide-react';
+  MdCalendarMonth as CalendarDays,
+  MdAdd as Plus,
+  MdAccessTime as Clock,
+  MdCheckCircle as CheckCircle2,
+  MdCancel as XCircle,
+  MdRefresh as LoaderCircle,
+  MdRefresh as RefreshCw,
+  MdError as AlertCircle,
+  MdEventAvailable as CalendarCheck,
+  MdChat as MessageSquareText
+} from 'react-icons/md';
 
 export const EmployeeLeaveView: React.FC = () => {
   const { user } = useAuth();

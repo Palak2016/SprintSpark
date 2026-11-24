@@ -1,5 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import { AlertTriangle, ChevronLeft, ChevronRight, CircleDot, Flag } from 'lucide-react';
+import {
+  MdWarningAmber as AlertTriangle,
+  MdChevronLeft as ChevronLeft,
+  MdChevronRight as ChevronRight,
+  MdRadioButtonChecked as CircleDot,
+  MdFlag as Flag
+} from 'react-icons/md';
 import type { Task } from '../../types';
 import { calendarMonth, formatDayLabel, taskFlag, toDay, todayInIndia } from '../../utils/planning';
 import { CHART_COLORS } from '../charts/Charts';

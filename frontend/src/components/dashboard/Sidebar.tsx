@@ -2,32 +2,34 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard,
-  FolderKanban,
-  CheckSquare,
-  Users,
-  CalendarDays,
-  Sparkles,
-  History,
-  Settings,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  Send,
-  Eye,
-  UserRound,
-  Sun,
-  Moon,
-  CircleHelp,
-  UsersRound,
-  Building2,
-  LogOut,
-  X,
-  Check,
-  ArrowUpRight,
-  ArrowLeftRight,
-  ShieldCheck,
-} from 'lucide-react';
+  MdDashboard as LayoutDashboard,
+  MdViewKanban as FolderKanban,
+  MdCheckBox as CheckSquare,
+  MdGroup as Users,
+  MdCalendarMonth as CalendarDays,
+  MdAssignment as ClipboardList,
+  MdExplore as Compass,
+  MdHistory as History,
+  MdSettings as Settings,
+  MdChevronLeft as ChevronLeft,
+  MdChevronRight as ChevronRight,
+  MdAccessTime as Clock,
+  MdSend as Send,
+  MdVisibility as Eye,
+  MdPerson as UserRound,
+  MdWbSunny as Sun,
+  MdDarkMode as Moon,
+  MdHelp as CircleHelp,
+  MdGroups as UsersRound,
+  MdBusiness as Building2,
+  MdLogout as LogOut,
+  MdClose as X,
+  MdCheck as Check,
+  MdArrowOutward as ArrowUpRight,
+  MdSwapHoriz as ArrowLeftRight,
+  MdVerifiedUser as ShieldCheck,
+  MdGpsFixed as Target
+} from 'react-icons/md';
 import { Logo } from '../common/Logo';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
@@ -145,13 +147,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { name: 'Tasks Board', href: '/manager/tasks', icon: CheckSquare },
     { name: 'My Tasks', href: '/manager/my-tasks', icon: CheckSquare },
     { name: 'Daily Updates', href: '/manager/daily-updates', icon: Send },
+    { name: 'Agenda Alignment', href: '/manager/agenda-drift', icon: Target },
     { name: 'Work Logs', href: '/manager/work-logs', icon: Clock },
     { name: 'Team & Capacity', href: '/manager/team', icon: Users },
     { name: 'Leave Requests', href: '/manager/leave', icon: CalendarDays },
     {
       name: 'Recovery Plans',
       href: '/manager/recovery',
-      icon: Sparkles,
+      icon: ClipboardList,
       badge: 'AI',
     },
     { name: 'Activity History', href: '/manager/audit', icon: History },
@@ -163,6 +166,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { name: 'My Tasks', href: '/employee/tasks', icon: CheckSquare },
     { name: 'Work Logs', href: '/employee/work-logs', icon: Clock },
     { name: 'Daily Updates', href: '/employee/daily-updates', icon: Send },
+    { name: 'Agenda Alignment', href: '/employee/agenda-drift', icon: Target },
     { name: 'Leave Requests', href: '/employee/leave', icon: CalendarDays },
     { name: 'Focus Guardian', href: '/employee/focus', icon: Eye },
   ];
@@ -597,7 +601,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl border border-violet-300/20 bg-violet-500/15">
-                  <Sparkles className="h-5 w-5 text-violet-300" />
+                  <Compass className="h-5 w-5 text-violet-300" />
                 </div>
 
                 <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-300">

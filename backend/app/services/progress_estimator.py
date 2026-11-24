@@ -292,10 +292,10 @@ def estimate_task_progress(
     update_notes: str,
 ) -> ProgressEstimate:
     config = resolve_config()
-    if config is None or config.provider != "gemini":
+    if config is None:
         raise LLMError(
             "NOT_CONFIGURED",
-            "Set GEMINI_API_KEY and LLM_PROVIDER=gemini to estimate task progress.",
+            "Configure OPENAI_API_KEY, WAYJET_API_KEY, or GEMINI_API_KEY and select the matching LLM_PROVIDER to estimate task progress.",
         )
 
     project = getattr(task, "project", None)

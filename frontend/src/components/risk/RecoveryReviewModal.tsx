@@ -14,20 +14,20 @@ import {
 } from './RecoveryInsights';
 import { formatIndianDateTime } from '../../utils/date';
 import {
-  Sparkles,
-  CheckCircle2,
-  XCircle,
-  ArrowRight,
-  ShieldCheck,
-  AlertTriangle,
-  Clock,
-  Users,
-  ArrowUpRight,
-  Calendar,
-  GitCompareArrows,
-  Info,
-  LoaderCircle,
-} from 'lucide-react';
+  MdFactCheck as ClipboardCheck,
+  MdCheckCircle as CheckCircle2,
+  MdCancel as XCircle,
+  MdArrowForward as ArrowRight,
+  MdVerifiedUser as ShieldCheck,
+  MdWarningAmber as AlertTriangle,
+  MdAccessTime as Clock,
+  MdGroup as Users,
+  MdArrowOutward as ArrowUpRight,
+  MdCalendarMonth as Calendar,
+  MdCompareArrows as GitCompareArrows,
+  MdInfo as Info,
+  MdRefresh as LoaderCircle
+} from 'react-icons/md';
 
 interface RecoveryReviewModalProps {
   isOpen: boolean;
@@ -165,7 +165,7 @@ export const RecoveryReviewModal: React.FC<RecoveryReviewModalProps> = ({
         <section className="rounded-2xl border border-violet-400/20 bg-gradient-to-br from-violet-500/[0.12] to-[#19112B] p-4 sm:p-5">
           <div className="flex items-start gap-3">
             <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-violet-400/20 bg-violet-500/10">
-              <Sparkles className="h-5 w-5 text-violet-300" />
+              <ClipboardCheck className="h-5 w-5 text-violet-300" />
             </div>
 
             <div className="min-w-0 flex-1">

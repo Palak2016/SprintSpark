@@ -3,14 +3,13 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Logo } from './Logo';
 import {
-  ShieldCheck,
-  ArrowUpRight,
-  ArrowRight,
-  LockKeyhole,
-  Activity,
-  Sparkles,
-  Heart,
-} from 'lucide-react';
+  MdVerifiedUser as ShieldCheck,
+  MdArrowOutward as ArrowUpRight,
+  MdArrowForward as ArrowRight,
+  MdLock as LockKeyhole,
+  MdInsights as Activity,
+  MdFavorite as Heart
+} from 'react-icons/md';
 
 export const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
@@ -184,7 +183,7 @@ export const Footer: React.FC = () => {
           <div className="lg:col-span-3">
             <div className="rounded-2xl border border-violet-200/10 bg-gradient-to-br from-[#211638] to-[#171025] p-5 sm:p-6">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-violet-300/15 bg-violet-400/10 text-violet-300">
-                <Sparkles className="h-5 w-5" />
+                <ArrowRight className="h-5 w-5" />
               </div>
 
               <h3 className="mt-4 text-lg font-semibold tracking-tight text-white">

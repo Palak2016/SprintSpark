@@ -3,14 +3,14 @@ import React from 'react';
 import { Task, TaskStatus } from '../../types';
 import { formatIndianDate } from '../../utils/date';
 import {
-  AlertOctagon,
-  Clock,
-  Link2,
-  CheckCircle2,
-  Circle,
-  PlayCircle,
-  Ban,
-} from 'lucide-react';
+  MdReportProblem as AlertOctagon,
+  MdAccessTime as Clock,
+  MdLink as Link2,
+  MdCheckCircle as CheckCircle2,
+  MdCircle as Circle,
+  MdPlayCircle as PlayCircle,
+  MdBlock as Ban
+} from 'react-icons/md';
 
 interface TaskKanbanProps {
   tasks: Task[];

@@ -2,13 +2,13 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import {
-  LogOut,
-  UserRound,
-  Mail,
-  ShieldCheck,
-  LockKeyhole,
-  Settings2,
-} from 'lucide-react';
+  MdLogout as LogOut,
+  MdPerson as UserRound,
+  MdMail as Mail,
+  MdVerifiedUser as ShieldCheck,
+  MdLock as LockKeyhole,
+  MdTune as Settings2
+} from 'react-icons/md';
 
 export const ProfileSettingsView: React.FC = () => {
   const { user, logout } = useAuth();

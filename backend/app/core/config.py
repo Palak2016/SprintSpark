@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import List, Optional
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_DIR = Path(__file__).resolve().parents[2]
@@ -15,9 +16,7 @@ class Settings(BaseSettings):
     # Defaults to SQLite for zero-friction out-of-the-box local operation; configurable to PostgreSQL
     DATABASE_URL: str = f"sqlite:///{(BACKEND_DIR / 'workpilot.db').as_posix()}"
     
-    # LLM settings used by the recovery planner (app/services/llm_client.py).
-    # With no key set, recovery proposals fall back to the rule-based planner
-    # and are labelled as rule-based (generation_trace.llm.invoked = false).
+    # LLM settings used by AI analysis and recovery planning.
     OPENAI_API_KEY: Optional[str] = None
     WAYJET_API_KEY: Optional[str] = None
     GEMINI_API_KEY: Optional[str] = None
@@ -27,11 +26,14 @@ class Settings(BaseSettings):
     OPENAI_BASE_URL: str = "https://api.openai.com/v1"
     WAYJET_MODEL: str = "gpt-5.1"
     WAYJET_BASE_URL: str = "https://api.wayjet.ai/v1"
-    GEMINI_MODEL: str = "gemini-2.0-flash"
-    LLM_TIMEOUT_SECONDS: float = 45.0
-    # When true, generation fails (HTTP 503) instead of falling back to rules
-    # if the model cannot be called.
-    RECOVERY_REQUIRE_LLM: bool = False
+    GEMINI_MODEL: str = "gemini-3.6-flash"
+    LLM_TIMEOUT_SECONDS: float = 20.0
+
+    # Initial agenda-drift thresholds. Scores below the partial threshold are
+    # considered potentially off track only when semantic confidence is adequate.
+    AGENDA_DRIFT_ALIGNED_THRESHOLD: int = Field(default=80, ge=1, le=100)
+    AGENDA_DRIFT_PARTIAL_THRESHOLD: int = Field(default=50, ge=0, le=99)
+    AGENDA_DRIFT_MIN_CONFIDENCE: int = Field(default=60, ge=1, le=100)
 
     # Business timezone for "today" in risk scoring (due dates, overdue,
     # daily recalculation). Use an IANA name such as "Asia/Kolkata".
@@ -65,6 +67,15 @@ class Settings(BaseSettings):
         case_sensitive=True,
         extra="ignore",
     )
+
+    @model_validator(mode="after")
+    def validate_agenda_drift_thresholds(self):
+        if self.AGENDA_DRIFT_PARTIAL_THRESHOLD >= self.AGENDA_DRIFT_ALIGNED_THRESHOLD:
+            raise ValueError(
+                "AGENDA_DRIFT_PARTIAL_THRESHOLD must be lower than "
+                "AGENDA_DRIFT_ALIGNED_THRESHOLD."
+            )
+        return self
 
 
 settings = Settings()

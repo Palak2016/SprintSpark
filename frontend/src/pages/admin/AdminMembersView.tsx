@@ -1,6 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { LoaderCircle, Pencil, Power, Search, ShieldCheck, X } from 'lucide-react';
+import {
+  MdRefresh as LoaderCircle,
+  MdEdit as Pencil,
+  MdPowerSettingsNew as Power,
+  MdSearch as Search,
+  MdVerifiedUser as ShieldCheck,
+  MdClose as X
+} from 'react-icons/md';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { Company, CompanyMember } from '../../types';

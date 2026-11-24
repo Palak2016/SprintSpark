@@ -1,23 +1,24 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Send,
-  AlertOctagon,
-  CheckCircle2,
-  Calendar,
-  Info,
-  ClipboardList,
-  Clock,
-  Target,
-  ShieldCheck,
-  Sparkles,
-  ArrowUpRight,
-  RefreshCw,
-  CircleAlert,
-  MessageSquare,
-  LoaderCircle,
-  Download,
-} from 'lucide-react';
+  MdSend as Send,
+  MdReportProblem as AlertOctagon,
+  MdCheckCircle as CheckCircle2,
+  MdCalendarMonth as Calendar,
+  MdInfo as Info,
+  MdAssignment as ClipboardList,
+  MdAccessTime as Clock,
+  MdGpsFixed as Target,
+  MdVerifiedUser as ShieldCheck,
+  MdInsights as Activity,
+  MdInsights as ChartNoAxesCombined,
+  MdArrowOutward as ArrowUpRight,
+  MdRefresh as RefreshCw,
+  MdError as CircleAlert,
+  MdMessage as MessageSquare,
+  MdRefresh as LoaderCircle,
+  MdDownload as Download
+} from 'react-icons/md';
 
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
@@ -60,8 +61,11 @@ export const DailyUpdatesView: React.FC = () => {
   const [isAnalyzingProgress, setIsAnalyzingProgress] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [submittedAgendaDrift, setSubmittedAgendaDrift] = useState<DailyUpdate['agenda_drift']>(null);
+  const [agendaDriftNote, setAgendaDriftNote] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [analysisToken, setAnalysisToken] = useState<string | null>(null);
+  const [manualProgressMode, setManualProgressMode] = useState(false);
   const [progressAnalysis, setProgressAnalysis] = useState<string | null>(null);
   const [progressAnalysisError, setProgressAnalysisError] = useState(false);
   const [signals, setSignals] = useState<ExtractedSignal[]>([]);
@@ -202,8 +206,11 @@ export const DailyUpdatesView: React.FC = () => {
   const handleTaskSelect = (taskId: number) => {
     setSelectedTaskId(taskId);
     setSuccessMsg(null);
+    setSubmittedAgendaDrift(null);
+    setAgendaDriftNote(null);
     setErrorMsg(null);
     setAnalysisToken(null);
+    setManualProgressMode(false);
     setProgressAnalysis(null);
     setSignals([]);
     setRemovedSignals([]);
@@ -217,11 +224,12 @@ export const DailyUpdatesView: React.FC = () => {
     }
   };
 
-  const handleAnalyzeProgress = async () => {
+  const handleAnalyzeProgress = async (manualProgressPct?: number) => {
     if (!selectedTaskId || updateNotes.trim().length < 5 || isAnalyzingProgress) return;
 
     setIsAnalyzingProgress(true);
     setAnalysisToken(null);
+    setManualProgressMode(false);
     setProgressAnalysis(null);
     setProgressAnalysisError(false);
     setSignals([]);
@@ -231,12 +239,17 @@ export const DailyUpdatesView: React.FC = () => {
       const estimate = await api.analyzeDailyUpdateProgress({
         task_id: selectedTaskId,
         update_notes: updateNotes.trim(),
+        manual_progress_pct: manualProgressPct,
       });
       setProgressPct(estimate.progress_pct);
       setAnalysisToken(estimate.analysis_token);
+      setManualProgressMode(!estimate.ai_available);
       setSignals(estimate.signals ?? []);
+      setProgressAnalysisError(!estimate.ai_available);
       setProgressAnalysis(
-        `AI estimates ${estimate.progress_pct}%. ${estimate.explanation}`,
+        estimate.ai_available
+          ? `AI estimates ${estimate.progress_pct}%. ${estimate.explanation}`
+          : estimate.explanation,
       );
     } catch (error: unknown) {
       console.error('Failed to analyze daily update progress:', error);
@@ -267,6 +280,8 @@ export const DailyUpdatesView: React.FC = () => {
 
     setIsSubmitting(true);
     setSuccessMsg(null);
+    setSubmittedAgendaDrift(null);
+    setAgendaDriftNote(null);
     setErrorMsg(null);
 
     try {
@@ -279,6 +294,8 @@ export const DailyUpdatesView: React.FC = () => {
         blocker_notes: isBlocked ? blockerNotes.trim() : undefined,
         update_notes: updateNotes.trim(),
       });
+      setSubmittedAgendaDrift(submittedUpdate.agenda_drift ?? null);
+      setAgendaDriftNote(submittedUpdate.agenda_drift_note ?? null);
       setProgressPct(submittedUpdate.progress_pct);
       setAnalysisToken(null);
       setSignals([]);
@@ -385,7 +402,7 @@ export const DailyUpdatesView: React.FC = () => {
                 color: C.purple,
               }}
             >
-              <Sparkles size={13} />
+              <Activity size={13} />
               Workforce intelligence
             </div>
 
@@ -567,8 +584,110 @@ export const DailyUpdatesView: React.FC = () => {
             }}
           >
             <CheckCircle2 size={18} className="mt-0.5 shrink-0" />
-            <span>{successMsg}</span>
+            <div className="space-y-1">
+              <p>{successMsg}</p>
+              <p className="text-xs" style={{ color: C.muted }}>
+                {submittedAgendaDrift
+                  ? `Agenda check: ${submittedAgendaDrift.alignment_status.replaceAll('_', ' ')} · score ${submittedAgendaDrift.alignment_score}/100 · confidence ${submittedAgendaDrift.confidence_score}%.`
+                  : agendaDriftNote ?? 'No agenda check result was returned for this update.'}
+              </p>
+            </div>
           </div>
+        )}
+
+        {submittedAgendaDrift && (
+          <section
+            aria-live="polite"
+            className="space-y-4 rounded-2xl border p-5"
+            style={{
+              borderColor: 'var(--ui-border)',
+              background: 'var(--ui-surface)',
+              color: C.white,
+            }}
+          >
+            <div>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="text-base font-bold" style={{ color: C.lilac }}>
+                  Agenda alignment result
+                </h2>
+                <span
+                  className="rounded-full border px-3 py-1 text-xs font-semibold"
+                  style={{
+                    color: submittedAgendaDrift.alignment_status === 'OFF_TRACK'
+                      ? 'var(--ui-danger)'
+                      : 'var(--ui-text)',
+                    borderColor: submittedAgendaDrift.alignment_status === 'OFF_TRACK'
+                      ? 'var(--ui-danger-border)'
+                      : 'var(--ui-border)',
+                    background: submittedAgendaDrift.alignment_status === 'OFF_TRACK'
+                      ? 'var(--ui-danger-bg)'
+                      : 'var(--ui-surface-raised)',
+                  }}
+                >
+                  {submittedAgendaDrift.alignment_status.replaceAll('_', ' ')}
+                </span>
+              </div>
+              <p className="mt-2 text-xs font-medium" style={{ color: C.muted }}>
+                Task: {myTasks.find((task) => task.id === selectedTaskId)?.title ?? 'Selected task'}
+              </p>
+              <p className="mt-2 text-sm leading-6" style={{ color: C.muted }}>
+                {submittedAgendaDrift.drift_explanation}
+              </p>
+            </div>
+
+            {submittedAgendaDrift.recommended_actions.length > 0 ? (
+              <div>
+                <h3 className="text-sm font-semibold" style={{ color: C.lilac }}>What to do next</h3>
+                <ol className="mt-2 list-inside list-decimal space-y-1.5 text-sm" style={{ color: C.muted }}>
+                  {submittedAgendaDrift.recommended_actions.map((action, index) => (
+                    <li key={`${action}-${index}`}>{action}</li>
+                  ))}
+                </ol>
+              </div>
+            ) : submittedAgendaDrift.alignment_status !== 'ALIGNED' ? (
+              <p className="text-sm leading-5" style={{ color: C.muted }}>
+                No specific next steps were generated. Add task details or provide clarification before acting.
+              </p>
+            ) : null}
+
+            <div className="rounded-xl p-3 text-sm" style={{ background: 'var(--ui-surface-raised)', color: C.muted }}>
+              {submittedAgendaDrift.manager_notified ? (
+                <p>Your manager was notified to review this potential drift.</p>
+              ) : submittedAgendaDrift.recovery_proposal_id ? (
+                <p>
+                  An advisory recovery proposal was created for manager review
+                  {submittedAgendaDrift.recovery_proposal_status
+                    ? ` (${submittedAgendaDrift.recovery_proposal_status.replaceAll('_', ' ').toLowerCase()})`
+                    : ''}. No task changes happen until a manager approves them.
+                </p>
+              ) : submittedAgendaDrift.alignment_status === 'ALIGNED' ? (
+                <p>This update aligns with the task; no recovery plan is needed.</p>
+              ) : isManager ? (
+                <p>Use these self-directed steps to improve this task; no manager escalation or approval is needed.</p>
+              ) : (
+                <p>No drift alert or recovery plan was created. Add more detail if the work needs clarification.</p>
+              )}
+            </div>
+
+            <div className="flex flex-wrap gap-3 text-sm">
+              <a
+                href={isManager ? '/manager/agenda-drift' : '/employee/agenda-drift'}
+                className="font-semibold underline underline-offset-2"
+                style={{ color: C.purple }}
+              >
+                Open Agenda Alignment
+              </a>
+              {isManager && submittedAgendaDrift.recovery_proposal_id && (
+                <a
+                  href="/manager/recovery"
+                  className="font-semibold underline underline-offset-2"
+                  style={{ color: C.purple }}
+                >
+                  Review recovery plan
+                </a>
+              )}
+            </div>
+          </section>
         )}
 
         {errorMsg && (
@@ -739,7 +858,9 @@ export const DailyUpdatesView: React.FC = () => {
                 <div>
                   <div className="mb-4 flex items-center justify-between gap-3">
                     <span className="text-xs font-semibold" style={{ color: C.lilac }}>
-                      {analysisToken ? 'Estimated completion' : 'Current completion'}
+                      {analysisToken
+                        ? manualProgressMode ? 'Manual completion estimate' : 'Estimated completion'
+                        : 'Current completion'}
                     </span>
 
                     <span
@@ -859,7 +980,11 @@ export const DailyUpdatesView: React.FC = () => {
                     value={updateNotes}
                     onChange={(event) => {
                       setUpdateNotes(event.target.value);
+                      setSuccessMsg(null);
+                      setSubmittedAgendaDrift(null);
+                      setAgendaDriftNote(null);
                       setAnalysisToken(null);
+                      setManualProgressMode(false);
                       setProgressAnalysis(null);
                       setSignals([]);
                       setRemovedSignals([]);
@@ -900,7 +1025,7 @@ export const DailyUpdatesView: React.FC = () => {
                       {isAnalyzingProgress ? (
                         <LoaderCircle size={14} className="animate-spin" />
                       ) : (
-                        <Sparkles size={14} />
+                        <ChartNoAxesCombined size={14} />
                       )}
                       {isAnalyzingProgress ? 'Analyzing update...' : 'Analyze update'}
                     </button>
@@ -918,6 +1043,44 @@ export const DailyUpdatesView: React.FC = () => {
                       </p>
                     )}
                   </div>
+
+                  {manualProgressMode && (
+                    <div className="mt-4 rounded-xl border p-3" style={{ borderColor: C.border }}>
+                      <label
+                        htmlFor="manual-progress"
+                        className="block text-xs font-semibold"
+                        style={{ color: C.lilac }}
+                      >
+                        Set progress from completed deliverables
+                      </label>
+                      <input
+                        id="manual-progress"
+                        type="range"
+                        min={selectedTask?.progress_pct ?? 0}
+                        max={100}
+                        value={progressPct}
+                        onChange={(event) => {
+                          setProgressPct(Number(event.target.value));
+                          setAnalysisToken(null);
+                        }}
+                        className="mt-3 w-full accent-violet-500"
+                      />
+                      <div className="mt-2 flex items-center justify-between gap-3">
+                        <p className="text-xs leading-5" style={{ color: C.muted }}>
+                          AI is unavailable. Choose a value; it will be saved only when you submit.
+                        </p>
+                        <button
+                          type="button"
+                          disabled={isAnalyzingProgress || isSubmitting}
+                          onClick={() => void handleAnalyzeProgress(progressPct)}
+                          className="shrink-0 rounded-lg border px-3 py-2 text-xs font-semibold disabled:opacity-50"
+                          style={{ borderColor: C.border, color: C.purple }}
+                        >
+                          Apply manual progress
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   {signals.length > 0 && (
                     <div
@@ -978,6 +1141,12 @@ export const DailyUpdatesView: React.FC = () => {
                   className="border-t pt-5"
                   style={{ borderColor: C.border }}
                 >
+                  {!analysisToken && (
+                    <p className="mb-3 text-xs leading-5" style={{ color: C.muted }}>
+                      Click Analyze update, then Submit daily update. Analyzing alone
+                      does not save the report.
+                    </p>
+                  )}
                   <button
                     type="submit"
                     disabled={

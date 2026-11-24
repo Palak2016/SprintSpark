@@ -23,14 +23,16 @@ def _project_or_404(project_id: int, db: Session) -> Project:
 
 @router.get("/recovery-planner/status")
 def recovery_planner_status(current_user: User = Depends(require_manager)):
-    """Which planner will run: shows the configured provider/model only
-    (never the key)."""
+    """Show whether AI planning is available without exposing its key."""
     config = describe_config()
     return {
         "llm_configured": config["configured"],
         "provider": config["provider"],
         "model": config["model"],
-        "mode_when_recovery_needed": "AI_HYBRID" if config["configured"] else "RULE_BASED_FALLBACK",
+        "fallback_providers": config["fallback_providers"],
+        "mode_when_recovery_needed": (
+            "AI_WITH_RULE_FALLBACK" if config["configured"] else "AI_UNAVAILABLE"
+        ),
     }
 
 
@@ -59,6 +61,11 @@ def generate_recovery_proposal(
     result_state = run_recovery_workflow(project_id, db, actor_id=current_user.id)
     proposal_id = result_state.get("proposal_record_id")
     if not proposal_id:
+        if result_state.get("status") == "NO_ACTION_NEEDED":
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=result_state.get("error") or "No recovery actions are currently needed.",
+            )
         if result_state.get("error"):
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

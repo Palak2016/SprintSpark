@@ -210,6 +210,48 @@ export interface DailyUpdate {
   date: string;
   created_at: string;
   user?: UserSimple;
+  agenda_drift?: DailyUpdateAgendaDrift | null;
+  agenda_drift_note?: string | null;
+}
+
+export interface DailyUpdateAgendaDrift {
+  alignment_status: AgendaDrift['alignment_status'];
+  alignment_score: number;
+  confidence_score: number;
+  drift_explanation: string;
+  recommended_actions: string[];
+  manager_notified: boolean;
+  recovery_proposal_id?: number | null;
+  recovery_proposal_status?: string | null;
+}
+
+export interface AgendaDrift {
+  id: number;
+  employee_id: number;
+  employee_name: string;
+  task_id: number;
+  task_title: string;
+  task_priority: string;
+  task_due_date: string;
+  project_id: number;
+  daily_update_id: number;
+  daily_update_notes: string;
+  progress_pct: number;
+  is_blocked: boolean;
+  alignment_status: 'ALIGNED' | 'PARTIALLY_ALIGNED' | 'OFF_TRACK' | 'NEEDS_CLARIFICATION';
+  alignment_score: number;
+  confidence_score: number;
+  drift_explanation: string;
+  detected_mismatches: { kind: string; evidence: string }[];
+  recommended_actions: string[];
+  reported_blockers?: string | null;
+  employee_clarification?: string | null;
+  manager_review_status: 'PENDING_REVIEW' | 'ACKNOWLEDGED' | 'DISMISSED';
+  manager_feedback?: string | null;
+  recovery_proposal_id?: number | null;
+  analysis_details: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
 }
 
 export type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
@@ -557,7 +599,8 @@ export interface RecoveryPlannerStatus {
   llm_configured: boolean;
   provider: string | null;
   model: string | null;
-  mode_when_recovery_needed: GenerationMode;
+  fallback_providers: string[];
+  mode_when_recovery_needed: 'AI_WITH_RULE_FALLBACK' | 'AI_UNAVAILABLE';
 }
 
 export interface ProjectAnalytics {

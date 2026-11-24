@@ -1,6 +1,8 @@
 
 import React, { useEffect } from 'react';
-import { X } from 'lucide-react';
+import {
+  MdClose as X
+} from 'react-icons/md';
 
 interface ModalProps {
   isOpen: boolean;

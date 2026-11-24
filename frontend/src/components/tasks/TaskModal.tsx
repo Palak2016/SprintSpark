@@ -9,12 +9,12 @@ import {
 } from '../../types';
 import { api } from '../../services/api';
 import {
-  AlertCircle,
-  Link2,
-  Check,
-  CalendarDays,
-  ChevronDown,
-} from 'lucide-react';
+  MdError as AlertCircle,
+  MdLink as Link2,
+  MdCheck as Check,
+  MdCalendarMonth as CalendarDays,
+  MdExpandMore as ChevronDown
+} from 'react-icons/md';
 
 interface TaskModalProps {
   isOpen: boolean;

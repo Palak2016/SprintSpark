@@ -5,15 +5,15 @@ import { motion, useReducedMotion } from 'motion/react';
 import { Logo } from '../components/common/Logo';
 import { useAuth } from '../context/AuthContext';
 import {
-  Eye,
-  EyeOff,
-  AlertCircle,
-  ArrowRight,
-  LockKeyhole,
-  Mail,
-  ShieldCheck,
-  Sparkles,
-} from 'lucide-react';
+  MdVisibility as Eye,
+  MdVisibilityOff as EyeOff,
+  MdError as AlertCircle,
+  MdArrowForward as ArrowRight,
+  MdLock as LockKeyhole,
+  MdMail as Mail,
+  MdVerifiedUser as ShieldCheck,
+  MdInsights as Activity
+} from 'react-icons/md';
 
 export const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -291,7 +291,7 @@ export const Login: React.FC = () => {
           </span>
 
           <span className="inline-flex items-center gap-1.5">
-            <Sparkles className="h-3.5 w-3.5 text-[#BFC3C7]" />
+            <Activity className="h-3.5 w-3.5 text-[#BFC3C7]" />
             AI-assisted delivery
           </span>
         </div>

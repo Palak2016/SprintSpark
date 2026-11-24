@@ -4,10 +4,22 @@ import { useProject } from '../../context/ProjectContext';
 import { api } from '../../services/api';
 import type { AuditEvent, DailyUpdate } from '../../types';
 import {
-  History, Search, ShieldCheck, AlertOctagon, Calendar, Clock,
-  User, RefreshCw, FileText, ChevronDown, ChevronUp,
-  MessageSquareText, CircleAlert, CheckCircle2, Activity,
-} from 'lucide-react';
+  MdHistory as History,
+  MdSearch as Search,
+  MdVerifiedUser as ShieldCheck,
+  MdReportProblem as AlertOctagon,
+  MdCalendarMonth as Calendar,
+  MdAccessTime as Clock,
+  MdPerson as User,
+  MdRefresh as RefreshCw,
+  MdDescription as FileText,
+  MdExpandMore as ChevronDown,
+  MdExpandLess as ChevronUp,
+  MdChat as MessageSquareText,
+  MdError as CircleAlert,
+  MdCheckCircle as CheckCircle2,
+  MdInsights as Activity
+} from 'react-icons/md';
 import {
   formatIndianDate,
   formatIndianTime,

@@ -12,6 +12,7 @@ from app.models.recovery import RecoveryProposal, ProposalStatus
 from app.models.audit import AuditEvent
 from app.models.notification import Notification
 from app.services.recovery_graph import run_recovery_workflow
+from tests.fake_recovery_model import fake_recovery_model
 
 
 def seed_database(db: Session, force_reset: bool = True):
@@ -268,6 +269,6 @@ def seed_database(db: Session, force_reset: bool = True):
     db.commit()
 
     # 9. Execute LangGraph recovery workflow to generate live Risk Analysis and Pending Recovery Proposal
-    run_recovery_workflow(project.id, db)
+    run_recovery_workflow(project.id, db, llm=fake_recovery_model)
 
     return {"message": "Test scenario seeded successfully."}

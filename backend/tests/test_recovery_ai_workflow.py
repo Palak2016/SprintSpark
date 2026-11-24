@@ -1,4 +1,4 @@
-"""End-to-end recovery planning: AI path, fallback, validation, approval,
+"""End-to-end recovery planning: AI path, validation, approval,
 authorization, timeline date changes and analytics.
 
 The model is always faked here; no network calls are made.
@@ -8,7 +8,6 @@ from datetime import date, timedelta
 
 import pytest
 
-from app.core.config import settings
 from app.core.security import create_access_token
 from app.models.audit import AuditEvent
 from app.models.company import Company
@@ -41,7 +40,9 @@ def scenario(db_session):
                company_id=1, company_name="WorkPilot AI")
     db_session.add_all([asha, ben])
     db_session.flush()
-    project = Project(name=f"Recovery scenario {suffix}", manager_id=1,
+    project = Project(name=f"Recovery scenario {suffix}",
+                      description="Integrate payment processing with the checkout experience.",
+                      manager_id=1,
                       company_id=1,
                       start_date=today - timedelta(days=10),
                       target_end_date=today + timedelta(days=12))
@@ -52,6 +53,7 @@ def scenario(db_session):
         ProjectMember(project_id=project.id, user_id=ben.id, role_in_project="Engineer"),
     ])
     blocked = Task(project_id=project.id, title="Payments API", assignee_id=asha.id,
+                   description="Implement payment authorization and validate sandbox transactions.",
                    status=TaskStatus.BLOCKED.value, priority="CRITICAL",
                    estimated_hours=10, progress_pct=20, is_blocked=True,
                    blocker_reason="Waiting for sandbox credentials",
@@ -80,6 +82,9 @@ def _fake_model(scenario):
     def model(system_prompt, user_prompt):
         assert "Private" not in user_prompt  # leave reasons are never sent
         assert "@example.com" not in user_prompt  # nor email addresses
+        assert "Integrate payment processing" in user_prompt
+        assert "Implement payment authorization" in user_prompt
+        assert "sandbox testing is blocked" in user_prompt
         return LLMResult("openai", "gpt-test-0001", {
             "delay_explanation": "Payments API is blocked and Ben is on leave during Checkout UI.",
             "recommended_strategy_id": "S1",
@@ -112,6 +117,16 @@ def _generate(client, token, project_id):
 def test_ai_generation_is_traced_and_invalid_ai_actions_are_rejected(
     client, manager_token, db_session, scenario, monkeypatch
 ):
+    db_session.add(DailyUpdate(
+        task_id=scenario["blocked"].id,
+        user_id=scenario["asha"].id,
+        progress_pct=20,
+        is_blocked=True,
+        blocker_notes="Waiting for sandbox credentials",
+        update_notes="Added the authorization request schema; sandbox testing is blocked.",
+        date=date.today(),
+    ))
+    db_session.flush()
     monkeypatch.setattr(recovery_graph, "resolve_config", lambda: FAKE_CONFIG)
     monkeypatch.setattr(recovery_ai_planner, "call_json_model", _fake_model(scenario))
 
@@ -141,7 +156,9 @@ def test_ai_generation_is_traced_and_invalid_ai_actions_are_rejected(
     assert comparison["before"]["projected_completion"]
     assert comparison["after"]["projected_completion"]
     assert "not a measured result" in comparison["label"]
-    assert any(s["source"] == "RULE" for s in trace["strategies"])  # rule baseline shown for comparison
+    assert all(s["source"] == "AI" for s in trace["strategies"])
+    db_session.refresh(scenario["follow"])
+    assert scenario["follow"].assignee_id == scenario["ben"].id
     assert "sk-test" not in response.text
 
     audit = db_session.query(AuditEvent).filter(
@@ -152,45 +169,97 @@ def test_ai_generation_is_traced_and_invalid_ai_actions_are_rejected(
     assert audit.metadata_json["model"] == "gpt-test-0001"
 
 
-def test_model_failure_falls_back_to_rules_and_says_so(client, manager_token, scenario, monkeypatch):
+def test_model_failure_saves_validated_rule_based_fallback(
+    client, manager_token, db_session, scenario, monkeypatch, caplog,
+):
     def broken(system_prompt, user_prompt):
         raise LLMError("TIMEOUT", "openai did not respond within 5s.", "openai", "gpt-test", 5000)
 
     monkeypatch.setattr(recovery_graph, "resolve_config", lambda: FAKE_CONFIG)
     monkeypatch.setattr(recovery_ai_planner, "call_json_model", broken)
 
-    proposal = _generate(client, manager_token, scenario["project"].id).json()
+    before = db_session.query(RecoveryProposal).filter_by(
+        project_id=scenario["project"].id,
+    ).count()
+    response = _generate(client, manager_token, scenario["project"].id)
+    assert response.status_code == 200
+    proposal = response.json()
     trace = proposal["generation_trace"]
+    assert proposal["status"] == "PENDING_APPROVAL"
     assert trace["generation_mode"] == "RULE_BASED_FALLBACK"
-    assert trace["llm"]["invoked"] is True
     assert trace["llm"]["status"] == "FAILED"
     assert trace["llm"]["error_category"] == "TIMEOUT"
-    assert {a["source"] for a in proposal["proposed_actions"]} == {"RULE"}
-    assert not proposal["title"].startswith("AI")
+    assert proposal["proposed_actions"]
+    assert {action["source"] for action in proposal["proposed_actions"]} == {"RULE"}
+    assert all(
+        action["validation"]["status"] in ("VALID", "ADVISORY")
+        for action in proposal["proposed_actions"]
+    )
+    assert "provider=openai model=gpt-test category=TIMEOUT latency_ms=5000" in caplog.text
+    assert db_session.query(RecoveryProposal).filter_by(
+        project_id=scenario["project"].id,
+    ).count() == before + 1
 
 
-def test_required_llm_failure_returns_503_without_saving(client, manager_token, db_session, scenario, monkeypatch):
-    def broken(system_prompt, user_prompt):
-        raise LLMError("HTTP_ERROR", "openai returned HTTP 500.", "openai", "gpt-test", 10)
+def test_invalid_ai_actions_return_503_without_saving(client, manager_token, db_session, scenario, monkeypatch):
+    def invalid_plan(system_prompt, user_prompt):
+        return LLMResult("openai", "gpt-test", {
+            "delay_explanation": "A task needs attention.",
+            "recommended_strategy_id": "S1",
+            "recommendation_reason": "The strategy is based on current project facts.",
+            "strategies": [{
+                "strategy_id": "S1",
+                "name": "Invalid test plan",
+                "approach": "MIXED",
+                "summary": "This plan refers to a nonexistent task.",
+                "actions": [{
+                    "action_type": "REASSIGN",
+                    "task_id": 987654,
+                    "proposed_values": {"assignee_id": scenario["asha"].id},
+                    "reason": "The referenced task is not part of this project.",
+                }],
+            }],
+        }, 10)
 
-    monkeypatch.setattr(settings, "RECOVERY_REQUIRE_LLM", True)
     monkeypatch.setattr(recovery_graph, "resolve_config", lambda: FAKE_CONFIG)
-    monkeypatch.setattr(recovery_ai_planner, "call_json_model", broken)
+    monkeypatch.setattr(recovery_ai_planner, "call_json_model", invalid_plan)
     before = db_session.query(RecoveryProposal).filter(
         RecoveryProposal.project_id == scenario["project"].id).count()
 
     response = _generate(client, manager_token, scenario["project"].id)
     assert response.status_code == 503
-    assert "HTTP 500" in response.json()["detail"]
+    assert "No recovery strategy produced actions" in response.json()["detail"]
     assert db_session.query(RecoveryProposal).filter(
         RecoveryProposal.project_id == scenario["project"].id).count() == before
 
 
-def test_without_a_key_the_trace_reports_no_llm_call(client, manager_token, scenario):
-    trace = _generate(client, manager_token, scenario["project"].id).json()["generation_trace"]
-    assert trace["llm"]["invoked"] is False
-    assert trace["llm"]["status"] == "NOT_CONFIGURED"
-    assert trace["generation_mode"] == "RULE_BASED_FALLBACK"
+def test_without_a_key_returns_503_without_a_rule_based_plan(
+    client,
+    manager_token,
+    db_session,
+    scenario,
+    monkeypatch,
+):
+    monkeypatch.setattr(recovery_graph, "resolve_config", lambda: None)
+    before = db_session.query(RecoveryProposal).filter(
+        RecoveryProposal.project_id == scenario["project"].id).count()
+    response = _generate(client, manager_token, scenario["project"].id)
+
+    assert response.status_code == 503
+    assert "configure an LLM provider" in response.json()["detail"]
+    assert db_session.query(RecoveryProposal).filter(
+        RecoveryProposal.project_id == scenario["project"].id).count() == before
+
+
+def test_planner_status_never_advertises_rule_fallback(client, manager_token):
+    response = client.get(
+        "/api/v1/recovery-planner/status",
+        headers=_auth(manager_token),
+    )
+
+    assert response.status_code == 200
+    assert response.json()["mode_when_recovery_needed"] == "AI_UNAVAILABLE"
+    assert response.json()["llm_configured"] is False
 
 
 def test_new_proposal_supersedes_older_pending_one(client, manager_token, db_session, scenario):

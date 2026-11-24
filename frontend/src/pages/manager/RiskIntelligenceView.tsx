@@ -8,16 +8,16 @@ import { RiskDetailCard } from '../../components/risk/RiskDetailCard';
 import { RecoveryReviewModal } from '../../components/risk/RecoveryReviewModal';
 import { RiskHistoryPanel, RiskSuggestionsPanel } from '../../components/risk/RiskReviewPanels';
 import {
-  AlertTriangle,
-  RefreshCw,
-  Sparkles,
-  ShieldCheck,
-  CheckCircle2,
-  HelpCircle,
-  Activity,
-  FolderKanban,
-  ArrowUpRight,
-} from 'lucide-react';
+  MdWarningAmber as AlertTriangle,
+  MdRefresh as RefreshCw,
+  MdFactCheck as ClipboardCheck,
+  MdVerifiedUser as ShieldCheck,
+  MdCheckCircle as CheckCircle2,
+  MdHelp as HelpCircle,
+  MdInsights as Activity,
+  MdViewKanban as FolderKanban,
+  MdArrowOutward as ArrowUpRight
+} from 'react-icons/md';
 
 export const RiskIntelligenceView: React.FC = () => {
   const navigate = useNavigate();
@@ -249,7 +249,7 @@ export const RiskIntelligenceView: React.FC = () => {
               </p>
             </div>
             <div className="rounded-xl bg-sky-500/10 p-2.5">
-              <Sparkles className="h-5 w-5 text-sky-300" />
+              <ClipboardCheck className="h-5 w-5 text-sky-300" />
             </div>
           </div>
           <div className="mt-4 flex items-center gap-2 border-t border-white/[0.06] pt-3">

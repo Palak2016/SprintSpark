@@ -3,14 +3,14 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import {
-  ArrowRight,
-  ChevronDown,
-  LayoutDashboard,
-  Menu,
-  ShieldCheck,
-  Sparkles,
-  X,
-} from 'lucide-react';
+  MdArrowForward as ArrowRight,
+  MdExpandMore as ChevronDown,
+  MdDashboard as LayoutDashboard,
+  MdMenu as Menu,
+  MdVerifiedUser as ShieldCheck,
+  MdInsights as Activity,
+  MdClose as X
+} from 'react-icons/md';
 
 import { Logo } from './Logo';
 import { useAuth } from '../../context/AuthContext';
@@ -151,7 +151,7 @@ export function Navbar() {
                     className="group flex gap-3 rounded-xl p-3 transition hover:bg-violet-300/[0.08]"
                   >
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-violet-300/15 bg-violet-400/10 text-violet-300">
-                      <Sparkles className="h-4 w-4" />
+                      <Activity className="h-4 w-4" />
                     </span>
 
                     <span>

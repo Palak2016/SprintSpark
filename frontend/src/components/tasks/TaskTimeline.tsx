@@ -1,5 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, CalendarDays, ChevronLeft, ChevronRight, Flag, Info, LoaderCircle, Lock } from 'lucide-react';
+import {
+  MdWarningAmber as AlertTriangle,
+  MdCalendarMonth as CalendarDays,
+  MdChevronLeft as ChevronLeft,
+  MdChevronRight as ChevronRight,
+  MdFlag as Flag,
+  MdInfo as Info,
+  MdRefresh as LoaderCircle,
+  MdLock as Lock
+} from 'react-icons/md';
 import type { Task } from '../../types';
 import {
   ZOOM_DAY_WIDTH,

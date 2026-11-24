@@ -8,14 +8,14 @@ import { Task, LeaveRequest, DailyUpdate } from '../../types';
 import { StatCard } from '../../components/dashboard/StatCard';
 import { useVisibleInterval } from '../../hooks/useVisibleInterval';
 import {
-  CheckSquare,
-  Clock,
-  AlertOctagon,
-  CalendarDays,
-  Send,
-  ArrowRight,
-  FolderKanban,
-} from 'lucide-react';
+  MdCheckBox as CheckSquare,
+  MdAccessTime as Clock,
+  MdReportProblem as AlertOctagon,
+  MdCalendarMonth as CalendarDays,
+  MdSend as Send,
+  MdArrowForward as ArrowRight,
+  MdViewKanban as FolderKanban
+} from 'react-icons/md';
 
 export const EmployeeOverview: React.FC = () => {
   const { user } = useAuth();

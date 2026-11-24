@@ -3,12 +3,32 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import {
-  Activity, AlertTriangle, ArrowDownRight, ArrowRight, ArrowUpRight,
-  CalendarDays, CheckCircle2, ChevronDown, Clock3, Compass, Database,
-  FolderKanban, Layers3, LockKeyhole, MoveUpRight, ShieldCheck,
-  Sparkles, Users, Workflow, Zap, ChartNoAxesCombined, CircleHelp,
-  BrainCircuit, Gauge, Menu, X
-} from 'lucide-react';
+  MdInsights as Activity,
+  MdWarningAmber as AlertTriangle,
+  MdArrowDownward as ArrowDownRight,
+  MdArrowForward as ArrowRight,
+  MdArrowOutward as ArrowUpRight,
+  MdCalendarMonth as CalendarDays,
+  MdCheckCircle as CheckCircle2,
+  MdExpandMore as ChevronDown,
+  MdSchedule as Clock3,
+  MdExplore as Compass,
+  MdStorage as Database,
+  MdFactCheck as ClipboardCheck,
+  MdViewKanban as FolderKanban,
+  MdLayers as Layers3,
+  MdLock as LockKeyhole,
+  MdArrowOutward as MoveUpRight,
+  MdVerifiedUser as ShieldCheck,
+  MdGroup as Users,
+  MdAccountTree as Workflow,
+  MdBolt as Zap,
+  MdInsights as ChartNoAxesCombined,
+  MdHelp as CircleHelp,
+  MdSpeed as Gauge,
+  MdMenu as Menu,
+  MdClose as X
+} from 'react-icons/md';
 
 import { Navbar } from '../components/common/Navbar';
 import { Footer } from '../components/common/Footer';
@@ -48,7 +68,7 @@ const features = [
     label: 'EVIDENCE-BACKED ALERTS',
   },
   {
-    icon: Sparkles,
+    icon: ClipboardCheck,
     title: 'AI recovery planner',
     description: 'Explore recovery proposals with clear reasoning, assumptions, and suggested actions.',
     label: 'AI-ASSISTED PLANNING',
@@ -89,7 +109,7 @@ const workflow = [
   { icon: Database, title: 'Capture project reality', description: 'Collect tasks, dependencies, progress, blockers, and team availability.' },
   { icon: ChartNoAxesCombined, title: 'Evaluate delivery risk', description: 'Identify schedule pressure and potential capacity conflicts.' },
   { icon: ShieldCheck, title: 'Understand the evidence', description: 'Inspect the project data behind every important risk signal.' },
-  { icon: Sparkles, title: 'Explore recovery options', description: 'Generate possible interventions and explain their trade-offs.' },
+  { icon: ClipboardCheck, title: 'Explore recovery options', description: 'Generate possible interventions and explain their trade-offs.' },
   { icon: CheckCircle2, title: 'Review and approve', description: 'Let authorized managers review changes before they are applied.' },
 ];
 
@@ -348,7 +368,7 @@ function DashboardMockup() {
                   animate={reduceMotion ? undefined : { rotate: 360 }}
                   transition={{ duration: 12, repeat: Infinity, ease: 'linear' }}
                 >
-                  <Sparkles className="h-5 w-5 text-violet-300" />
+                  <ClipboardCheck className="h-5 w-5 text-violet-300" />
                 </motion.div>
                 <p className="text-sm font-semibold text-white">AI recovery proposal</p>
                 <span className="ml-auto rounded-full border border-violet-300/20 px-2 py-1 text-[9px] text-violet-200">DRAFT</span>
@@ -380,7 +400,7 @@ function DashboardMockup() {
         <div className="rounded-xl border border-violet-200/20 bg-[#211638]/95 p-3 shadow-xl shadow-black/30 backdrop-blur-xl">
           <div className="flex items-center gap-2">
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-400/15">
-              <BrainCircuit className="h-4 w-4 text-violet-300" />
+              <Activity className="h-4 w-4 text-violet-300" />
             </span>
             <div>
               <p className="text-[10px] font-semibold text-white">AI insight</p>
@@ -790,7 +810,7 @@ export const LandingPage = () => {
                 {activeTab === 'recovery' && (
                   <div className="space-y-4">
                     <div className="rounded-xl border border-violet-300/20 bg-violet-400/[0.07] p-4">
-                      <div className="flex items-center gap-2 font-semibold text-violet-100"><Sparkles className="h-5 w-5" /> Recovery proposal · Demo</div>
+                      <div className="flex items-center gap-2 font-semibold text-violet-100"><ClipboardCheck className="h-5 w-5" /> Recovery proposal · Demo</div>
                       <p className="mt-2 text-sm leading-6 text-[#B7ADC9]">Illustrative suggestions for a manager to review. This preview does not modify any task.</p>
                     </div>
                     {[

@@ -1,11 +1,11 @@
 
 import React from 'react';
 import {
-  AlertTriangle,
-  CheckCircle2,
-  AlertOctagon,
-  HelpCircle,
-} from 'lucide-react';
+  MdWarningAmber as AlertTriangle,
+  MdCheckCircle as CheckCircle2,
+  MdReportProblem as AlertOctagon,
+  MdHelp as HelpCircle
+} from 'react-icons/md';
 
 interface RiskBadgeProps {
   level?: 'LOW' | 'MEDIUM' | 'HIGH' | 'INSUFFICIENT_DATA';
