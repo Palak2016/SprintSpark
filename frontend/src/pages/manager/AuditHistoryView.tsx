@@ -3,23 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useProject } from '../../context/ProjectContext';
 import { api } from '../../services/api';
 import type { AuditEvent, DailyUpdate } from '../../types';
-import {
-  MdHistory as History,
-  MdSearch as Search,
-  MdVerifiedUser as ShieldCheck,
-  MdReportProblem as AlertOctagon,
-  MdCalendarMonth as Calendar,
-  MdAccessTime as Clock,
-  MdPerson as User,
-  MdRefresh as RefreshCw,
-  MdDescription as FileText,
-  MdExpandMore as ChevronDown,
-  MdExpandLess as ChevronUp,
-  MdChat as MessageSquareText,
-  MdError as CircleAlert,
-  MdCheckCircle as CheckCircle2,
-  MdInsights as Activity
-} from 'react-icons/md';
+import { IconManagerActivity, IconManagerAlertOctagon, IconManagerCalendar, IconManagerCheckCircle2, IconManagerChevronDown, IconManagerChevronUp, IconManagerCircleAlert, IconManagerClock, IconManagerFileText, IconManagerHistory, IconManagerMessageSquareText, IconManagerRefreshCw, IconManagerSearch, IconManagerShieldCheck, IconManagerUser, IconSpinner } from '../../icons';
 import {
   formatIndianDate,
   formatIndianTime,
@@ -127,7 +111,7 @@ export const AuditHistoryView: React.FC = () => {
         iconBg: 'bg-rose-500/10',
         iconColor: 'text-rose-300',
         badge: 'border-rose-400/20 bg-rose-500/10 text-rose-300',
-        Icon: AlertOctagon,
+        Icon: IconManagerAlertOctagon,
       };
     }
 
@@ -141,7 +125,7 @@ export const AuditHistoryView: React.FC = () => {
         iconBg: 'bg-emerald-500/10',
         iconColor: 'text-emerald-300',
         badge: 'border-emerald-400/20 bg-emerald-500/10 text-emerald-300',
-        Icon: ShieldCheck,
+        Icon: IconManagerShieldCheck,
       };
     }
 
@@ -150,7 +134,7 @@ export const AuditHistoryView: React.FC = () => {
       iconBg: 'bg-violet-500/10',
       iconColor: 'text-violet-300',
       badge: 'border-violet-400/20 bg-violet-500/10 text-violet-300',
-      Icon: FileText,
+      Icon: IconManagerFileText,
     };
   };
 
@@ -160,7 +144,7 @@ export const AuditHistoryView: React.FC = () => {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-violet-400/15 bg-violet-500/10">
-            <History className="h-5 w-5 text-violet-300" />
+            <IconManagerHistory className="h-5 w-5 text-violet-300" />
           </div>
 
           <div>
@@ -184,7 +168,7 @@ export const AuditHistoryView: React.FC = () => {
           disabled={isLoading || !activeProject}
           className="inline-flex items-center justify-center gap-2 self-start rounded-xl border border-white/[0.08] bg-[#19112B] px-4 py-2.5 text-xs font-semibold text-[#D5CBE5] hover:border-violet-400/30 disabled:opacity-50 sm:self-auto"
         >
-          <RefreshCw
+          <IconManagerRefreshCw
             className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`}
           />
           Refresh
@@ -208,7 +192,7 @@ export const AuditHistoryView: React.FC = () => {
             Search history
           </label>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#827694]" />
+            <IconManagerSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#827694]" />
             <input
               type="text"
               value={search}
@@ -225,7 +209,7 @@ export const AuditHistoryView: React.FC = () => {
         <div className="flex items-center justify-between gap-3 border-b border-white/[0.06] px-4 py-4 sm:px-5">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-500/10">
-              <MessageSquareText className="h-4 w-4 text-violet-300" />
+              <IconManagerMessageSquareText className="h-4 w-4 text-violet-300" />
             </div>
             <div>
               <h2 className="text-sm font-bold">Daily Employee Updates</h2>
@@ -247,7 +231,7 @@ export const AuditHistoryView: React.FC = () => {
             </p>
           ) : isLoading && dailyUpdates.length === 0 ? (
             <div className="flex items-center justify-center gap-2 py-8 text-xs text-[#A99DBD]">
-              <RefreshCw className="h-4 w-4 animate-spin text-violet-300" />
+              <IconSpinner className="h-4 w-4 animate-spin text-violet-300" />
               Loading employee updates...
             </div>
           ) : error && dailyUpdates.length === 0 ? (
@@ -263,7 +247,7 @@ export const AuditHistoryView: React.FC = () => {
             </div>
           ) : filteredUpdates.length === 0 ? (
             <div className="py-8 text-center">
-              <MessageSquareText className="mx-auto h-7 w-7 text-[#827694]" />
+              <IconManagerMessageSquareText className="mx-auto h-7 w-7 text-[#827694]" />
               <p className="mt-2 text-sm font-semibold">
                 {normalizedSearch ? 'No matching updates' : 'No employee updates yet'}
               </p>
@@ -286,7 +270,7 @@ export const AuditHistoryView: React.FC = () => {
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-3">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/10">
-                        <User className="h-5 w-5 text-violet-300" />
+                        <IconManagerUser className="h-5 w-5 text-violet-300" />
                       </div>
                       <div className="min-w-0">
                         <h3 className="break-words text-sm font-semibold">
@@ -300,7 +284,7 @@ export const AuditHistoryView: React.FC = () => {
 
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="inline-flex items-center gap-1.5 rounded-lg bg-[#19112B] px-2.5 py-1.5 text-xs text-[#B7ADC9]">
-                        <Calendar className="h-3.5 w-3.5 text-violet-300" />
+                        <IconManagerCalendar className="h-3.5 w-3.5 text-violet-300" />
                         {formatIndianDate(update.date)}
                       </span>
 
@@ -314,11 +298,11 @@ export const AuditHistoryView: React.FC = () => {
                         }`}
                       >
                         {update.is_blocked ? (
-                          <CircleAlert className="h-3.5 w-3.5" />
+                          <IconManagerCircleAlert className="h-3.5 w-3.5" />
                         ) : completed ? (
-                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          <IconManagerCheckCircle2 className="h-3.5 w-3.5" />
                         ) : (
-                          <Activity className="h-3.5 w-3.5" />
+                          <IconManagerActivity className="h-3.5 w-3.5" />
                         )}
                         {update.is_blocked ? 'Blocked' : completed ? 'Completed' : 'In progress'}
                       </span>
@@ -353,7 +337,7 @@ export const AuditHistoryView: React.FC = () => {
 
                   <div className="mt-4 rounded-xl border border-white/[0.06] bg-[#19112B]/80 p-3.5">
                     <div className="flex items-center gap-2">
-                      <MessageSquareText className="h-4 w-4 text-violet-300" />
+                      <IconManagerMessageSquareText className="h-4 w-4 text-violet-300" />
                       <h4 className="text-xs font-semibold text-[#E8E0F3]">
                         Employee's Daily Update
                       </h4>
@@ -366,7 +350,7 @@ export const AuditHistoryView: React.FC = () => {
                   {update.is_blocked && (
                     <div className="mt-3 rounded-xl border border-rose-400/15 bg-rose-500/[0.06] p-3.5">
                       <div className="flex items-center gap-2">
-                        <AlertOctagon className="h-4 w-4 text-rose-300" />
+                        <IconManagerAlertOctagon className="h-4 w-4 text-rose-300" />
                         <h4 className="text-xs font-semibold text-rose-200">
                           Blocker / Help Needed
                         </h4>
@@ -378,7 +362,7 @@ export const AuditHistoryView: React.FC = () => {
                   )}
 
                   <div className="mt-3 flex items-center gap-1.5 text-[10px] text-[#827694]">
-                    <Clock className="h-3 w-3" />
+                    <IconManagerClock className="h-3 w-3" />
                     Submitted{' '}
                     {update.created_at
                       ? formatIndianDateTime(update.created_at)
@@ -401,7 +385,7 @@ export const AuditHistoryView: React.FC = () => {
         >
           <div className="flex min-w-0 items-center gap-3">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-500/10">
-              <History className="h-4 w-4 text-violet-300" />
+              <IconManagerHistory className="h-4 w-4 text-violet-300" />
             </div>
             <div>
               <h2 className="text-sm font-bold">Activity Timeline</h2>
@@ -417,9 +401,9 @@ export const AuditHistoryView: React.FC = () => {
           <div className="flex shrink-0 items-center gap-1.5 text-xs font-semibold text-violet-300">
             {showTimeline ? 'Hide' : 'View'}
             {showTimeline ? (
-              <ChevronUp className="h-4 w-4" />
+              <IconManagerChevronUp className="h-4 w-4" />
             ) : (
-              <ChevronDown className="h-4 w-4" />
+              <IconManagerChevronDown className="h-4 w-4" />
             )}
           </div>
         </button>
@@ -439,12 +423,12 @@ export const AuditHistoryView: React.FC = () => {
               </div>
             ) : isLoading && audits.length === 0 ? (
               <div className="flex items-center justify-center gap-2 py-8 text-xs text-[#A99DBD]">
-                <RefreshCw className="h-4 w-4 animate-spin text-violet-300" />
+                <IconSpinner className="h-4 w-4 animate-spin text-violet-300" />
                 Loading activity...
               </div>
             ) : filteredAudits.length === 0 ? (
               <div className="py-8 text-center">
-                <History className="mx-auto h-7 w-7 text-[#827694]" />
+                <IconManagerHistory className="mx-auto h-7 w-7 text-[#827694]" />
                 <p className="mt-2 text-sm font-semibold">
                   {normalizedSearch ? 'No matching events' : 'No audit events yet'}
                 </p>
@@ -487,20 +471,20 @@ export const AuditHistoryView: React.FC = () => {
                             <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-[11px] text-[#A99DBD]">
                               {event.actor?.full_name && (
                                 <span className="inline-flex items-center gap-1.5">
-                                  <User className="h-3.5 w-3.5" />
+                                  <IconManagerUser className="h-3.5 w-3.5" />
                                   {event.actor.full_name}
                                 </span>
                               )}
 
                               <span className="inline-flex items-center gap-1.5">
-                                <Calendar className="h-3.5 w-3.5" />
+                                <IconManagerCalendar className="h-3.5 w-3.5" />
                                 {event.created_at
                                   ? formatIndianDate(event.created_at)
                                   : 'Date unavailable'}
                               </span>
 
                               <span className="inline-flex items-center gap-1.5">
-                                <Clock className="h-3.5 w-3.5" />
+                                <IconManagerClock className="h-3.5 w-3.5" />
                                 {event.created_at
                                   ? formatIndianTime(event.created_at)
                                   : 'Time unavailable'}
@@ -515,12 +499,12 @@ export const AuditHistoryView: React.FC = () => {
                               aria-expanded={isExpanded}
                               className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-white/[0.08] bg-[#19112B] px-3 py-2 text-[11px] text-[#B7ADC9] hover:text-violet-300"
                             >
-                              <FileText className="h-3.5 w-3.5" />
+                              <IconManagerFileText className="h-3.5 w-3.5" />
                               {isExpanded ? 'Hide changes' : 'View changes'}
                               {isExpanded ? (
-                                <ChevronUp className="h-3.5 w-3.5" />
+                                <IconManagerChevronUp className="h-3.5 w-3.5" />
                               ) : (
-                                <ChevronDown className="h-3.5 w-3.5" />
+                                <IconManagerChevronDown className="h-3.5 w-3.5" />
                               )}
                             </button>
                           )}

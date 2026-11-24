@@ -11,18 +11,7 @@ import type { LeaveRequest } from '../../types';
 import { LeaveRequestModal } from '../../components/leave/LeaveRequestModal';
 import { formatIndianDate } from '../../utils/date';
 
-import {
-  MdCalendarMonth as CalendarDays,
-  MdAdd as Plus,
-  MdAccessTime as Clock,
-  MdCheckCircle as CheckCircle2,
-  MdCancel as XCircle,
-  MdRefresh as LoaderCircle,
-  MdRefresh as RefreshCw,
-  MdError as AlertCircle,
-  MdEventAvailable as CalendarCheck,
-  MdChat as MessageSquareText
-} from 'react-icons/md';
+import { IconAlertCircle, IconCalendarCheck, IconCalendarDays, IconCheckCircle2, IconClock, IconMessageSquareText, IconPlus, IconRefresh, IconSpinner, IconXCircle } from '../../icons';
 
 export const EmployeeLeaveView: React.FC = () => {
   const { user } = useAuth();
@@ -174,7 +163,7 @@ export const EmployeeLeaveView: React.FC = () => {
         <div>
           <div className="mb-2 flex items-center gap-2">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-violet-400/15 bg-violet-500/10">
-              <CalendarDays
+              <IconCalendarDays
                 size={18}
                 strokeWidth={2}
                 className="shrink-0 text-violet-300"
@@ -208,7 +197,7 @@ export const EmployeeLeaveView: React.FC = () => {
             disabled={isLoading}
             className={secondaryButtonClass}
           >
-            <RefreshCw
+            <IconRefresh
               size={15}
               className={isLoading ? 'animate-spin' : ''}
             />
@@ -220,7 +209,7 @@ export const EmployeeLeaveView: React.FC = () => {
             onClick={() => setIsModalOpen(true)}
             className={primaryButtonClass}
           >
-            <Plus size={17} />
+            <IconPlus size={17} />
             Apply for Leave
           </button>
         </div>
@@ -233,7 +222,7 @@ export const EmployeeLeaveView: React.FC = () => {
           className="flex flex-col gap-3 rounded-2xl border border-rose-400/20 bg-rose-500/[0.07] p-4 sm:flex-row sm:items-center sm:justify-between"
         >
           <div className="flex items-start gap-3">
-            <AlertCircle
+            <IconAlertCircle
               size={20}
               className="mt-0.5 shrink-0 text-rose-300"
             />
@@ -268,7 +257,7 @@ export const EmployeeLeaveView: React.FC = () => {
             </span>
 
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/10">
-              <Clock size={17} className="text-amber-300" />
+              <IconClock size={17} className="text-amber-300" />
             </div>
           </div>
 
@@ -288,7 +277,7 @@ export const EmployeeLeaveView: React.FC = () => {
             </span>
 
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10">
-              <CheckCircle2
+              <IconCheckCircle2
                 size={17}
                 className="text-emerald-300"
               />
@@ -311,7 +300,7 @@ export const EmployeeLeaveView: React.FC = () => {
             </span>
 
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-rose-500/10">
-              <XCircle size={17} className="text-rose-300" />
+              <IconXCircle size={17} className="text-rose-300" />
             </div>
           </div>
 
@@ -330,7 +319,7 @@ export const EmployeeLeaveView: React.FC = () => {
         <div className="flex flex-col gap-2 border-b border-white/[0.07] p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-violet-400/15 bg-violet-500/10">
-              <CalendarCheck
+              <IconCalendarCheck
                 size={21}
                 className="text-violet-300"
               />
@@ -355,7 +344,7 @@ export const EmployeeLeaveView: React.FC = () => {
 
         {isLoading ? (
           <div className="flex min-h-[220px] flex-col items-center justify-center p-8">
-            <LoaderCircle
+            <IconSpinner
               size={32}
               className="animate-spin text-violet-300"
             />
@@ -371,7 +360,7 @@ export const EmployeeLeaveView: React.FC = () => {
         ) : leaves.length === 0 ? (
           <div className="px-5 py-14 text-center">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-violet-400/15 bg-violet-500/10">
-              <CalendarDays
+              <IconCalendarDays
                 size={32}
                 className="text-violet-300"
               />
@@ -391,7 +380,7 @@ export const EmployeeLeaveView: React.FC = () => {
               onClick={() => setIsModalOpen(true)}
               className={`${primaryButtonClass} mt-5`}
             >
-              <Plus size={17} />
+              <IconPlus size={17} />
               Apply for Leave
             </button>
           </div>
@@ -423,11 +412,11 @@ export const EmployeeLeaveView: React.FC = () => {
                           className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${getStatusStyle(status)}`}
                         >
                           {isApproved ? (
-                            <CheckCircle2 size={12} />
+                            <IconCheckCircle2 size={12} />
                           ) : isRejected ? (
-                            <XCircle size={12} />
+                            <IconXCircle size={12} />
                           ) : (
-                            <Clock size={12} />
+                            <IconClock size={12} />
                           )}
 
                           {status}
@@ -444,12 +433,12 @@ export const EmployeeLeaveView: React.FC = () => {
                           }`}
                         >
                           {isApproved ? (
-                            <CheckCircle2
+                            <IconCheckCircle2
                               size={18}
                               className="mt-0.5 shrink-0 text-emerald-300"
                             />
                           ) : (
-                            <XCircle
+                            <IconXCircle
                               size={18}
                               className="mt-0.5 shrink-0 text-rose-300"
                             />
@@ -503,7 +492,7 @@ export const EmployeeLeaveView: React.FC = () => {
                           }`}
                         >
                           <div className="flex items-start gap-2.5">
-                            <MessageSquareText
+                            <IconMessageSquareText
                               size={16}
                               className={`mt-0.5 shrink-0 ${
                                 isRejected
@@ -530,7 +519,7 @@ export const EmployeeLeaveView: React.FC = () => {
                       {/* Pending message */}
                       {isPending && (
                         <p className="mt-3 flex items-center gap-2 text-xs text-amber-300/90">
-                          <Clock size={14} className="shrink-0" />
+                          <IconClock size={14} className="shrink-0" />
                           Waiting for your manager to review this request.
                         </p>
                       )}

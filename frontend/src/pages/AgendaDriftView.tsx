@@ -1,17 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import {
-  MdWarningAmber as AlertTriangle,
-  MdArrowOutward as ArrowUpRight,
-  MdCheck as Check,
-  MdHelp as CircleHelp,
-  MdChecklist as ListChecks,
-  MdRefresh as LoaderCircle,
-  MdMessage as MessageSquare,
-  MdRefresh as RefreshCw,
-  MdVerifiedUser as ShieldCheck,
-  MdGpsFixed as Target,
-  MdClose as X
-} from 'react-icons/md';
+import { IconAlertTriangle, IconArrowUpRight, IconCheck, IconCircleHelp, IconListChecks, IconMessageSquare, IconRefresh, IconShieldCheck, IconSpinner, IconTarget, IconX } from '../icons';
 import { useAuth } from '../context/AuthContext';
 import { useProject } from '../context/ProjectContext';
 import { api } from '../services/api';
@@ -105,7 +93,7 @@ export const AgendaDriftView: React.FC = () => {
       <header className="flex flex-col gap-4 rounded-2xl border border-violet-400/15 bg-[#1B132B] p-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-start gap-3">
           <div className="rounded-xl border border-violet-300/20 bg-violet-500/10 p-3 text-violet-200">
-            <Target size={21} />
+            <IconTarget size={21} />
           </div>
           <div>
             <h1 className="text-xl font-semibold">Agenda alignment</h1>
@@ -122,7 +110,7 @@ export const AgendaDriftView: React.FC = () => {
           disabled={isLoading}
           className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-sm text-[#E4D9F2] hover:bg-white/5 disabled:opacity-50"
         >
-          <RefreshCw size={15} className={isLoading ? 'animate-spin' : ''} />
+          <IconRefresh size={15} className={isLoading ? 'animate-spin' : ''} />
           Refresh
         </button>
       </header>
@@ -139,11 +127,11 @@ export const AgendaDriftView: React.FC = () => {
         </div>
       ) : isLoading ? (
         <div className="flex items-center justify-center gap-2 py-16 text-sm text-[#B8ACC9]">
-          <LoaderCircle size={18} className="animate-spin" /> Loading agenda checks…
+          <IconSpinner size={18} className="animate-spin" /> Loading agenda checks…
         </div>
       ) : records.length === 0 ? (
         <div className="rounded-2xl border border-white/10 bg-[#1B132B] p-8 text-center">
-          <ShieldCheck className="mx-auto text-emerald-300" size={26} />
+          <IconShieldCheck className="mx-auto text-emerald-300" size={26} />
           <p className="mt-3 font-medium">No agenda drift to review</p>
           <p className="mt-1 text-sm text-[#B8ACC9]">
             New daily updates are checked automatically. Updates without an assigned task do not create false alerts.
@@ -195,7 +183,7 @@ export const AgendaDriftView: React.FC = () => {
                   {record.reported_blockers && (
                     <section className="rounded-xl border border-amber-300/15 bg-amber-500/[0.06] p-3">
                       <h3 className="flex items-center gap-2 text-xs font-semibold text-amber-200">
-                        <AlertTriangle size={14} /> Reported blocker
+                        <IconAlertTriangle size={14} /> Reported blocker
                       </h3>
                       <p className="mt-1 text-sm leading-5 text-[#E4D9F2]">{record.reported_blockers}</p>
                     </section>
@@ -224,7 +212,7 @@ export const AgendaDriftView: React.FC = () => {
                 <div className="space-y-4">
                   <section className="rounded-xl border border-violet-300/15 bg-violet-500/[0.05] p-4">
                     <h3 className="flex items-center gap-2 text-sm font-semibold text-violet-100">
-                      <ListChecks size={16} /> {isOwnManagerRecord ? 'Your next steps' : 'Practical next steps'}
+                      <IconListChecks size={16} /> {isOwnManagerRecord ? 'Your next steps' : 'Practical next steps'}
                     </h3>
                     {record.recommended_actions.length > 0 ? (
                       <ol className="mt-3 space-y-2">
@@ -263,7 +251,7 @@ export const AgendaDriftView: React.FC = () => {
                           onClick={() => void submitReview(record, 'ACKNOWLEDGED')}
                           className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/15 px-3 py-2 text-xs font-medium text-emerald-200 hover:bg-emerald-500/25 disabled:opacity-50"
                         >
-                          <Check size={14} /> Approve
+                          <IconCheck size={14} /> Approve
                         </button>
                         <button
                           type="button"
@@ -271,14 +259,14 @@ export const AgendaDriftView: React.FC = () => {
                           onClick={() => void submitReview(record, 'DISMISSED')}
                           className="inline-flex items-center gap-1.5 rounded-lg bg-white/[0.06] px-3 py-2 text-xs font-medium text-[#D8CDEF] hover:bg-white/10 disabled:opacity-50"
                         >
-                          <X size={14} /> Dismiss
+                          <IconX size={14} /> Dismiss
                         </button>
                         {record.recovery_proposal_id && (
                           <a
                             href="/manager/recovery"
                             className="inline-flex items-center gap-1.5 rounded-lg border border-violet-300/20 px-3 py-2 text-xs font-medium text-violet-200 hover:bg-violet-500/10"
                           >
-                            Review recovery proposal <ArrowUpRight size={14} />
+                            Review recovery proposal <IconArrowUpRight size={14} />
                           </a>
                         )}
                       </div>
@@ -293,7 +281,7 @@ export const AgendaDriftView: React.FC = () => {
                   ) : (
                     <section className="rounded-xl border border-white/[0.08] p-4">
                       <h3 className="flex items-center gap-2 text-sm font-semibold">
-                        <MessageSquare size={15} className="text-violet-200" /> Add context or clarify
+                        <IconMessageSquare size={15} className="text-violet-200" /> Add context or clarify
                       </h3>
                       <p className="mt-1 text-xs leading-5 text-[#A99DBD]">
                         Your note will be used to update this check. It will not change your task or assignment.
@@ -312,7 +300,7 @@ export const AgendaDriftView: React.FC = () => {
                         onClick={() => void submitClarification(record)}
                         className="mt-2 inline-flex items-center gap-2 rounded-lg bg-violet-500/20 px-3 py-2 text-xs font-medium text-violet-100 hover:bg-violet-500/30 disabled:opacity-50"
                       >
-                        {busyId === record.id ? <LoaderCircle size={14} className="animate-spin" /> : <CircleHelp size={14} />}
+                        {busyId === record.id ? <IconSpinner size={14} className="animate-spin" /> : <IconCircleHelp size={14} />}
                         Send clarification
                       </button>
                     </section>

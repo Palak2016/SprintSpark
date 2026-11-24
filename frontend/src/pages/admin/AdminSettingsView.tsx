@@ -1,10 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import {
-  MdCheck as Check,
-  MdContentPaste as Clipboard,
-  MdRefresh as LoaderCircle,
-  MdRefresh as RefreshCw
-} from 'react-icons/md';
+import { IconCheck, IconClipboard, IconKey, IconSpinner } from '../../icons';
 import { api } from '../../services/api';
 import { Company } from '../../types';
 import {
@@ -110,9 +105,10 @@ export const AdminSettingsView: React.FC = () => {
                   type="button"
                   onClick={() => void copy()}
                   aria-label={copied ? 'Code copied' : 'Copy signup code'}
+                  title={copied ? 'Code copied' : 'Copy signup code'}
                   className="rounded-lg border border-white/10 p-2.5 text-[#D1C7E0] transition hover:bg-white/10 hover:text-white"
                 >
-                  {copied ? <Check className="h-4 w-4" /> : <Clipboard className="h-4 w-4" />}
+                  {copied ? <IconCheck className="h-4 w-4" /> : <IconClipboard className="h-4 w-4" />}
                 </button>
               </div>
 
@@ -123,7 +119,7 @@ export const AdminSettingsView: React.FC = () => {
                   </p>
                   <div className="mt-3 flex gap-2">
                     <button type="button" onClick={() => void rotate()} disabled={rotating} className={buttonClass}>
-                      {rotating ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                      {rotating ? <IconSpinner className="h-3.5 w-3.5 animate-spin" /> : <IconKey className="h-3.5 w-3.5" />}
                       {rotating ? 'Generating...' : 'Generate new code'}
                     </button>
                     <button type="button" onClick={() => setConfirmRotate(false)} disabled={rotating} className={buttonClass}>
@@ -133,7 +129,7 @@ export const AdminSettingsView: React.FC = () => {
                 </div>
               ) : (
                 <button type="button" onClick={() => setConfirmRotate(true)} className={buttonClass}>
-                  <RefreshCw className="h-3.5 w-3.5" />
+                  <IconKey className="h-3.5 w-3.5" />
                   Generate new code
                 </button>
               )}

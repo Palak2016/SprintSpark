@@ -1,17 +1,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  MdNotifications as Bell,
-  MdCheck as Check,
-  MdViewKanban as FolderKanban,
-  MdLogout as LogOut,
-  MdExpandMore as ChevronDown,
-  MdMenu as Menu,
-  MdDoneAll as CheckCheck,
-  MdLayers as Layers3,
-  MdArrowOutward as ArrowUpRight
-} from 'react-icons/md';
+import { IconDashboardArrowUpRight, IconDashboardBell, IconDashboardCheck, IconDashboardCheckCheck, IconDashboardChevronDown, IconDashboardFolderKanban, IconDashboardLayers3, IconDashboardLogOut, IconDashboardMenu } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import { useProject } from '../../context/ProjectContext';
 import { api } from '../../services/api';
@@ -182,9 +172,9 @@ export const Topbar: React.FC<TopbarProps> = ({
           type="button"
           onClick={onToggleMobileSidebar}
           aria-label="Toggle navigation sidebar"
-          className={`shrink-0 p-2 md:hidden ${controlClass}`}
+          className={`shrink-0 p-2 md:hidden ${controlClass}`} title="Toggle navigation sidebar"
         >
-          <Menu className="h-5 w-5" />
+          <IconDashboardMenu className="h-5 w-5" />
         </button>
 
         {leading ?? (
@@ -201,7 +191,7 @@ export const Topbar: React.FC<TopbarProps> = ({
             className={`flex max-w-full items-center gap-2 rounded-xl px-2.5 py-2 text-sm sm:px-3 ${controlClass}`}
           >
             <span className="dashboard-project-icon flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-violet-400/15 bg-violet-500/15">
-              <FolderKanban className="dashboard-topbar-icon h-4 w-4 text-violet-300" />
+              <IconDashboardFolderKanban className="dashboard-topbar-icon h-4 w-4 text-violet-300" />
             </span>
 
             <span className="min-w-0 text-left">
@@ -214,7 +204,7 @@ export const Topbar: React.FC<TopbarProps> = ({
               </span>
             </span>
 
-            <ChevronDown
+            <IconDashboardChevronDown
               className={`h-4 w-4 shrink-0 text-[#8F83A7] transition-transform ${
                 showProjectMenu ? 'rotate-180' : ''
               }`}
@@ -229,7 +219,7 @@ export const Topbar: React.FC<TopbarProps> = ({
             >
               <div className="flex items-center gap-3 border-b border-white/[0.07] px-3 py-3">
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-500/15">
-                  <Layers3 className="h-4 w-4 text-violet-300" />
+                  <IconDashboardLayers3 className="h-4 w-4 text-violet-300" />
                 </div>
 
                 <div>
@@ -245,7 +235,7 @@ export const Topbar: React.FC<TopbarProps> = ({
               <div className="max-h-64 overflow-y-auto py-2">
                 {projects.length === 0 ? (
                   <div className="px-4 py-8 text-center">
-                    <FolderKanban className="mx-auto mb-2 h-6 w-6 text-[#76698D]" />
+                    <IconDashboardFolderKanban className="mx-auto mb-2 h-6 w-6 text-[#76698D]" />
                     <p className="text-sm text-[#D8D0E7]">
                       No projects available
                     </p>
@@ -279,7 +269,7 @@ export const Topbar: React.FC<TopbarProps> = ({
                               : 'bg-white/[0.05] text-[#9487AA]'
                           }`}
                         >
-                          <FolderKanban className="h-4 w-4" />
+                          <IconDashboardFolderKanban className="h-4 w-4" />
                         </span>
 
                         <span className="min-w-0 flex-1 truncate text-sm font-medium">
@@ -287,7 +277,7 @@ export const Topbar: React.FC<TopbarProps> = ({
                         </span>
 
                         {isActive && (
-                          <Check className="h-4 w-4 shrink-0 text-violet-300" />
+                          <IconDashboardCheck className="h-4 w-4 shrink-0 text-violet-300" />
                         )}
                       </button>
                     );
@@ -313,9 +303,9 @@ export const Topbar: React.FC<TopbarProps> = ({
               setShowNotifications((previous) => !previous);
               setShowProjectMenu(false);
             }}
-            className={`relative p-2.5 ${controlClass}`}
+            className={`relative p-2.5 ${controlClass}`} title={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
           >
-            <Bell className="dashboard-topbar-icon h-5 w-5" />
+            <IconDashboardBell className="dashboard-topbar-icon h-5 w-5" />
 
             {unreadCount > 0 && (
               <>
@@ -353,7 +343,7 @@ export const Topbar: React.FC<TopbarProps> = ({
                     disabled={markingRead}
                     className="notification-mark-read inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-2 text-xs font-semibold text-violet-300 transition-colors hover:bg-violet-500/10 hover:text-violet-200 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    <CheckCheck className="h-3.5 w-3.5" />
+                    <IconDashboardCheckCheck className="h-3.5 w-3.5" />
                     {markingRead ? 'Updating...' : 'Mark all read'}
                   </button>
                 )}
@@ -364,7 +354,7 @@ export const Topbar: React.FC<TopbarProps> = ({
                 {notifications.length === 0 ? (
                   <div className="px-5 py-10 text-center">
                     <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-violet-300/10 bg-violet-500/[0.08]">
-                      <Bell className="h-5 w-5 text-violet-300" />
+                      <IconDashboardBell className="h-5 w-5 text-violet-300" />
                     </div>
                     <p className="text-sm font-medium text-[#E5DDF2]">
                       All quiet here
@@ -426,7 +416,7 @@ export const Topbar: React.FC<TopbarProps> = ({
                         </div>
 
                         {clickable && (
-                          <ArrowUpRight className="mt-1 h-4 w-4 shrink-0 text-[#8F83A7]" />
+                          <IconDashboardArrowUpRight className="mt-1 h-4 w-4 shrink-0 text-[#8F83A7]" />
                         )}
                       </div>
                     </div>
@@ -452,7 +442,7 @@ export const Topbar: React.FC<TopbarProps> = ({
           title="Sign out of your account"
           className="inline-flex items-center gap-2 rounded-xl border border-rose-400/15 bg-rose-500/[0.08] px-2.5 py-2.5 text-xs font-semibold text-rose-300 transition-all hover:border-rose-400/30 hover:bg-rose-500/[0.15] hover:text-rose-200 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3"
         >
-          <LogOut className="h-4 w-4" />
+          <IconDashboardLogOut className="h-4 w-4" />
           <span className="hidden sm:inline">
             {loggingOut ? 'Signing out...' : 'Logout'}
           </span>

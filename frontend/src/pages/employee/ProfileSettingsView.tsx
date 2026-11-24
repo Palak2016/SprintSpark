@@ -1,14 +1,7 @@
 
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
-import {
-  MdLogout as LogOut,
-  MdPerson as UserRound,
-  MdMail as Mail,
-  MdVerifiedUser as ShieldCheck,
-  MdLock as LockKeyhole,
-  MdTune as Settings2
-} from 'react-icons/md';
+import { IconLockKeyhole, IconLogOut, IconMail, IconSettings2, IconShieldCheck, IconUserRound } from '../../icons';
 
 export const ProfileSettingsView: React.FC = () => {
   const { user, logout } = useAuth();
@@ -25,7 +18,7 @@ export const ProfileSettingsView: React.FC = () => {
 
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-violet-400/20 bg-violet-500/10">
-            <Settings2 size={24} className="text-violet-300" />
+            <IconSettings2 size={24} className="text-violet-300" />
           </div>
 
           <div>
@@ -44,7 +37,7 @@ export const ProfileSettingsView: React.FC = () => {
         {/* Card Header */}
         <div className="border-b border-white/[0.07] bg-violet-500/[0.04] p-5 sm:p-6">
           <div className="flex items-center gap-2">
-            <UserRound size={17} className="text-violet-300" />
+            <IconUserRound size={17} className="text-violet-300" />
             <h2 className="text-sm font-semibold">Account Information</h2>
           </div>
           <p className="mt-1 text-xs text-[#A99DBD]">
@@ -79,7 +72,7 @@ export const ProfileSettingsView: React.FC = () => {
               </p>
 
               <span className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-violet-400/20 bg-violet-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-violet-300">
-                <ShieldCheck size={13} />
+                <IconShieldCheck size={13} />
                 {user?.role || 'Member'}
               </span>
             </div>
@@ -89,7 +82,7 @@ export const ProfileSettingsView: React.FC = () => {
           <div className="space-y-1 pt-5">
             <div className="flex items-start gap-3 rounded-xl p-3 transition hover:bg-white/[0.025]">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-500/10">
-                <UserRound size={17} className="text-violet-300" />
+                <IconUserRound size={17} className="text-violet-300" />
               </div>
 
               <div className="min-w-0 flex-1">
@@ -104,7 +97,7 @@ export const ProfileSettingsView: React.FC = () => {
 
             <div className="flex items-start gap-3 rounded-xl p-3 transition hover:bg-white/[0.025]">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-500/10">
-                <Mail size={17} className="text-violet-300" />
+                <IconMail size={17} className="text-violet-300" />
               </div>
 
               <div className="min-w-0 flex-1">
@@ -119,7 +112,7 @@ export const ProfileSettingsView: React.FC = () => {
 
             <div className="flex items-start gap-3 rounded-xl p-3 transition hover:bg-white/[0.025]">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10">
-                <ShieldCheck size={17} className="text-emerald-300" />
+                <IconShieldCheck size={17} className="text-emerald-300" />
               </div>
 
               <div className="min-w-0 flex-1">
@@ -142,7 +135,7 @@ export const ProfileSettingsView: React.FC = () => {
       <section className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#19112B]">
         <div className="border-b border-white/[0.07] p-5 sm:p-6">
           <div className="flex items-center gap-2">
-            <LockKeyhole size={17} className="text-violet-300" />
+            <IconLockKeyhole size={17} className="text-violet-300" />
             <h2 className="text-sm font-semibold">Security & Session</h2>
           </div>
           <p className="mt-1 text-xs text-[#A99DBD]">
@@ -202,7 +195,7 @@ export const ProfileSettingsView: React.FC = () => {
           onClick={logout}
           className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-xs font-semibold text-rose-300 transition hover:border-rose-400/40 hover:bg-rose-500/20 focus:outline-none focus:ring-2 focus:ring-rose-400/40"
         >
-          <LogOut size={16} />
+          <IconLogOut size={16} />
           Sign Out
         </button>
       </section>

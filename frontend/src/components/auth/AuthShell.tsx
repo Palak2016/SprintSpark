@@ -1,8 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import {
-  MdError as AlertCircle
-} from 'react-icons/md';
+import { IconError } from '../../icons';
 import { Logo } from '../common/Logo';
 
 /*
@@ -121,7 +119,7 @@ export const AuthError: React.FC<{ message: string }> = ({ message }) => (
     role="alert"
     className="flex items-start gap-3 rounded-xl border border-rose-400/20 bg-rose-400/[0.08] p-3.5 text-sm leading-5 text-rose-200"
   >
-    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
+    <IconError className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
     <span>{message}</span>
   </div>
 );

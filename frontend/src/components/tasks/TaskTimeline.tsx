@@ -1,14 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  MdWarningAmber as AlertTriangle,
-  MdCalendarMonth as CalendarDays,
-  MdChevronLeft as ChevronLeft,
-  MdChevronRight as ChevronRight,
-  MdFlag as Flag,
-  MdInfo as Info,
-  MdRefresh as LoaderCircle,
-  MdLock as Lock
-} from 'react-icons/md';
+import { IconSpinner, IconTasksAlertTriangle, IconTasksCalendarDays, IconTasksChevronLeft, IconTasksChevronRight, IconTasksFlag, IconTasksInfo, IconTasksLock } from '../../icons';
 import type { Task } from '../../types';
 import {
   ZOOM_DAY_WIDTH,
@@ -231,21 +222,21 @@ export const TaskTimeline: React.FC<TaskTimelineProps> = ({
           {zoomButton('month', 'Month')}
         </div>
         <div className="flex items-center gap-2">
-          <button type="button" onClick={() => page(-1)} aria-label="Earlier dates" className="rounded-lg border border-white/10 p-1.5 text-[#B7ADC9] hover:bg-white/5 hover:text-white">
-            <ChevronLeft className="h-4 w-4" />
+          <button type="button" onClick={() => page(-1)} aria-label="Earlier dates" className="rounded-lg border border-white/10 p-1.5 text-[#B7ADC9] hover:bg-white/5 hover:text-white" title="Earlier dates">
+            <IconTasksChevronLeft className="h-4 w-4" />
           </button>
           <button type="button" onClick={scrollToToday} className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-[#D8CFE7] hover:bg-white/5">
-            <CalendarDays className="h-3.5 w-3.5" /> Today
+            <IconTasksCalendarDays className="h-3.5 w-3.5" /> Today
           </button>
-          <button type="button" onClick={() => page(1)} aria-label="Later dates" className="rounded-lg border border-white/10 p-1.5 text-[#B7ADC9] hover:bg-white/5 hover:text-white">
-            <ChevronRight className="h-4 w-4" />
+          <button type="button" onClick={() => page(1)} aria-label="Later dates" className="rounded-lg border border-white/10 p-1.5 text-[#B7ADC9] hover:bg-white/5 hover:text-white" title="Later dates">
+            <IconTasksChevronRight className="h-4 w-4" />
           </button>
         </div>
         <p className="w-full text-[11px] text-[#8f84a3] sm:w-auto">
           {canEdit ? (
             <>Drag a bar to move it, drag its edges to change dates. Keyboard: Alt+Arrow moves a focused task by a day.</>
           ) : (
-            <span className="inline-flex items-center gap-1"><Lock className="h-3 w-3" /> Read-only: only managers can change dates.</span>
+            <span className="inline-flex items-center gap-1"><IconTasksLock className="h-3 w-3" /> Read-only: only managers can change dates.</span>
           )}
         </p>
       </div>
@@ -257,7 +248,7 @@ export const TaskTimeline: React.FC<TaskTimelineProps> = ({
             message.tone === 'error' ? 'border-rose-400/20 bg-rose-500/[0.08] text-rose-200' : 'border-white/10 bg-white/[0.03] text-[#D8CFE7]'
           }`}
         >
-          {message.tone === 'error' ? <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /> : <Info className="mt-0.5 h-4 w-4 shrink-0" />}
+          {message.tone === 'error' ? <IconTasksAlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /> : <IconTasksInfo className="mt-0.5 h-4 w-4 shrink-0" />}
           <span className="flex-1">{message.text}</span>
           <button type="button" onClick={() => setMessage(null)} className="text-[11px] underline">Dismiss</button>
         </div>
@@ -285,10 +276,10 @@ export const TaskTimeline: React.FC<TaskTimelineProps> = ({
                     {task.assignee?.full_name ?? 'Unassigned'}
                   </span>
                 </span>
-                {flag === 'BLOCKED' && <span title="Blocked"><AlertTriangle className="h-3.5 w-3.5 text-[#d03b3b]" aria-label="Blocked" /></span>}
+                {flag === 'BLOCKED' && <span title="Blocked"><IconTasksAlertTriangle className="h-3.5 w-3.5 text-[#d03b3b]" aria-label="Blocked" /></span>}
                 {flag === 'OVERDUE' && <span className="text-[10px] font-semibold text-[#ec835a]">Overdue</span>}
                 {task.priority === 'CRITICAL' && task.status !== 'COMPLETED' && (
-                  <span title="Critical priority"><Flag className="h-3.5 w-3.5 text-[#fab219]" aria-label="Critical priority" /></span>
+                  <span title="Critical priority"><IconTasksFlag className="h-3.5 w-3.5 text-[#fab219]" aria-label="Critical priority" /></span>
                 )}
               </button>
             );
@@ -405,11 +396,11 @@ export const TaskTimeline: React.FC<TaskTimelineProps> = ({
                       <span className="absolute inset-y-0 left-0" style={{ width: bar.progressWidth, background: color }} />
                       {bar.width > 70 && (
                         <span className="relative flex h-full items-center gap-1 px-2 text-[10px] font-semibold text-white">
-                          {flag === 'BLOCKED' && <AlertTriangle className="h-3 w-3 shrink-0" />}
+                          {flag === 'BLOCKED' && <IconTasksAlertTriangle className="h-3 w-3 shrink-0" />}
                           <span className="truncate">{task.progress_pct}%</span>
                         </span>
                       )}
-                      {isPending && <LoaderCircle className="absolute right-1 top-1/2 h-3.5 w-3.5 -translate-y-1/2 animate-spin text-white" />}
+                      {isPending && <IconSpinner className="absolute right-1 top-1/2 h-3.5 w-3.5 -translate-y-1/2 animate-spin text-white" />}
                     </button>
                     {editable && (
                       <>
@@ -457,7 +448,7 @@ export const TaskTimeline: React.FC<TaskTimelineProps> = ({
         <span className="inline-flex items-center gap-1.5"><span className="inline-block h-2.5 w-4 rounded-sm ring-2 ring-[#ec835a]" /> Overdue</span>
         <span className="inline-flex items-center gap-1.5"><span className="inline-block h-3 w-[2px] bg-[#c4b5fd]" /> Today</span>
         {target !== null && <span className="inline-flex items-center gap-1.5"><span className="inline-block h-3 w-0 border-l-2 border-dashed border-[#fab219]" /> Project target</span>}
-        <span className="inline-flex items-center gap-1.5"><Flag className="h-3 w-3 text-[#fab219]" /> Critical priority</span>
+        <span className="inline-flex items-center gap-1.5"><IconTasksFlag className="h-3 w-3 text-[#fab219]" /> Critical priority</span>
         <span>Filled part of a bar = reported progress.</span>
       </div>
     </div>

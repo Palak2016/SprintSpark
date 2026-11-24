@@ -7,15 +7,7 @@ import { api } from '../../services/api';
 import { Task, LeaveRequest, DailyUpdate } from '../../types';
 import { StatCard } from '../../components/dashboard/StatCard';
 import { useVisibleInterval } from '../../hooks/useVisibleInterval';
-import {
-  MdCheckBox as CheckSquare,
-  MdAccessTime as Clock,
-  MdReportProblem as AlertOctagon,
-  MdCalendarMonth as CalendarDays,
-  MdSend as Send,
-  MdArrowForward as ArrowRight,
-  MdViewKanban as FolderKanban
-} from 'react-icons/md';
+import { IconAlertOctagon, IconArrowRight, IconCalendarDays, IconCheckSquare, IconClock, IconFolderKanban, IconSend } from '../../icons';
 
 export const EmployeeOverview: React.FC = () => {
   const { user } = useAuth();
@@ -119,7 +111,7 @@ export const EmployeeOverview: React.FC = () => {
           title="Assigned Tasks"
           value={activeTasks.length}
           subtitle={`${completedTasks.length} tasks completed`}
-          icon={CheckSquare}
+          icon={IconCheckSquare}
           variant="forest"
           action={{
             label: 'Open Queue',
@@ -135,7 +127,7 @@ export const EmployeeOverview: React.FC = () => {
               ? 'Impediment flagged'
               : 'Clear of blockers'
           }
-          icon={AlertOctagon}
+          icon={IconAlertOctagon}
           variant={blockedTasks.length > 0 ? 'danger' : 'success'}
           action={{
             label: 'Details',
@@ -147,7 +139,7 @@ export const EmployeeOverview: React.FC = () => {
           title="Daily Updates"
           value={recentUpdates.length}
           subtitle="Standup records logged"
-          icon={Send}
+          icon={IconSend}
           variant="default"
           action={{
             label: 'Submit',
@@ -163,7 +155,7 @@ export const EmployeeOverview: React.FC = () => {
               ? `${pendingLeaves.length} request(s) pending`
               : 'All decided'
           }
-          icon={CalendarDays}
+          icon={IconCalendarDays}
           variant={pendingLeaves.length > 0 ? 'warning' : 'default'}
           action={{
             label: 'Apply',
@@ -196,7 +188,7 @@ export const EmployeeOverview: React.FC = () => {
         ) : myProjects.length === 0 ? (
           <div className="rounded-2xl border border-white/10 bg-[#19112B] p-8 text-center">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-violet-400/20 bg-violet-500/10">
-              <FolderKanban className="h-5 w-5 text-violet-300" />
+              <IconFolderKanban className="h-5 w-5 text-violet-300" />
             </div>
 
             <p className="mt-3 text-sm font-semibold text-white">
@@ -224,7 +216,7 @@ export const EmployeeOverview: React.FC = () => {
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex min-w-0 items-start gap-3">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-violet-400/20 bg-violet-500/10">
-                        <FolderKanban className="h-5 w-5 text-violet-300" />
+                        <IconFolderKanban className="h-5 w-5 text-violet-300" />
                       </div>
 
                       <div className="min-w-0">
@@ -320,7 +312,7 @@ export const EmployeeOverview: React.FC = () => {
                     className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl border border-violet-400/30 bg-violet-500/10 px-4 py-2.5 text-sm font-semibold text-violet-200 transition-colors hover:border-violet-300/50 hover:bg-violet-500/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
                   >
                     View My Tasks
-                    <ArrowRight className="h-4 w-4" />
+                    <IconArrowRight className="h-4 w-4" />
                   </button>
                 </article>
               );
@@ -349,7 +341,7 @@ export const EmployeeOverview: React.FC = () => {
               className="inline-flex items-center gap-2 rounded-lg border border-violet-400/30 bg-violet-500/10 px-3 py-2 text-sm font-semibold text-violet-200 transition-all hover:border-violet-300/60 hover:bg-violet-500/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
             >
               View All Tasks
-              <ArrowRight className="h-4 w-4" />
+              <IconArrowRight className="h-4 w-4" />
             </Link>
           </div>
 
@@ -361,7 +353,7 @@ export const EmployeeOverview: React.FC = () => {
             ) : activeTasks.length === 0 ? (
               <div className="p-8 text-center">
                 <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-400/20 bg-emerald-500/10">
-                  <CheckSquare className="h-5 w-5 text-emerald-300" />
+                  <IconCheckSquare className="h-5 w-5 text-emerald-300" />
                 </div>
 
                 <p className="mt-3 text-sm font-semibold text-white">
@@ -399,7 +391,7 @@ export const EmployeeOverview: React.FC = () => {
 
                     <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#B7ADC9]">
                       <span className="inline-flex items-center gap-1.5">
-                        <Clock className="h-3.5 w-3.5 text-violet-300" />
+                        <IconClock className="h-3.5 w-3.5 text-violet-300" />
                         Due {task.due_date || 'Not set'}
                       </span>
 
@@ -454,7 +446,7 @@ export const EmployeeOverview: React.FC = () => {
               className="inline-flex items-center gap-2 rounded-lg border border-violet-400/30 bg-violet-500/10 px-3 py-2 text-sm font-semibold text-violet-200 transition-all hover:border-violet-300/60 hover:bg-violet-500/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
             >
               Request Time Off
-              <ArrowRight className="h-4 w-4" />
+              <IconArrowRight className="h-4 w-4" />
             </Link>
           </div>
 
@@ -465,7 +457,7 @@ export const EmployeeOverview: React.FC = () => {
               </p>
             ) : myLeaves.length === 0 ? (
               <div className="py-6 text-center">
-                <CalendarDays className="mx-auto h-8 w-8 text-violet-300" />
+                <IconCalendarDays className="mx-auto h-8 w-8 text-violet-300" />
 
                 <p className="mt-3 text-sm font-semibold text-white">
                   No leave requests yet
@@ -521,7 +513,7 @@ export const EmployeeOverview: React.FC = () => {
                     className="flex items-start gap-3"
                   >
                     <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10">
-                      <Clock className="h-4 w-4 text-violet-300" />
+                      <IconClock className="h-4 w-4 text-violet-300" />
                     </div>
 
                     <div className="min-w-0">

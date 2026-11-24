@@ -1,11 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import {
-  MdWarningAmber as AlertTriangle,
-  MdChevronLeft as ChevronLeft,
-  MdChevronRight as ChevronRight,
-  MdRadioButtonChecked as CircleDot,
-  MdFlag as Flag
-} from 'react-icons/md';
+import { IconTasksAlertTriangle, IconTasksChevronLeft, IconTasksChevronRight, IconTasksCircleDot, IconTasksFlag } from '../../icons';
 import type { Task } from '../../types';
 import { calendarMonth, formatDayLabel, taskFlag, toDay, todayInIndia } from '../../utils/planning';
 import { CHART_COLORS } from '../charts/Charts';
@@ -49,12 +43,12 @@ export const TaskCalendar: React.FC<{ tasks: Task[]; onTaskClick: (task: Task) =
     <div className="task-calendar rounded-2xl border border-white/[0.08] bg-[#19112B]">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.06] p-3">
         <div className="flex items-center gap-2">
-          <button type="button" onClick={() => shift(-1)} aria-label="Previous month" className="rounded-lg border border-white/10 p-1.5 text-[#B7ADC9] hover:bg-white/5 hover:text-white">
-            <ChevronLeft className="h-4 w-4" />
+          <button type="button" onClick={() => shift(-1)} aria-label="Previous month" className="rounded-lg border border-white/10 p-1.5 text-[#B7ADC9] hover:bg-white/5 hover:text-white" title="Previous month">
+            <IconTasksChevronLeft className="h-4 w-4" />
           </button>
           <h3 className="min-w-36 text-center text-sm font-semibold text-white" aria-live="polite">{monthLabel}</h3>
-          <button type="button" onClick={() => shift(1)} aria-label="Next month" className="rounded-lg border border-white/10 p-1.5 text-[#B7ADC9] hover:bg-white/5 hover:text-white">
-            <ChevronRight className="h-4 w-4" />
+          <button type="button" onClick={() => shift(1)} aria-label="Next month" className="rounded-lg border border-white/10 p-1.5 text-[#B7ADC9] hover:bg-white/5 hover:text-white" title="Next month">
+            <IconTasksChevronRight className="h-4 w-4" />
           </button>
           <button
             type="button"
@@ -65,7 +59,7 @@ export const TaskCalendar: React.FC<{ tasks: Task[]; onTaskClick: (task: Task) =
           </button>
         </div>
         <p className="text-[11px] text-[#8f84a3]">
-          {inMonth} task(s) start or are due this month. Tasks appear on their due date; <CircleDot className="inline h-3 w-3" /> marks a start date.
+          {inMonth} task(s) start or are due this month. Tasks appear on their due date; <IconTasksCircleDot className="inline h-3 w-3" /> marks a start date.
         </p>
       </div>
 
@@ -109,9 +103,9 @@ export const TaskCalendar: React.FC<{ tasks: Task[]; onTaskClick: (task: Task) =
                         onClick={() => onTaskClick(task)}
                         data-task-status="starting"
                         className="flex w-full items-center gap-1 truncate rounded px-1 py-0.5 text-left text-[10px] text-[#A99DBD] hover:bg-white/5"
-                        title={`Starts: ${task.title}`}
+                        title={`Starts: ${task.title}`} aria-label={`Starts: ${task.title}`}
                       >
-                        <CircleDot className="h-3 w-3 shrink-0" />
+                        <IconTasksCircleDot className="h-3 w-3 shrink-0" />
                         <span className="truncate">{task.title}</span>
                       </button>
                     </li>
@@ -128,9 +122,9 @@ export const TaskCalendar: React.FC<{ tasks: Task[]; onTaskClick: (task: Task) =
                           className="flex w-full items-center gap-1 rounded-md border-l-[3px] bg-white/[0.04] px-1.5 py-1 text-left text-[11px] text-white hover:bg-white/[0.08] focus-visible:outline-2 focus-visible:outline-violet-300"
                           style={{ borderLeftColor: style.border }}
                         >
-                          {style.label === 'Blocked' && <AlertTriangle className="h-3 w-3 shrink-0 text-[#d03b3b]" />}
-                          {style.label === 'Overdue' && <AlertTriangle className="h-3 w-3 shrink-0 text-[#ec835a]" />}
-                          {task.priority === 'CRITICAL' && task.status !== 'COMPLETED' && <Flag className="h-3 w-3 shrink-0 text-[#fab219]" />}
+                          {style.label === 'Blocked' && <IconTasksAlertTriangle className="h-3 w-3 shrink-0 text-[#d03b3b]" />}
+                          {style.label === 'Overdue' && <IconTasksAlertTriangle className="h-3 w-3 shrink-0 text-[#ec835a]" />}
+                          {task.priority === 'CRITICAL' && task.status !== 'COMPLETED' && <IconTasksFlag className="h-3 w-3 shrink-0 text-[#fab219]" />}
                           <span className="truncate">{task.title}</span>
                           <span className="sr-only">, {style.label}</span>
                         </button>

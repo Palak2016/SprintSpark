@@ -3,13 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal } from '../common/Modal';
 import { Task } from '../../types';
 import { api } from '../../services/api';
-import {
-  MdReportProblem as AlertOctagon,
-  MdCheckCircle as CheckCircle2,
-  MdGppMaybe as ShieldAlert,
-  MdRefresh as LoaderCircle,
-  MdInfo as Info
-} from 'react-icons/md';
+import { IconAlertOctagon, IconCheckCircle2, IconInfo, IconShieldAlert, IconSpinner } from '../../icons';
 
 interface BlockerModalProps {
   isOpen: boolean;
@@ -124,9 +118,9 @@ export const BlockerModal: React.FC<BlockerModalProps> = ({
             }`}
           >
             {task.is_blocked ? (
-              <CheckCircle2 className="h-5 w-5 text-emerald-300" />
+              <IconCheckCircle2 className="h-5 w-5 text-emerald-300" />
             ) : (
-              <ShieldAlert className="h-5 w-5 text-rose-300" />
+              <IconShieldAlert className="h-5 w-5 text-rose-300" />
             )}
           </div>
 
@@ -150,7 +144,7 @@ export const BlockerModal: React.FC<BlockerModalProps> = ({
           <div className="space-y-4">
             <div className="rounded-2xl border border-rose-400/20 bg-rose-500/[0.07] p-4">
               <div className="flex items-start gap-3">
-                <AlertOctagon className="mt-0.5 h-5 w-5 shrink-0 text-rose-300" />
+                <IconAlertOctagon className="mt-0.5 h-5 w-5 shrink-0 text-rose-300" />
 
                 <div className="min-w-0">
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-rose-300">
@@ -166,7 +160,7 @@ export const BlockerModal: React.FC<BlockerModalProps> = ({
             </div>
 
             <div className="flex items-start gap-2.5 rounded-xl border border-violet-400/15 bg-violet-500/[0.06] p-3">
-              <Info className="mt-0.5 h-4 w-4 shrink-0 text-violet-300" />
+              <IconInfo className="mt-0.5 h-4 w-4 shrink-0 text-violet-300" />
 
               <p className="text-xs leading-5 text-[#B7ADC9]">
                 Marking this blocker as resolved will call the
@@ -180,7 +174,7 @@ export const BlockerModal: React.FC<BlockerModalProps> = ({
                 role="alert"
                 className="flex items-start gap-2.5 rounded-xl border border-rose-400/20 bg-rose-500/10 p-3"
               >
-                <AlertOctagon className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
+                <IconAlertOctagon className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
 
                 <p className="break-words text-xs leading-5 text-rose-200">
                   {error}
@@ -205,9 +199,9 @@ export const BlockerModal: React.FC<BlockerModalProps> = ({
                 className={`${buttonClass} border border-emerald-400/20 bg-emerald-500/15 text-emerald-200 hover:bg-emerald-500/25`}
               >
                 {isSubmitting ? (
-                  <LoaderCircle className="h-4 w-4 animate-spin" />
+                  <IconSpinner className="h-4 w-4 animate-spin" />
                 ) : (
-                  <CheckCircle2 className="h-4 w-4" />
+                  <IconCheckCircle2 className="h-4 w-4" />
                 )}
 
                 <span>
@@ -223,7 +217,7 @@ export const BlockerModal: React.FC<BlockerModalProps> = ({
           <form onSubmit={handleReport} className="space-y-4">
             <div className="rounded-2xl border border-amber-400/20 bg-amber-500/[0.07] p-4">
               <div className="flex items-start gap-3">
-                <AlertOctagon className="mt-0.5 h-5 w-5 shrink-0 text-amber-300" />
+                <IconAlertOctagon className="mt-0.5 h-5 w-5 shrink-0 text-amber-300" />
 
                 <div>
                   <p className="text-xs font-semibold text-amber-200">
@@ -289,7 +283,7 @@ export const BlockerModal: React.FC<BlockerModalProps> = ({
                 role="alert"
                 className="flex items-start gap-2.5 rounded-xl border border-rose-400/20 bg-rose-500/10 p-3"
               >
-                <AlertOctagon className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
+                <IconAlertOctagon className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
 
                 <p className="break-words text-xs leading-5 text-rose-200">
                   {error}
@@ -313,9 +307,9 @@ export const BlockerModal: React.FC<BlockerModalProps> = ({
                 className={`${buttonClass} border border-rose-400/20 bg-rose-500/15 text-rose-200 hover:bg-rose-500/25`}
               >
                 {isSubmitting ? (
-                  <LoaderCircle className="h-4 w-4 animate-spin" />
+                  <IconSpinner className="h-4 w-4 animate-spin" />
                 ) : (
-                  <AlertOctagon className="h-4 w-4" />
+                  <IconAlertOctagon className="h-4 w-4" />
                 )}
 
                 <span>

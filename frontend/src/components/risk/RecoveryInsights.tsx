@@ -1,16 +1,5 @@
 import React, { useMemo } from 'react';
-import {
-  MdWarningAmber as AlertTriangle,
-  MdFactCheck as ClipboardCheck,
-  MdCheckCircle as CheckCircle2,
-  MdHelp as CircleHelp,
-  MdDescription as FileText,
-  MdCompareArrows as GitCompareArrows,
-  MdChecklist as ListChecks,
-  MdGppMaybe as ShieldAlert,
-  MdVerifiedUser as ShieldCheck,
-  MdCancel as XCircle
-} from 'react-icons/md';
+import { IconAlertTriangle, IconCheckCircle2, IconCircleHelp, IconClipboardCheck, IconFileText, IconGitCompareArrows, IconListChecks, IconShieldAlert, IconShieldCheck, IconXCircle } from '../../icons';
 import type { GenerationTrace, ProposedAction, RecoveryProposal, ScheduleComparison } from '../../types';
 import { formatIndianDate, formatIndianDateTime } from '../../utils/date';
 import { compareScheduleRows, formatDayLabel, toDay } from '../../utils/planning';
@@ -65,7 +54,7 @@ export const ProvenanceBadge: React.FC<{ trace?: GenerationTrace | null; compact
     fallback: 'border-amber-400/25 bg-amber-500/10 text-amber-200',
     unknown: 'border-white/10 bg-white/[0.03] text-[#A99DBD]',
   }[p.tone];
-  const Icon = p.tone === 'ai' ? ClipboardCheck : p.tone === 'unknown' ? CircleHelp : ListChecks;
+  const Icon = p.tone === 'ai' ? IconClipboardCheck : p.tone === 'unknown' ? IconCircleHelp : IconListChecks;
   return (
     <span className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[10px] font-semibold ${styles}`} title={p.detail}>
       <Icon className="h-3 w-3" />
@@ -94,7 +83,7 @@ export const ActionBadges: React.FC<{ action: ProposedAction }> = ({ action }) =
             : 'border-white/10 bg-white/[0.04] text-[#D8CFE7]'
         }`}
       >
-        {action.validation.status === 'VALID' ? <ShieldCheck className="h-3 w-3" /> : <CircleHelp className="h-3 w-3" />}
+        {action.validation.status === 'VALID' ? <IconShieldCheck className="h-3 w-3" /> : <IconCircleHelp className="h-3 w-3" />}
         {action.validation.status === 'VALID' ? 'Validated' : 'Advisory, not applied automatically'}
       </span>
     )}
@@ -304,7 +293,7 @@ export const StrategiesPanel: React.FC<{ trace: GenerationTrace }> = ({ trace })
       {ai?.delay_explanation && (
         <div className="rounded-xl border border-violet-400/20 bg-violet-500/[0.06] p-3">
           <p className="flex items-center gap-1.5 text-[11px] font-semibold text-violet-200">
-            <FileText className="h-3.5 w-3.5" /> AI explanation of the delay (not verified)
+            <IconFileText className="h-3.5 w-3.5" /> AI explanation of the delay (not verified)
           </p>
           <p className="mt-1 text-xs leading-5 text-[#D8CFE7]">{ai.delay_explanation}</p>
         </div>
@@ -379,7 +368,7 @@ export const ValidationPanel: React.FC<{ trace: GenerationTrace }> = ({ trace })
   return (
     <div className="space-y-2 text-xs">
       <p className="flex items-center gap-1.5 font-semibold text-white">
-        {v.status === 'PASSED' ? <CheckCircle2 className="h-4 w-4 text-[#0ca30c]" /> : <ShieldAlert className="h-4 w-4 text-[#fab219]" />}
+        {v.status === 'PASSED' ? <IconCheckCircle2 className="h-4 w-4 text-[#0ca30c]" /> : <IconShieldAlert className="h-4 w-4 text-[#fab219]" />}
         {v.status === 'PASSED'
           ? 'All proposed actions passed validation against project data.'
           : v.status === 'PASSED_WITH_WARNINGS'
@@ -390,7 +379,7 @@ export const ValidationPanel: React.FC<{ trace: GenerationTrace }> = ({ trace })
         <ul className="space-y-1">
           {warnings.map((w) => (
             <li key={w} className="flex items-start gap-1.5 text-amber-100/90">
-              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#fab219]" /> {w}
+              <IconAlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#fab219]" /> {w}
             </li>
           ))}
         </ul>
@@ -401,7 +390,7 @@ export const ValidationPanel: React.FC<{ trace: GenerationTrace }> = ({ trace })
           <ul className="mt-2 space-y-1">
             {rejected.map((r, i) => (
               <li key={i} className="flex items-start gap-1.5 text-rose-100/90">
-                <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#d03b3b]" />
+                <IconXCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#d03b3b]" />
                 <span>
                   {r.source === 'AI' ? 'AI' : 'Rule'} {r.action_type.replace(/_/g, ' ').toLowerCase()} on task #{r.task_id}: {r.errors.join(' ')}
                 </span>
@@ -433,7 +422,7 @@ export const TraceDetails: React.FC<{ proposal: RecoveryProposal }> = ({ proposa
   return (
     <details className="rounded-xl border border-white/[0.07] bg-[#130D21] p-3 text-xs">
       <summary className="flex cursor-pointer items-center gap-1.5 font-semibold text-[#D8CFE7]">
-        <GitCompareArrows className="h-3.5 w-3.5" /> How this proposal was generated
+        <IconGitCompareArrows className="h-3.5 w-3.5" /> How this proposal was generated
       </summary>
       <dl className="mt-3 grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-[10rem_1fr]">
         {rows.map(([k, v]) => (

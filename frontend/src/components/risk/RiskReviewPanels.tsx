@@ -3,13 +3,7 @@ import { api } from '../../services/api';
 import type { RiskHistoryItem, RiskSuggestion } from '../../types';
 import { formatIndianDateTime } from '../../utils/date';
 import { triggerLabel } from './RiskExplanation';
-import {
-  MdCheck as Check,
-  MdHistory as History,
-  MdInbox as Inbox,
-  MdFormatQuote as Quote,
-  MdClose as X
-} from 'react-icons/md';
+import { IconCheck, IconHistory, IconInbox, IconQuote, IconX } from '../../icons';
 
 const SUGGESTION_TEXT: Record<RiskSuggestion['kind'], (s: RiskSuggestion) => string> = {
   DEPENDENCY: (s) =>
@@ -62,7 +56,7 @@ export const RiskSuggestionsPanel: React.FC<{ projectId: number; onChanged?: () 
     <section className="rounded-2xl border border-white/[0.08] bg-[#19112B] p-4 sm:p-5">
       <div className="mb-3 flex items-center gap-2.5">
         <div className="rounded-lg bg-sky-500/10 p-2">
-          <Inbox className="h-4 w-4 text-sky-300" />
+          <IconInbox className="h-4 w-4 text-sky-300" />
         </div>
         <div>
           <h3 className="text-sm font-semibold text-[#FAF8FF]">Needs your confirmation</h3>
@@ -82,7 +76,7 @@ export const RiskSuggestionsPanel: React.FC<{ projectId: number; onChanged?: () 
             <li key={item.id} className="rounded-lg border border-white/[0.06] bg-[#130D21]/70 p-3">
               <p className="text-xs leading-5 text-[#D5CBE5]">{SUGGESTION_TEXT[item.kind](item)}</p>
               <p className="mt-1.5 flex items-start gap-1.5 text-[11px] italic leading-5 text-[#A99DBD]">
-                <Quote className="mt-0.5 h-3 w-3 shrink-0" />
+                <IconQuote className="mt-0.5 h-3 w-3 shrink-0" />
                 <span>
                   "{item.evidence}"{item.employee_name ? ` — ${item.employee_name}` : ''}, {item.update_date}
                 </span>
@@ -94,7 +88,7 @@ export const RiskSuggestionsPanel: React.FC<{ projectId: number; onChanged?: () 
                   onClick={() => void review(item, 'ACCEPT')}
                   className="inline-flex items-center gap-1 rounded-lg bg-violet-600 px-2.5 py-1.5 text-[11px] font-semibold text-white transition hover:bg-violet-500 disabled:opacity-50"
                 >
-                  <Check className="h-3 w-3" /> Accept
+                  <IconCheck className="h-3 w-3" /> Accept
                 </button>
                 <button
                   type="button"
@@ -102,7 +96,7 @@ export const RiskSuggestionsPanel: React.FC<{ projectId: number; onChanged?: () 
                   onClick={() => void review(item, 'REJECT')}
                   className="inline-flex items-center gap-1 rounded-lg border border-white/[0.1] px-2.5 py-1.5 text-[11px] font-semibold text-[#D5CBE5] transition hover:bg-white/[0.05] disabled:opacity-50"
                 >
-                  <X className="h-3 w-3" /> Reject
+                  <IconX className="h-3 w-3" /> Reject
                 </button>
               </div>
             </li>
@@ -139,7 +133,7 @@ export const RiskHistoryPanel: React.FC<{ projectId: number; refreshKey?: number
     <section className="rounded-2xl border border-white/[0.08] bg-[#19112B] p-4 sm:p-5">
       <div className="mb-3 flex items-center gap-2.5">
         <div className="rounded-lg bg-violet-500/10 p-2">
-          <History className="h-4 w-4 text-violet-300" />
+          <IconHistory className="h-4 w-4 text-violet-300" />
         </div>
         <div>
           <h3 className="text-sm font-semibold text-[#FAF8FF]">Risk history</h3>

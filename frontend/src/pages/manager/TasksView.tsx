@@ -24,22 +24,7 @@ import {
   type TaskFilters,
 } from '../../utils/planning';
 
-import {
-  MdViewKanban as Kanban,
-  MdList as List,
-  MdAdd as Plus,
-  MdSearch as Search,
-  MdCheckBox as CheckSquare,
-  MdError as AlertCircle,
-  MdRefresh as RefreshCw,
-  MdViewKanban as FolderKanban,
-  MdClose as X,
-  MdAssignment as ClipboardList,
-  MdDashboard as LayoutDashboard,
-  MdCheckCircle as CheckCircle2,
-  MdCalendarMonth as CalendarDays,
-  MdViewTimeline as GanttChartSquare
-} from 'react-icons/md';
+import { IconAlertCircle, IconCalendarDays, IconCheckCircle2, IconCheckSquare, IconClipboardList, IconFolderKanban, IconGanttChartSquare, IconKanban, IconLayoutDashboard, IconList, IconPlus, IconRefresh, IconSearch, IconSpinner, IconX } from '../../icons';
 
 type ViewMode = 'list' | 'kanban' | 'calendar' | 'timeline';
 const VIEW_STORAGE_KEY = 'workpilot_task_view';
@@ -346,7 +331,7 @@ export const TasksView: React.FC = () => {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="mb-2 flex items-center gap-2 text-sm text-[#B7ADC9]">
-            <FolderKanban className="h-4 w-4 text-[#A78BFA]" />
+            <IconFolderKanban className="h-4 w-4 text-[#A78BFA]" />
             <span>Workspace</span>
             <span>/</span>
             <span className="text-[#E5D9FF]">Task Management</span>
@@ -370,7 +355,7 @@ export const TasksView: React.FC = () => {
             disabled={!activeProject || isLoading}
             className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-[#19112B] px-3 py-2.5 text-sm font-medium text-[#D8CDEF] transition hover:bg-[#211638] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <RefreshCw
+            <IconRefresh
               className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`}
             />
             Refresh
@@ -382,7 +367,7 @@ export const TasksView: React.FC = () => {
             disabled={!activeProject}
             className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <Plus className="h-4 w-4" />
+            <IconPlus className="h-4 w-4" />
             New Task
           </button>
         </div>
@@ -394,7 +379,7 @@ export const TasksView: React.FC = () => {
           role="alert"
           className="flex items-start gap-3 rounded-xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-200"
         >
-          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <IconAlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
 
           <span className="flex-1">{errorMsg}</span>
 
@@ -402,9 +387,9 @@ export const TasksView: React.FC = () => {
             type="button"
             aria-label="Dismiss error"
             onClick={() => setErrorMsg(null)}
-            className="text-rose-200 transition hover:text-white"
+            className="text-rose-200 transition hover:text-white" title="Dismiss error"
           >
-            <X className="h-4 w-4" />
+            <IconX className="h-4 w-4" />
           </button>
         </div>
       )}
@@ -412,7 +397,7 @@ export const TasksView: React.FC = () => {
       {!activeProject ? (
         <div className="rounded-2xl border border-dashed border-white/15 bg-[#19112B]/70 px-6 py-16 text-center">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-violet-400/20 bg-violet-500/10">
-            <FolderKanban className="h-7 w-7 text-violet-300" />
+            <IconFolderKanban className="h-7 w-7 text-violet-300" />
           </div>
 
           <h2 className="mt-4 text-lg font-semibold text-white">
@@ -431,7 +416,7 @@ export const TasksView: React.FC = () => {
             <div className="rounded-2xl border border-white/[0.08] bg-[#19112B] p-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-[#B7ADC9]">Total Tasks</p>
-                <ClipboardList className="h-5 w-5 text-violet-300" />
+                <IconClipboardList className="h-5 w-5 text-violet-300" />
               </div>
               <p className="mt-3 text-2xl font-bold">{tasks.length}</p>
               <p className="mt-1 text-xs text-[#A99DBD]">
@@ -442,7 +427,7 @@ export const TasksView: React.FC = () => {
             <div className="rounded-2xl border border-white/[0.08] bg-[#19112B] p-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-[#B7ADC9]">Completed</p>
-                <CheckSquare className="h-5 w-5 text-emerald-300" />
+                <IconCheckSquare className="h-5 w-5 text-emerald-300" />
               </div>
               <p className="mt-3 text-2xl font-bold">{completedTasks}</p>
               <p className="mt-1 text-xs text-[#A99DBD]">
@@ -453,7 +438,7 @@ export const TasksView: React.FC = () => {
             <div className="rounded-2xl border border-white/[0.08] bg-[#19112B] p-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-[#B7ADC9]">Remaining Tasks</p>
-                <LayoutDashboard className="h-5 w-5 text-sky-300" />
+                <IconLayoutDashboard className="h-5 w-5 text-sky-300" />
               </div>
               <p className="mt-3 text-2xl font-bold">
                 {tasks.length - completedTasks}
@@ -466,7 +451,7 @@ export const TasksView: React.FC = () => {
             <div className="rounded-2xl border border-white/[0.08] bg-[#19112B] p-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-[#B7ADC9]">Reported Progress</p>
-                <CheckSquare className="h-5 w-5 text-violet-300" />
+                <IconCheckSquare className="h-5 w-5 text-violet-300" />
               </div>
               <p className="mt-3 text-2xl font-bold">{progress}%</p>
               <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/[0.08]">
@@ -483,7 +468,7 @@ export const TasksView: React.FC = () => {
             <section className="rounded-2xl border border-amber-400/20 bg-[#19112B] p-5">
               <div className="mb-4 flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-400/10">
-                  <AlertCircle className="h-5 w-5 text-amber-300" />
+                  <IconAlertCircle className="h-5 w-5 text-amber-300" />
                 </div>
 
                 <div>
@@ -544,9 +529,9 @@ export const TasksView: React.FC = () => {
                           className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {isResolving ? (
-                            <RefreshCw className="h-4 w-4 animate-spin" />
+                            <IconSpinner className="h-4 w-4 animate-spin" />
                           ) : (
-                            <CheckCircle2 className="h-4 w-4" />
+                            <IconCheckCircle2 className="h-4 w-4" />
                           )}
 
                           {isResolving
@@ -565,7 +550,7 @@ export const TasksView: React.FC = () => {
           <div className="flex flex-col gap-4 rounded-2xl border border-white/[0.08] bg-[#19112B] p-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 items-center gap-3">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-500/15 text-violet-200">
-                <FolderKanban className="h-5 w-5" />
+                <IconFolderKanban className="h-5 w-5" />
               </div>
 
               <div className="min-w-0">
@@ -585,7 +570,7 @@ export const TasksView: React.FC = () => {
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <div className="relative w-full sm:w-64">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#A99DBD]" />
+                <IconSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#A99DBD]" />
 
                 <input
                   type="search"
@@ -601,19 +586,19 @@ export const TasksView: React.FC = () => {
                     type="button"
                     aria-label="Clear task search"
                     onClick={() => setSearch('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A99DBD] transition hover:text-white"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A99DBD] transition hover:text-white" title="Clear task search"
                   >
-                    <X className="h-4 w-4" />
+                    <IconX className="h-4 w-4" />
                   </button>
                 )}
               </div>
 
               <div className="flex items-center rounded-xl border border-white/10 bg-[#130D21] p-1" role="group" aria-label="Task view">
                 {([
-                  ['list', 'List', List],
-                  ['kanban', 'Kanban', Kanban],
-                  ['calendar', 'Calendar', CalendarDays],
-                  ['timeline', 'Timeline', GanttChartSquare],
+                  ['list', 'List', IconList],
+                  ['kanban', 'Kanban', IconKanban],
+                  ['calendar', 'Calendar', IconCalendarDays],
+                  ['timeline', 'Timeline', IconGanttChartSquare],
                 ] as const).map(([mode, label, Icon]) => (
                   <button
                     key={mode}
@@ -624,7 +609,7 @@ export const TasksView: React.FC = () => {
                       viewMode === mode
                         ? 'bg-violet-600 text-white shadow-sm'
                         : 'text-[#B7ADC9] hover:bg-white/5 hover:text-white'
-                    }`}
+                    }`} aria-label={label} title={label}
                   >
                     <Icon className="h-4 w-4" />
                     <span className="hidden sm:inline">{label}</span>
@@ -684,7 +669,7 @@ export const TasksView: React.FC = () => {
                 onClick={() => setFilters(DEFAULT_FILTERS)}
                 className="inline-flex items-center gap-1 rounded-xl px-2 py-2 text-xs font-medium text-violet-300 hover:text-violet-200"
               >
-                <X className="h-3.5 w-3.5" />
+                <IconX className="h-3.5 w-3.5" />
                 Clear {filterCount} filter{filterCount === 1 ? '' : 's'}
               </button>
             )}
@@ -693,7 +678,7 @@ export const TasksView: React.FC = () => {
           {/* Task board */}
           {isLoading ? (
             <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-white/[0.08] bg-[#19112B] px-6 py-12">
-              <RefreshCw className="h-8 w-8 animate-spin text-violet-300" />
+              <IconSpinner className="h-8 w-8 animate-spin text-violet-300" />
               <p className="mt-4 text-sm font-medium text-white">
                 Loading tasks...
               </p>
@@ -705,9 +690,9 @@ export const TasksView: React.FC = () => {
             <div className="rounded-2xl border border-dashed border-white/15 bg-[#19112B]/70 px-6 py-16 text-center">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-violet-400/20 bg-violet-500/10">
                 {search ? (
-                  <Search className="h-7 w-7 text-violet-300" />
+                  <IconSearch className="h-7 w-7 text-violet-300" />
                 ) : (
-                  <ClipboardList className="h-7 w-7 text-violet-300" />
+                  <IconClipboardList className="h-7 w-7 text-violet-300" />
                 )}
               </div>
 
@@ -735,7 +720,7 @@ export const TasksView: React.FC = () => {
                   onClick={handleOpenCreate}
                   className="mt-5 inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-500"
                 >
-                  <Plus className="h-4 w-4" />
+                  <IconPlus className="h-4 w-4" />
                   Create First Task
                 </button>
               )}

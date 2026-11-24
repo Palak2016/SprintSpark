@@ -4,16 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion, useReducedMotion } from 'motion/react';
 import { Logo } from '../components/common/Logo';
 import { useAuth } from '../context/AuthContext';
-import {
-  MdVisibility as Eye,
-  MdVisibilityOff as EyeOff,
-  MdError as AlertCircle,
-  MdArrowForward as ArrowRight,
-  MdLock as LockKeyhole,
-  MdMail as Mail,
-  MdVerifiedUser as ShieldCheck,
-  MdInsights as Activity
-} from 'react-icons/md';
+import { IconActivity, IconAlertCircle, IconArrowRight, IconEye, IconEyeOff, IconLockKeyhole, IconMail, IconShieldCheck } from '../icons';
 
 export const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -140,7 +131,7 @@ export const Login: React.FC = () => {
             {/* Card intro */}
             <div className="mb-6 flex items-center gap-3">
               <div className="signin-icon-tile flex h-11 w-11 items-center justify-center rounded-xl border border-white/[0.1] bg-white/[0.04] text-[#D1D3D6]">
-                <LockKeyhole className="h-5 w-5" />
+                <IconLockKeyhole className="h-5 w-5" />
               </div>
 
               <div>
@@ -159,7 +150,7 @@ export const Login: React.FC = () => {
                 role="alert"
                 className="mb-5 flex items-start gap-3 rounded-xl border border-rose-400/20 bg-rose-400/[0.08] p-3.5 text-sm text-rose-200"
               >
-                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
+                <IconAlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
                 <span>{errorMessage}</span>
               </div>
             )}
@@ -172,7 +163,7 @@ export const Login: React.FC = () => {
                 </label>
 
                 <div className="relative">
-                  <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#92979D]" />
+                  <IconMail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#92979D]" />
 
                   <input
                     id="loginEmail"
@@ -203,7 +194,7 @@ export const Login: React.FC = () => {
                 </div>
 
                 <div className="relative">
-                  <LockKeyhole className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#92979D]" />
+                  <IconLockKeyhole className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#92979D]" />
 
                   <input
                     id="loginPassword"
@@ -221,14 +212,15 @@ export const Login: React.FC = () => {
                     aria-label={
                       showPassword ? 'Hide password' : 'Show password'
                     }
+                    title={showPassword ? 'Hide password' : 'Show password'}
                     aria-pressed={showPassword}
                     onClick={() => setShowPassword(!showPassword)}
                     className="signin-secondary-action absolute right-3.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-[#92979D] transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/70"
                   >
                     {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
+                      <IconEyeOff className="h-4 w-4" />
                     ) : (
-                      <Eye className="h-4 w-4" />
+                      <IconEye className="h-4 w-4" />
                     )}
                   </button>
                 </div>
@@ -258,7 +250,7 @@ export const Login: React.FC = () => {
                 </span>
 
                 {!isSubmitting && (
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  <IconArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 )}
               </button>
             </form>
@@ -278,7 +270,7 @@ export const Login: React.FC = () => {
               className="signin-secondary-action flex w-full items-center justify-center gap-2 rounded-xl border border-white/[0.12] bg-white/[0.025] px-4 py-3 text-sm font-semibold text-[#D1D3D6] transition hover:border-white/25 hover:bg-white/[0.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70"
             >
               Create an account
-              <ArrowRight className="h-4 w-4" />
+              <IconArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
@@ -286,12 +278,12 @@ export const Login: React.FC = () => {
         {/* Trust indicators */}
         <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[10px] text-[#92979D]">
           <span className="inline-flex items-center gap-1.5">
-            <ShieldCheck className="h-3.5 w-3.5 text-[#BFC3C7]" />
+            <IconShieldCheck className="h-3.5 w-3.5 text-[#BFC3C7]" />
             Role-aware access
           </span>
 
           <span className="inline-flex items-center gap-1.5">
-            <Activity className="h-3.5 w-3.5 text-[#BFC3C7]" />
+            <IconActivity className="h-3.5 w-3.5 text-[#BFC3C7]" />
             AI-assisted delivery
           </span>
         </div>

@@ -1,24 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-  MdSend as Send,
-  MdReportProblem as AlertOctagon,
-  MdCheckCircle as CheckCircle2,
-  MdCalendarMonth as Calendar,
-  MdInfo as Info,
-  MdAssignment as ClipboardList,
-  MdAccessTime as Clock,
-  MdGpsFixed as Target,
-  MdVerifiedUser as ShieldCheck,
-  MdInsights as Activity,
-  MdInsights as ChartNoAxesCombined,
-  MdArrowOutward as ArrowUpRight,
-  MdRefresh as RefreshCw,
-  MdError as CircleAlert,
-  MdMessage as MessageSquare,
-  MdRefresh as LoaderCircle,
-  MdDownload as Download
-} from 'react-icons/md';
+import { IconActivity, IconAlertOctagon, IconArrowUpRight, IconCalendar, IconChartNoAxesCombined, IconCheckCircle2, IconCircleAlert, IconClipboardList, IconClock, IconDownload, IconInfo, IconMessageSquare, IconRefresh, IconSend, IconShieldCheck, IconSpinner, IconTarget } from '../../icons';
 
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
@@ -402,7 +384,7 @@ export const DailyUpdatesView: React.FC = () => {
                 color: C.purple,
               }}
             >
-              <Activity size={13} />
+              <IconActivity size={13} />
               Workforce intelligence
             </div>
 
@@ -442,9 +424,9 @@ export const DailyUpdatesView: React.FC = () => {
               style={{ borderColor: C.border, color: C.lilac }}
             >
               {isDownloading ? (
-                <LoaderCircle size={15} className="animate-spin" />
+                <IconSpinner size={15} className="animate-spin" />
               ) : (
-                <Download size={15} />
+                <IconDownload size={15} />
               )}
               {isDownloading
                 ? 'Preparing…'
@@ -460,7 +442,7 @@ export const DailyUpdatesView: React.FC = () => {
               className="inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-xs font-semibold transition hover:bg-white/5 disabled:opacity-50"
               style={{ borderColor: C.border, color: C.lilac }}
             >
-              <RefreshCw
+              <IconRefresh
                 size={15}
                 className={isLoading ? 'animate-spin' : ''}
               />
@@ -485,7 +467,7 @@ export const DailyUpdatesView: React.FC = () => {
                 color: C.purple,
               }}
             >
-              <ShieldCheck size={20} />
+              <IconShieldCheck size={20} />
             </div>
 
             <div>
@@ -515,21 +497,21 @@ export const DailyUpdatesView: React.FC = () => {
                 user?.role === 'MANAGER'
                   ? 'Tasks in projects you manage'
                   : 'Tasks assigned to you',
-              icon: ClipboardList,
+              icon: IconClipboardList,
               color: 'var(--ui-accent)',
             },
             {
               label: 'Completed tasks',
               value: completedTasks,
               description: 'At 100% completion',
-              icon: CheckCircle2,
+              icon: IconCheckCircle2,
               color: 'var(--ui-success)',
             },
             {
               label: 'Blocked tasks',
               value: blockedTasks,
               description: 'Need attention',
-              icon: AlertOctagon,
+              icon: IconAlertOctagon,
               color: 'var(--ui-danger)',
             },
           ].map((stat) => {
@@ -583,7 +565,7 @@ export const DailyUpdatesView: React.FC = () => {
               color: 'var(--ui-success)',
             }}
           >
-            <CheckCircle2 size={18} className="mt-0.5 shrink-0" />
+            <IconCheckCircle2 size={18} className="mt-0.5 shrink-0" />
             <div className="space-y-1">
               <p>{successMsg}</p>
               <p className="text-xs" style={{ color: C.muted }}>
@@ -700,7 +682,7 @@ export const DailyUpdatesView: React.FC = () => {
               color: 'var(--ui-danger)',
             }}
           >
-            <CircleAlert size={18} className="mt-0.5 shrink-0" />
+            <IconCircleAlert size={18} className="mt-0.5 shrink-0" />
             <span>{errorMsg}</span>
             <button
               type="button"
@@ -738,7 +720,7 @@ export const DailyUpdatesView: React.FC = () => {
                     color: '#FFFFFF',
                   }}
                 >
-                  <Send size={19} />
+                  <IconSend size={19} />
                 </div>
 
                 <div>
@@ -757,7 +739,7 @@ export const DailyUpdatesView: React.FC = () => {
                 className="flex min-h-72 flex-col items-center justify-center gap-3 p-8"
                 style={{ color: C.muted }}
               >
-                <LoaderCircle
+                <IconSpinner
                   size={28}
                   className="animate-spin"
                   style={{ color: C.purple }}
@@ -777,7 +759,7 @@ export const DailyUpdatesView: React.FC = () => {
                     color: C.purple,
                   }}
                 >
-                  <ClipboardList size={28} />
+                  <IconClipboardList size={28} />
                 </div>
                 <h3 className="text-base font-bold">
                   {user?.role === 'MANAGER'
@@ -921,7 +903,7 @@ export const DailyUpdatesView: React.FC = () => {
                         className="flex items-center gap-2 text-sm font-semibold"
                         style={{ color: isBlocked ? 'var(--ui-danger)' : C.lilac }}
                       >
-                        <AlertOctagon size={16} />
+                        <IconAlertOctagon size={16} />
                         This task is blocked
                       </span>
                       <span
@@ -967,7 +949,7 @@ export const DailyUpdatesView: React.FC = () => {
                     className="mb-2 flex items-center gap-2 text-xs font-semibold"
                     style={{ color: C.lilac }}
                   >
-                    <MessageSquare size={14} />
+                    <IconMessageSquare size={14} />
                     Accomplishments & next steps
                   </label>
 
@@ -1023,9 +1005,9 @@ export const DailyUpdatesView: React.FC = () => {
                       }}
                     >
                       {isAnalyzingProgress ? (
-                        <LoaderCircle size={14} className="animate-spin" />
+                        <IconSpinner size={14} className="animate-spin" />
                       ) : (
-                        <ChartNoAxesCombined size={14} />
+                        <IconChartNoAxesCombined size={14} />
                       )}
                       {isAnalyzingProgress ? 'Analyzing update...' : 'Analyze update'}
                     </button>
@@ -1159,14 +1141,14 @@ export const DailyUpdatesView: React.FC = () => {
                     }}
                   >
                     {isSubmitting ? (
-                      <LoaderCircle size={17} className="animate-spin" />
+                      <IconSpinner size={17} className="animate-spin" />
                     ) : (
-                      <Send size={16} />
+                      <IconSend size={16} />
                     )}
                     {isSubmitting
                       ? 'Submitting and refreshing...'
                       : 'Submit daily update'}
-                    {!isSubmitting && <ArrowUpRight size={16} />}
+                    {!isSubmitting && <IconArrowUpRight size={16} />}
                   </button>
                 </div>
               </form>
@@ -1190,7 +1172,7 @@ export const DailyUpdatesView: React.FC = () => {
                     color: C.purple,
                   }}
                 >
-                  <Target size={19} />
+                  <IconTarget size={19} />
                 </div>
                 <div>
                   <h2 className="text-sm font-bold">Task snapshot</h2>
@@ -1244,9 +1226,9 @@ export const DailyUpdatesView: React.FC = () => {
                     }}
                   >
                     {isBlocked ? (
-                      <AlertOctagon size={16} />
+                      <IconAlertOctagon size={16} />
                     ) : (
-                      <CheckCircle2 size={16} />
+                      <IconCheckCircle2 size={16} />
                     )}
                     {isBlocked
                       ? 'Blocker reported for this update'
@@ -1273,7 +1255,7 @@ export const DailyUpdatesView: React.FC = () => {
                 style={{ borderColor: C.border }}
               >
                 <div className="flex items-center gap-2.5">
-                  <Calendar size={17} style={{ color: C.purple }} />
+                  <IconCalendar size={17} style={{ color: C.purple }} />
                   <h2 className="text-sm font-bold">Recent updates</h2>
                 </div>
 
@@ -1293,7 +1275,7 @@ export const DailyUpdatesView: React.FC = () => {
                   className="flex justify-center p-8"
                   style={{ color: C.muted }}
                 >
-                  <LoaderCircle size={22} className="animate-spin" />
+                  <IconSpinner size={22} className="animate-spin" />
                 </div>
               ) : updates.length === 0 ? (
                 <div className="px-5 py-10 text-center">
@@ -1304,7 +1286,7 @@ export const DailyUpdatesView: React.FC = () => {
                       color: C.purple,
                     }}
                   >
-                    <Calendar size={22} />
+                    <IconCalendar size={22} />
                   </div>
                   <p className="text-sm font-semibold">No updates yet</p>
                   <p
@@ -1331,7 +1313,7 @@ export const DailyUpdatesView: React.FC = () => {
                             className="mt-1.5 flex items-center gap-1.5 text-[10px]"
                             style={{ color: C.muted }}
                           >
-                            <Clock size={11} />
+                            <IconClock size={11} />
                             {formatDate(update.date)}
                           </div>
                         </div>
@@ -1372,7 +1354,7 @@ export const DailyUpdatesView: React.FC = () => {
                             className="flex items-center gap-1.5 text-[10px] font-bold"
                             style={{ color: 'var(--ui-danger)' }}
                           >
-                            <AlertOctagon size={12} />
+                            <IconAlertOctagon size={12} />
                             BLOCKED
                           </div>
 
@@ -1410,7 +1392,7 @@ export const DailyUpdatesView: React.FC = () => {
               }}
             >
               <div className="flex items-start gap-3">
-                <Info
+                <IconInfo
                   size={17}
                   className="mt-0.5 shrink-0"
                   style={{ color: C.purple }}

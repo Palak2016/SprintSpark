@@ -1,9 +1,7 @@
 
 import React from 'react';
-import {
-  MdArrowOutward as ArrowUpRight
-} from 'react-icons/md';
-import type { IconType } from 'react-icons';
+import { IconDashboardArrowUpRight } from '../../icons';
+import type { IconType } from '../../icons';
 
 interface StatCardProps {
   title: string;
@@ -127,7 +125,7 @@ export const StatCard: React.FC<StatCardProps> = ({
               "
             >
               {action.label}
-              <ArrowUpRight className="h-3.5 w-3.5" />
+              <IconDashboardArrowUpRight className="h-3.5 w-3.5" />
             </button>
           )}
         </div>

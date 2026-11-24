@@ -1,11 +1,5 @@
 import React from 'react';
-import {
-  MdSettings as Settings,
-  MdVerifiedUser as ShieldCheck,
-  MdNotifications as Bell,
-  MdPalette as Palette,
-  MdPerson as UserRound
-} from 'react-icons/md';
+import { IconBell, IconPalette, IconSettings, IconShieldCheck, IconUserRound } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 
 export const AccountSettingsView: React.FC = () => {
@@ -13,19 +7,19 @@ export const AccountSettingsView: React.FC = () => {
 
   const settings = [
     {
-      icon: Palette,
+      icon: IconPalette,
       title: 'Appearance',
       description: 'Choose how WorkPilot looks on your device.',
       value: 'Manage theme from the sidebar account menu',
     },
     {
-      icon: Bell,
+      icon: IconBell,
       title: 'Notifications',
       description: 'Stay informed about project activity and updates.',
       value: 'Notification preferences are not configured yet',
     },
     {
-      icon: ShieldCheck,
+      icon: IconShieldCheck,
       title: 'Security',
       description: 'Keep your account information secure.',
       value: 'Password and security management are not configured yet',
@@ -36,7 +30,7 @@ export const AccountSettingsView: React.FC = () => {
     <div className="min-h-full space-y-6 bg-[#100B1D] p-4 text-[#FAF8FF] sm:p-6 lg:p-8">
       <header>
         <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl border border-violet-400/20 bg-violet-500/10">
-          <Settings className="h-6 w-6 text-violet-300" />
+          <IconSettings className="h-6 w-6 text-violet-300" />
         </div>
 
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-300">
@@ -56,7 +50,7 @@ export const AccountSettingsView: React.FC = () => {
       <section className="rounded-2xl border border-white/[0.08] bg-[#19112B] p-5 sm:p-6">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/10">
-            <UserRound className="h-5 w-5 text-violet-300" />
+            <IconUserRound className="h-5 w-5 text-violet-300" />
           </div>
 
           <div>

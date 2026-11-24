@@ -1,35 +1,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import {
-  MdDashboard as LayoutDashboard,
-  MdViewKanban as FolderKanban,
-  MdCheckBox as CheckSquare,
-  MdGroup as Users,
-  MdCalendarMonth as CalendarDays,
-  MdAssignment as ClipboardList,
-  MdExplore as Compass,
-  MdHistory as History,
-  MdSettings as Settings,
-  MdChevronLeft as ChevronLeft,
-  MdChevronRight as ChevronRight,
-  MdAccessTime as Clock,
-  MdSend as Send,
-  MdVisibility as Eye,
-  MdPerson as UserRound,
-  MdWbSunny as Sun,
-  MdDarkMode as Moon,
-  MdHelp as CircleHelp,
-  MdGroups as UsersRound,
-  MdBusiness as Building2,
-  MdLogout as LogOut,
-  MdClose as X,
-  MdCheck as Check,
-  MdArrowOutward as ArrowUpRight,
-  MdSwapHoriz as ArrowLeftRight,
-  MdVerifiedUser as ShieldCheck,
-  MdGpsFixed as Target
-} from 'react-icons/md';
+import { IconFocusGuardian, IconSidebarActivityHistory, IconSidebarAdminTransfer, IconSidebarArrowLeftRight, IconSidebarArrowUpRight, IconSidebarBuilding2, IconSidebarCheck, IconSidebarChevronLeft, IconSidebarChevronRight, IconSidebarCircleHelp, IconSidebarCompass, IconSidebarEmployeeAgenda, IconSidebarEmployeeLeave, IconSidebarEmployeeTasks, IconSidebarEmployeeUpdates, IconSidebarEmployeeWorkLogs, IconSidebarLogOut, IconSidebarManagerAgenda, IconSidebarManagerLeave, IconSidebarManagerTasks, IconSidebarManagerUpdates, IconSidebarManagerWorkLogs, IconSidebarMoon, IconSidebarMyOverview, IconSidebarOverview, IconSidebarProjects, IconSidebarRecoveryPlans, IconSidebarSettings, IconSidebarSun, IconSidebarTaskBoard, IconSidebarTeamCapacity, IconSidebarUserRound, IconSidebarUsersRound, IconSidebarX } from '../../icons';
 import { Logo } from '../common/Logo';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
@@ -142,39 +114,39 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }, [accountMenuOpen, quickstartOpen]);
 
   const managerNav: NavItem[] = [
-    { name: 'Overview', href: '/manager', icon: LayoutDashboard },
-    { name: 'Projects', href: '/manager/projects', icon: FolderKanban },
-    { name: 'Tasks Board', href: '/manager/tasks', icon: CheckSquare },
-    { name: 'My Tasks', href: '/manager/my-tasks', icon: CheckSquare },
-    { name: 'Daily Updates', href: '/manager/daily-updates', icon: Send },
-    { name: 'Agenda Alignment', href: '/manager/agenda-drift', icon: Target },
-    { name: 'Work Logs', href: '/manager/work-logs', icon: Clock },
-    { name: 'Team & Capacity', href: '/manager/team', icon: Users },
-    { name: 'Leave Requests', href: '/manager/leave', icon: CalendarDays },
+    { name: 'Overview', href: '/manager', icon: IconSidebarOverview },
+    { name: 'Projects', href: '/manager/projects', icon: IconSidebarProjects },
+    { name: 'Tasks Board', href: '/manager/tasks', icon: IconSidebarTaskBoard },
+    { name: 'My Tasks', href: '/manager/my-tasks', icon: IconSidebarManagerTasks },
+    { name: 'Daily Updates', href: '/manager/daily-updates', icon: IconSidebarManagerUpdates },
+    { name: 'Agenda Alignment', href: '/manager/agenda-drift', icon: IconSidebarManagerAgenda },
+    { name: 'Work Logs', href: '/manager/work-logs', icon: IconSidebarManagerWorkLogs },
+    { name: 'Team & Capacity', href: '/manager/team', icon: IconSidebarTeamCapacity },
+    { name: 'Leave Requests', href: '/manager/leave', icon: IconSidebarManagerLeave },
     {
       name: 'Recovery Plans',
       href: '/manager/recovery',
-      icon: ClipboardList,
+      icon: IconSidebarRecoveryPlans,
       badge: 'AI',
     },
-    { name: 'Activity History', href: '/manager/audit', icon: History },
-    { name: 'Settings', href: '/manager/settings', icon: Settings },
+    { name: 'Activity History', href: '/manager/audit', icon: IconSidebarActivityHistory },
+    { name: 'Settings', href: '/manager/settings', icon: IconSidebarSettings },
   ];
 
   const employeeNav: NavItem[] = [
-    { name: 'My Overview', href: '/employee', icon: LayoutDashboard },
-    { name: 'My Tasks', href: '/employee/tasks', icon: CheckSquare },
-    { name: 'Work Logs', href: '/employee/work-logs', icon: Clock },
-    { name: 'Daily Updates', href: '/employee/daily-updates', icon: Send },
-    { name: 'Agenda Alignment', href: '/employee/agenda-drift', icon: Target },
-    { name: 'Leave Requests', href: '/employee/leave', icon: CalendarDays },
-    { name: 'Focus Guardian', href: '/employee/focus', icon: Eye },
+    { name: 'My Overview', href: '/employee', icon: IconSidebarMyOverview },
+    { name: 'My Tasks', href: '/employee/tasks', icon: IconSidebarEmployeeTasks },
+    { name: 'Work Logs', href: '/employee/work-logs', icon: IconSidebarEmployeeWorkLogs },
+    { name: 'Daily Updates', href: '/employee/daily-updates', icon: IconSidebarEmployeeUpdates },
+    { name: 'Agenda Alignment', href: '/employee/agenda-drift', icon: IconSidebarEmployeeAgenda },
+    { name: 'Leave Requests', href: '/employee/leave', icon: IconSidebarEmployeeLeave },
+    { name: 'Focus Guardian', href: '/employee/focus', icon: IconFocusGuardian },
   ];
 
   const transferItem: NavItem = {
     name: 'Admin Transfer',
     href: '/company-transfer',
-    icon: ShieldCheck,
+    icon: IconSidebarAdminTransfer,
     highlight: true,
     badge: String(incomingTransfers),
   };
@@ -271,9 +243,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {collapsed ? (
-            <ChevronRight className="h-4 w-4" />
+            <IconSidebarChevronRight className="h-4 w-4" />
           ) : (
-            <ChevronLeft className="h-4 w-4" />
+            <IconSidebarChevronLeft className="h-4 w-4" />
           )}
         </button>
       </div>
@@ -361,7 +333,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </p>
             )}
             {switchTargets.map((target) => {
-              const Icon = target === 'admin' ? Building2 : ArrowLeftRight;
+              const Icon = target === 'admin' ? IconSidebarBuilding2 : IconSidebarArrowLeftRight;
               return (
                 <NavLink
                   key={target}
@@ -373,7 +345,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   {!collapsed && (
                     <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
                       <span className="truncate">{WORKSPACE_LABELS[target]}</span>
-                      <ArrowUpRight className="h-4 w-4 text-violet-300/70" />
+                      <IconSidebarArrowUpRight className="h-4 w-4 text-violet-300/70" />
                     </span>
                   )}
                 </NavLink>
@@ -439,7 +411,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onClick={() => navigateFromMenu('/profile')}
                 className={menuItemClass}
               >
-                <UserRound className="h-4 w-4 text-[#A78BFA]" />
+                <IconSidebarUserRound className="h-4 w-4 text-[#A78BFA]" />
                 <span>Profile</span>
               </button>
 
@@ -449,7 +421,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onClick={() => navigateFromMenu(accountSettingsPath)}
                 className={menuItemClass}
               >
-                <Settings className="h-4 w-4 text-[#A78BFA]" />
+                <IconSidebarSettings className="h-4 w-4 text-[#A78BFA]" />
                 <span>Account settings</span>
               </button>
 
@@ -462,14 +434,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 className={menuItemClass}
               >
                 {theme === 'dark' ? (
-                  <Moon className="h-4 w-4 text-[#A78BFA]" />
+                  <IconSidebarMoon className="h-4 w-4 text-[#A78BFA]" />
                 ) : (
-                  <Sun className="h-4 w-4 text-amber-300" />
+                  <IconSidebarSun className="h-4 w-4 text-amber-300" />
                 )}
 
                 <span className="flex-1">Theme</span>
 
-                <ChevronRight
+                <IconSidebarChevronRight
                   className={`h-4 w-4 text-[#8F83A7] transition-transform ${
                     themeMenuOpen ? 'rotate-90' : ''
                   }`}
@@ -495,7 +467,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     >
                       <span>{option}</span>
                       {theme === option && (
-                        <Check className="h-4 w-4 text-violet-300" />
+                        <IconSidebarCheck className="h-4 w-4 text-violet-300" />
                       )}
                     </button>
                   ))}
@@ -512,7 +484,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 }}
                 className={menuItemClass}
               >
-                <CircleHelp className="h-4 w-4 text-[#A78BFA]" />
+                <IconSidebarCircleHelp className="h-4 w-4 text-[#A78BFA]" />
                 <span>Open Quickstart</span>
               </button>
 
@@ -524,7 +496,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onClick={switchAccount}
                 className={menuItemClass}
               >
-                <UsersRound className="h-4 w-4 text-[#A78BFA]" />
+                <IconSidebarUsersRound className="h-4 w-4 text-[#A78BFA]" />
                 <span>Switch account</span>
               </button>
 
@@ -534,7 +506,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onClick={handleLogout}
                 className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-rose-300 transition-colors hover:bg-rose-500/10 hover:text-rose-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
               >
-                <LogOut className="h-4 w-4" />
+                <IconSidebarLogOut className="h-4 w-4" />
                 <span>Log out</span>
               </button>
             </div>
@@ -580,7 +552,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
 
           {!collapsed && (
-            <ChevronRight
+            <IconSidebarChevronRight
               className={`h-4 w-4 shrink-0 text-[#8F83A7] transition-transform ${
                 accountMenuOpen ? '-rotate-90' : ''
               }`}
@@ -601,7 +573,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl border border-violet-300/20 bg-violet-500/15">
-                  <Compass className="h-5 w-5 text-violet-300" />
+                  <IconSidebarCompass className="h-5 w-5 text-violet-300" />
                 </div>
 
                 <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-300">
@@ -625,9 +597,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 type="button"
                 aria-label="Close Quickstart"
                 onClick={() => setQuickstartOpen(false)}
-                className="rounded-lg p-2 text-[#A99DBD] transition-colors hover:bg-white/10 hover:text-white"
+                className="rounded-lg p-2 text-[#A99DBD] transition-colors hover:bg-white/10 hover:text-white" title="Close Quickstart"
               >
-                <X className="h-5 w-5" />
+                <IconSidebarX className="h-5 w-5" />
               </button>
             </div>
 
@@ -647,7 +619,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     {link.label}
                   </span>
 
-                  <ArrowUpRight className="h-4 w-4 text-[#8F83A7] transition-colors group-hover:text-violet-300" />
+                  <IconSidebarArrowUpRight className="h-4 w-4 text-[#8F83A7] transition-colors group-hover:text-violet-300" />
                 </button>
               ))}
             </div>

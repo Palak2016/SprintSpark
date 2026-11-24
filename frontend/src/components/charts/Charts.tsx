@@ -1,12 +1,5 @@
 import React, { useId, useMemo, useRef, useState } from 'react';
-import {
-  MdError as AlertCircle,
-  MdWarningAmber as AlertTriangle,
-  MdCheckCircle as CheckCircle2,
-  MdCircle as Circle,
-  MdRefresh as LoaderCircle,
-  MdTableChart as Table2
-} from 'react-icons/md';
+import { IconAnalyticsAlertCircle, IconAnalyticsAlertTriangle, IconAnalyticsCheckCircle2, IconAnalyticsCircle, IconAnalyticsTable2, IconSpinner } from '../../icons';
 import { niceTicks } from '../../utils/planning';
 
 /*
@@ -72,7 +65,7 @@ export const ChartCard: React.FC<ChartCardProps> = ({
             aria-pressed={showTable}
             className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-white/10 px-2 py-1 text-[11px] font-medium text-[#B7ADC9] transition hover:bg-white/5 hover:text-white focus-visible:outline-2 focus-visible:outline-violet-300"
           >
-            <Table2 className="h-3.5 w-3.5" />
+            <IconAnalyticsTable2 className="h-3.5 w-3.5" />
             {showTable ? 'Chart' : 'Table'}
           </button>
         )}
@@ -87,7 +80,7 @@ export const ChartCard: React.FC<ChartCardProps> = ({
           </div>
         ) : error ? (
           <div role="alert" className="flex items-start gap-2 rounded-xl border border-rose-400/20 bg-rose-500/[0.07] p-3 text-xs leading-5 text-rose-200">
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <IconAnalyticsAlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
             {error}
           </div>
         ) : emptyMessage ? (
@@ -211,10 +204,10 @@ export const StatusBreakdown: React.FC<{ segments: StatusSegment[]; unit: string
 };
 
 export const statusIcon = {
-  todo: <Circle className="h-3.5 w-3.5" />,
-  progress: <LoaderCircle className="h-3.5 w-3.5" />,
-  blocked: <AlertTriangle className="h-3.5 w-3.5" />,
-  done: <CheckCircle2 className="h-3.5 w-3.5" />,
+  todo: <IconAnalyticsCircle className="h-3.5 w-3.5" />,
+  progress: <IconSpinner className="h-3.5 w-3.5 animate-spin" />,
+  blocked: <IconAnalyticsAlertTriangle className="h-3.5 w-3.5" />,
+  done: <IconAnalyticsCheckCircle2 className="h-3.5 w-3.5" />,
 };
 
 // ---------------------------------------------------------------------------
@@ -438,7 +431,7 @@ export const CapacityBars: React.FC<{
                 {row.compareValue != null && <span>(was {row.compareValue.toFixed(1)}{unit})</span>}
                 {row.over && (
                   <span className="inline-flex items-center gap-1 text-[#ec835a]">
-                    <AlertTriangle className="h-3 w-3" /> Over capacity
+                    <IconAnalyticsAlertTriangle className="h-3 w-3" /> Over capacity
                   </span>
                 )}
                 {row.note && <span className="truncate">{row.note}</span>}

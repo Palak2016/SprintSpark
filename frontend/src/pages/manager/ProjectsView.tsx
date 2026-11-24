@@ -5,23 +5,7 @@ import { api } from '../../services/api';
 import { RiskBadge } from '../../components/common/RiskBadge';
 import { Modal } from '../../components/common/Modal';
 import type { Project, UserSimple } from '../../types';
-import {
-  MdViewKanban as FolderKanban,
-  MdAdd as Plus,
-  MdSearch as Search,
-  MdCalendarMonth as Calendar,
-  MdGroup as Users,
-  MdCheck as Check,
-  MdArrowForward as ArrowRight,
-  MdRefresh as RefreshCw,
-  MdError as AlertCircle,
-  MdClose as X,
-  MdPerson as UserRound,
-  MdEdit as Pencil,
-  MdDelete as Trash2,
-  MdSave as Save,
-  MdGppMaybe as ShieldAlert
-} from 'react-icons/md';
+import { IconAlertCircle, IconArrowRight, IconCalendar, IconCheck, IconFolderKanban, IconPencil, IconPlus, IconRefresh, IconSave, IconSearch, IconShieldAlert, IconSpinner, IconTrash2, IconUserRound, IconUsers, IconX } from '../../icons';
 
 const getCurrentUserId = (): number | null => {
   if (typeof window === 'undefined') return null;
@@ -569,7 +553,7 @@ export const ProjectsView: React.FC = () => {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="mb-2 flex items-center gap-2 text-sm text-[#B7ADC9]">
-            <FolderKanban className="h-4 w-4 text-[#A78BFA]" />
+            <IconFolderKanban className="h-4 w-4 text-[#A78BFA]" />
             <span>Workspace</span>
             <span>/</span>
             <span className="text-[#E5D9FF]">Projects</span>
@@ -589,7 +573,7 @@ export const ProjectsView: React.FC = () => {
             disabled={isRefreshing}
             className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-[#19112B] px-3 py-2.5 text-sm font-medium text-[#D8CDEF] transition hover:bg-[#211638] disabled:opacity-50"
           >
-            <RefreshCw
+            <IconRefresh
               className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`}
             />
             Refresh
@@ -604,7 +588,7 @@ export const ProjectsView: React.FC = () => {
             }}
             className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-500"
           >
-            <Plus className="h-4 w-4" />
+            <IconPlus className="h-4 w-4" />
             New Project
           </button>
         </div>
@@ -615,14 +599,14 @@ export const ProjectsView: React.FC = () => {
           role="alert"
           className="flex items-start gap-3 rounded-xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-200"
         >
-          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <IconAlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           <span className="flex-1">{errorMsg}</span>
           <button
             type="button"
             aria-label="Dismiss error"
-            onClick={() => setErrorMsg(null)}
+            onClick={() => setErrorMsg(null)} title="Dismiss error"
           >
-            <X className="h-4 w-4" />
+            <IconX className="h-4 w-4" />
           </button>
         </div>
       )}
@@ -632,14 +616,14 @@ export const ProjectsView: React.FC = () => {
           role="status"
           className="flex items-start gap-3 rounded-xl border border-emerald-400/20 bg-emerald-500/10 p-4 text-sm text-emerald-200"
         >
-          <Check className="mt-0.5 h-4 w-4 shrink-0" />
+          <IconCheck className="mt-0.5 h-4 w-4 shrink-0" />
           <span className="flex-1">{successMsg}</span>
           <button
             type="button"
             aria-label="Dismiss success message"
-            onClick={() => setSuccessMsg(null)}
+            onClick={() => setSuccessMsg(null)} title="Dismiss success message"
           >
-            <X className="h-4 w-4" />
+            <IconX className="h-4 w-4" />
           </button>
         </div>
       )}
@@ -648,7 +632,7 @@ export const ProjectsView: React.FC = () => {
         <div className="rounded-2xl border border-white/[0.08] bg-[#19112B] p-4">
           <div className="flex items-center justify-between">
             <p className="text-sm text-[#B7ADC9]">Total Projects</p>
-            <FolderKanban className="h-5 w-5 text-violet-300" />
+            <IconFolderKanban className="h-5 w-5 text-violet-300" />
           </div>
           <p className="mt-3 text-2xl font-bold">{projects.length}</p>
           <p className="mt-1 text-xs text-[#A99DBD]">
@@ -659,7 +643,7 @@ export const ProjectsView: React.FC = () => {
         <div className="rounded-2xl border border-white/[0.08] bg-[#19112B] p-4">
           <div className="flex items-center justify-between">
             <p className="text-sm text-[#B7ADC9]">Active Projects</p>
-            <Check className="h-5 w-5 text-emerald-300" />
+            <IconCheck className="h-5 w-5 text-emerald-300" />
           </div>
           <p className="mt-3 text-2xl font-bold">{activeProjects.length}</p>
           <p className="mt-1 text-xs text-[#A99DBD]">
@@ -670,7 +654,7 @@ export const ProjectsView: React.FC = () => {
         <div className="rounded-2xl border border-white/[0.08] bg-[#19112B] p-4">
           <div className="flex items-center justify-between">
             <p className="text-sm text-[#B7ADC9]">Selected Workspace</p>
-            <ArrowRight className="h-5 w-5 text-violet-300" />
+            <IconArrowRight className="h-5 w-5 text-violet-300" />
           </div>
           <p
             className="mt-3 truncate text-lg font-bold"
@@ -686,7 +670,7 @@ export const ProjectsView: React.FC = () => {
         <div className="rounded-2xl border border-white/[0.08] bg-[#19112B] p-4">
           <div className="flex items-center justify-between">
             <p className="text-sm text-[#B7ADC9]">Matching Projects</p>
-            <Search className="h-5 w-5 text-sky-300" />
+            <IconSearch className="h-5 w-5 text-sky-300" />
           </div>
           <p className="mt-3 text-2xl font-bold">{filteredProjects.length}</p>
           <p className="mt-1 text-xs text-[#A99DBD]">
@@ -697,7 +681,7 @@ export const ProjectsView: React.FC = () => {
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative w-full sm:max-w-md">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#A99DBD]" />
+          <IconSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#A99DBD]" />
           <input
             type="search"
             aria-label="Search projects"
@@ -711,9 +695,9 @@ export const ProjectsView: React.FC = () => {
               type="button"
               aria-label="Clear search"
               onClick={() => setSearch('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A99DBD] hover:text-white"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A99DBD] hover:text-white" title="Clear search"
             >
-              <X className="h-4 w-4" />
+              <IconX className="h-4 w-4" />
             </button>
           )}
         </div>
@@ -746,7 +730,7 @@ export const ProjectsView: React.FC = () => {
                   <div className="mb-4 flex items-start justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-3">
                       <div className="manager-project-mark flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-charcoal-200 bg-forest-100 text-charcoal-900">
-                        <FolderKanban className="h-5 w-5" />
+                        <IconFolderKanban className="h-5 w-5" />
                       </div>
                       <div className="min-w-0">
                         <h2
@@ -774,7 +758,7 @@ export const ProjectsView: React.FC = () => {
                   <div className="mb-5 space-y-3 rounded-xl border border-white/[0.06] bg-[#130D21] p-3">
                     <div className="flex items-start justify-between gap-3">
                       <span className="flex shrink-0 items-center gap-2 text-xs text-[#A99DBD]">
-                        <Calendar className="h-4 w-4 text-violet-300" />
+                        <IconCalendar className="h-4 w-4 text-violet-300" />
                         Timeline
                       </span>
                       <span className="text-right text-xs font-medium text-[#E5D9FF]">
@@ -785,7 +769,7 @@ export const ProjectsView: React.FC = () => {
                     </div>
                     <div className="flex items-center justify-between gap-3">
                       <span className="flex items-center gap-2 text-xs text-[#A99DBD]">
-                        <Users className="h-4 w-4 text-violet-300" />
+                        <IconUsers className="h-4 w-4 text-violet-300" />
                         Assigned Team
                       </span>
                       <span className="text-xs font-medium text-[#E5D9FF]">
@@ -829,7 +813,7 @@ export const ProjectsView: React.FC = () => {
                     </span>
                     {isSelectedWorkspace ? (
                       <span className="inline-flex items-center gap-1.5 rounded-lg border border-violet-400/20 bg-violet-500/10 px-3 py-2 text-xs font-semibold text-violet-200">
-                        <Check className="h-3.5 w-3.5" />
+                        <IconCheck className="h-3.5 w-3.5" />
                         Selected Workspace
                       </span>
                     ) : (
@@ -839,7 +823,7 @@ export const ProjectsView: React.FC = () => {
                         className="inline-flex items-center gap-2 rounded-lg border border-violet-400/20 bg-violet-500/10 px-3 py-2 text-xs font-semibold text-violet-200 transition hover:bg-violet-500/20"
                       >
                         Set Workspace
-                        <ArrowRight className="h-3.5 w-3.5" />
+                        <IconArrowRight className="h-3.5 w-3.5" />
                       </button>
                     )}
                   </div>
@@ -851,9 +835,9 @@ export const ProjectsView: React.FC = () => {
                     className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-400/20 bg-emerald-500/10 px-3 py-2.5 text-sm font-medium text-emerald-300 transition hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {isActivating ? (
-                      <RefreshCw className="h-4 w-4 animate-spin" />
+                      <IconSpinner className="h-4 w-4 animate-spin" />
                     ) : (
-                      <Check className="h-4 w-4" />
+                      <IconCheck className="h-4 w-4" />
                     )}
                     {isActivating
                       ? 'Activating...'
@@ -873,7 +857,7 @@ export const ProjectsView: React.FC = () => {
                       }
                       className="inline-flex items-center justify-center gap-2 rounded-lg border border-violet-400/20 bg-violet-500/10 px-3 py-2.5 text-sm font-medium text-violet-200 transition hover:bg-violet-500/20 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      <Pencil className="h-4 w-4" />
+                      <IconPencil className="h-4 w-4" />
                       Edit
                     </button>
                     <button
@@ -886,7 +870,7 @@ export const ProjectsView: React.FC = () => {
                       }
                       className="inline-flex items-center justify-center gap-2 rounded-lg border border-rose-400/20 bg-rose-500/10 px-3 py-2.5 text-sm font-medium text-rose-300 transition hover:border-rose-400/40 hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <IconTrash2 className="h-4 w-4" />
                       Delete
                     </button>
                   </div>
@@ -897,7 +881,7 @@ export const ProjectsView: React.FC = () => {
         </div>
       ) : (
         <div className="rounded-2xl border border-dashed border-white/15 bg-[#19112B]/70 px-6 py-16 text-center">
-          <FolderKanban className="mx-auto h-10 w-10 text-violet-300" />
+          <IconFolderKanban className="mx-auto h-10 w-10 text-violet-300" />
           <h2 className="mt-4 text-lg font-semibold text-white">
             {projects.length === 0 ? 'No projects yet' : 'No matching projects'}
           </h2>
@@ -915,7 +899,7 @@ export const ProjectsView: React.FC = () => {
               }}
               className="mt-5 inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-500"
             >
-              <Plus className="h-4 w-4" />
+              <IconPlus className="h-4 w-4" />
               Create First Project
             </button>
           ) : (
@@ -944,7 +928,7 @@ export const ProjectsView: React.FC = () => {
               role="alert"
               className="flex items-start gap-2 rounded-xl border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-200"
             >
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <IconAlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>{errorMsg}</span>
             </div>
           )}
@@ -985,7 +969,7 @@ export const ProjectsView: React.FC = () => {
           <div>
             <label htmlFor="project-employee" className={labelClass}>
               <span className="inline-flex items-center gap-2">
-                <UserRound className="h-4 w-4 text-violet-300" />
+                <IconUserRound className="h-4 w-4 text-violet-300" />
                 Assign Initial Employee *
               </span>
             </label>
@@ -1084,12 +1068,12 @@ export const ProjectsView: React.FC = () => {
             >
               {isSubmitting ? (
                 <>
-                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  <IconSpinner className="h-4 w-4 animate-spin" />
                   Creating & Assigning...
                 </>
               ) : (
                 <>
-                  <Plus className="h-4 w-4" />
+                  <IconPlus className="h-4 w-4" />
                   Create & Assign Project
                 </>
               )}
@@ -1112,7 +1096,7 @@ export const ProjectsView: React.FC = () => {
               role="alert"
               className="flex items-start gap-2 rounded-xl border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-200"
             >
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <IconAlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>{editError}</span>
             </div>
           )}
@@ -1149,7 +1133,7 @@ export const ProjectsView: React.FC = () => {
             <div className="mb-3 flex items-center justify-between gap-3">
               <label className={`${labelClass} mb-0`}>
                 <span className="inline-flex items-center gap-2">
-                  <Users className="h-4 w-4 text-violet-300" />
+                  <IconUsers className="h-4 w-4 text-violet-300" />
                   Project Team
                 </span>
               </label>
@@ -1169,7 +1153,7 @@ export const ProjectsView: React.FC = () => {
 
             {isLoadingEmployees ? (
               <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-[#130D21] p-4 text-sm text-[#B7ADC9]">
-                <RefreshCw className="h-4 w-4 animate-spin text-violet-300" />
+                <IconSpinner className="h-4 w-4 animate-spin text-violet-300" />
                 Loading employees and managers...
               </div>
             ) : assignableUsers.length === 0 ? (
@@ -1226,7 +1210,7 @@ export const ProjectsView: React.FC = () => {
                             : 'bg-violet-500/15 text-violet-200'
                         }`}
                       >
-                        <UserRound className="h-4 w-4" />
+                        <IconUserRound className="h-4 w-4" />
                       </div>
 
                       <div className="min-w-0 flex-1">
@@ -1249,7 +1233,7 @@ export const ProjectsView: React.FC = () => {
                       </span>
 
                       {checked && (
-                        <Check className="h-4 w-4 shrink-0 text-emerald-300" />
+                        <IconCheck className="h-4 w-4 shrink-0 text-emerald-300" />
                       )}
                     </label>
                   );
@@ -1395,12 +1379,12 @@ export const ProjectsView: React.FC = () => {
             >
               {isSavingEdit ? (
                 <>
-                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  <IconSpinner className="h-4 w-4 animate-spin" />
                   Saving Changes...
                 </>
               ) : (
                 <>
-                  <Save className="h-4 w-4" />
+                  <IconSave className="h-4 w-4" />
                   Save Changes
                 </>
               )}
@@ -1421,7 +1405,7 @@ export const ProjectsView: React.FC = () => {
           <div className="space-y-5">
             <div className="flex items-start gap-3 rounded-2xl border border-rose-400/20 bg-rose-500/[0.08] p-4">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-rose-400/20 bg-rose-500/15">
-                <ShieldAlert className="h-5 w-5 text-rose-300" />
+                <IconShieldAlert className="h-5 w-5 text-rose-300" />
               </div>
               <div className="min-w-0 flex-1">
                 <h3 className="text-sm font-semibold leading-6 text-white">
@@ -1435,7 +1419,7 @@ export const ProjectsView: React.FC = () => {
                   .
                 </p>
                 <div className="mt-3 flex items-start gap-2 rounded-lg bg-rose-500/[0.08] p-3">
-                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
+                  <IconAlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
                   <p className="text-xs leading-5 text-rose-200">
                     This action cannot be undone. Associated tasks and linked
                     records may be affected, depending on your backend
@@ -1452,7 +1436,7 @@ export const ProjectsView: React.FC = () => {
                 disabled={deletingProjectId !== null}
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 px-4 py-2.5 text-sm font-medium text-[#D8CDEF] transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <X className="h-4 w-4" />
+                <IconX className="h-4 w-4" />
                 Cancel
               </button>
               <button
@@ -1463,12 +1447,12 @@ export const ProjectsView: React.FC = () => {
               >
                 {deletingProjectId !== null ? (
                   <>
-                    <RefreshCw className="h-4 w-4 animate-spin" />
+                    <IconSpinner className="h-4 w-4 animate-spin" />
                     Deleting...
                   </>
                 ) : (
                   <>
-                    <Trash2 className="h-4 w-4" />
+                    <IconTrash2 className="h-4 w-4" />
                     Delete Project
                   </>
                 )}

@@ -1,15 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  MdArrowForward as ArrowRight,
-  MdBusiness as Building2,
-  MdViewKanban as FolderKanban,
-  MdKey as KeyRound,
-  MdMail as Mail,
-  MdVerifiedUser as ShieldCheck,
-  MdHowToReg as UserCheck,
-  MdGroups as UsersRound
-} from 'react-icons/md';
+import { IconArrowRight, IconBuilding2, IconFolderKanban, IconKeyRound, IconMail, IconShieldCheck, IconUserCheck, IconUsersRound } from '../../icons';
 import { api } from '../../services/api';
 import {
   Company,
@@ -117,11 +108,11 @@ export const AdminOverview: React.FC = () => {
     portal.members.filter((m) => m.role === role && m.approval_status === status).length;
 
   const tiles = [
-    { label: 'Managers', value: portal.manager_count, icon: ShieldCheck, to: 'members' },
-    { label: 'Employees', value: portal.employee_count, icon: UsersRound, to: 'members' },
-    { label: 'Awaiting approval', value: portal.pending_count, icon: UserCheck, to: 'approvals', warn: portal.pending_count > 0 },
-    { label: 'Pending invitations', value: invitations ? pendingInvites.length : '—', icon: Mail, to: 'invitations' },
-    { label: 'Projects', value: analytics ? analytics.project_count : '—', icon: FolderKanban, to: 'analytics' },
+    { label: 'Managers', value: portal.manager_count, icon: IconShieldCheck, to: 'members' },
+    { label: 'Employees', value: portal.employee_count, icon: IconUsersRound, to: 'members' },
+    { label: 'Awaiting approval', value: portal.pending_count, icon: IconUserCheck, to: 'approvals', warn: portal.pending_count > 0 },
+    { label: 'Pending invitations', value: invitations ? pendingInvites.length : '—', icon: IconMail, to: 'invitations' },
+    { label: 'Projects', value: analytics ? analytics.project_count : '—', icon: IconFolderKanban, to: 'analytics' },
   ];
 
   const riskRows = analytics?.portfolio.distribution ?? [];
@@ -141,7 +132,7 @@ export const AdminOverview: React.FC = () => {
       <section className="flex flex-col gap-5 rounded-2xl border border-violet-300/15 bg-gradient-to-br from-violet-400/[0.08] to-white/[0.02] p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
         <div className="flex items-center gap-4">
           <span className="flex h-12 w-12 items-center justify-center rounded-xl border border-violet-300/20 bg-violet-400/10 text-violet-100">
-            <Building2 className="h-6 w-6" />
+            <IconBuilding2 className="h-6 w-6" />
           </span>
           <div>
             <h2 className="text-xl font-bold text-white">{portal.name}</h2>
@@ -212,7 +203,7 @@ export const AdminOverview: React.FC = () => {
           description="People who joined with the company signup code."
           aside={
             <Link to={adminPath(companyId, 'approvals')} className="inline-flex items-center gap-1 text-xs font-semibold text-violet-200 hover:text-violet-100">
-              Review <ArrowRight className="h-3.5 w-3.5" />
+              Review <IconArrowRight className="h-3.5 w-3.5" />
             </Link>
           }
         >
@@ -239,12 +230,12 @@ export const AdminOverview: React.FC = () => {
           description="Company Admin transfers."
           aside={
             <Link to={adminPath(companyId, 'ownership')} className="inline-flex items-center gap-1 text-xs font-semibold text-violet-200 hover:text-violet-100">
-              Manage <ArrowRight className="h-3.5 w-3.5" />
+              Manage <IconArrowRight className="h-3.5 w-3.5" />
             </Link>
           }
         >
           <div className="flex items-start gap-3 px-5 py-4 text-sm">
-            <KeyRound className="mt-0.5 h-4 w-4 shrink-0 text-violet-200/70" />
+            <IconKeyRound className="mt-0.5 h-4 w-4 shrink-0 text-violet-200/70" />
             {transfers === null ? (
               <p>Transfer status is unavailable.</p>
             ) : pendingTransfer ? (
@@ -270,7 +261,7 @@ export const AdminOverview: React.FC = () => {
           description="Latest risk analysis of each project in this company."
           aside={
             <Link to={adminPath(companyId, 'analytics')} className="inline-flex items-center gap-1 text-xs font-semibold text-violet-200 hover:text-violet-100">
-              Analytics <ArrowRight className="h-3.5 w-3.5" />
+              Analytics <IconArrowRight className="h-3.5 w-3.5" />
             </Link>
           }
         >
@@ -303,7 +294,7 @@ export const AdminOverview: React.FC = () => {
         description="Recorded administrative actions, most recent first."
         aside={
           <Link to={adminPath(companyId, 'activity')} className="inline-flex items-center gap-1 text-xs font-semibold text-violet-200 hover:text-violet-100">
-            All activity <ArrowRight className="h-3.5 w-3.5" />
+            All activity <IconArrowRight className="h-3.5 w-3.5" />
           </Link>
         }
       >

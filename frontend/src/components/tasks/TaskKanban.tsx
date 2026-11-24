@@ -2,15 +2,7 @@
 import React from 'react';
 import { Task, TaskStatus } from '../../types';
 import { formatIndianDate } from '../../utils/date';
-import {
-  MdReportProblem as AlertOctagon,
-  MdAccessTime as Clock,
-  MdLink as Link2,
-  MdCheckCircle as CheckCircle2,
-  MdCircle as Circle,
-  MdPlayCircle as PlayCircle,
-  MdBlock as Ban
-} from 'react-icons/md';
+import { IconTasksAlertOctagon, IconTasksBan, IconTasksCheckCircle2, IconTasksCircle, IconTasksClock, IconTasksLink2, IconTasksPlayCircle } from '../../icons';
 
 interface TaskKanbanProps {
   tasks: Task[];
@@ -38,7 +30,7 @@ export const TaskKanban: React.FC<TaskKanbanProps> = ({
       title: 'To Do',
       dot: 'bg-slate-400',
       border: 'border-t-slate-400',
-      icon: <Circle className="h-4 w-4" />,
+      icon: <IconTasksCircle className="h-4 w-4" />,
       countStyle: 'bg-slate-400/10 text-slate-300 border-slate-400/20',
     },
     {
@@ -46,7 +38,7 @@ export const TaskKanban: React.FC<TaskKanbanProps> = ({
       title: 'In Progress',
       dot: 'bg-violet-400',
       border: 'border-t-violet-400',
-      icon: <PlayCircle className="h-4 w-4" />,
+      icon: <IconTasksPlayCircle className="h-4 w-4" />,
       countStyle: 'bg-violet-500/10 text-violet-200 border-violet-400/20',
     },
     {
@@ -54,7 +46,7 @@ export const TaskKanban: React.FC<TaskKanbanProps> = ({
       title: 'Blocked',
       dot: 'bg-rose-400',
       border: 'border-t-rose-400',
-      icon: <Ban className="h-4 w-4" />,
+      icon: <IconTasksBan className="h-4 w-4" />,
       countStyle: 'bg-rose-500/10 text-rose-200 border-rose-400/20',
     },
     {
@@ -62,7 +54,7 @@ export const TaskKanban: React.FC<TaskKanbanProps> = ({
       title: 'Completed',
       dot: 'bg-emerald-400',
       border: 'border-t-emerald-400',
-      icon: <CheckCircle2 className="h-4 w-4" />,
+      icon: <IconTasksCheckCircle2 className="h-4 w-4" />,
       countStyle: 'bg-emerald-500/10 text-emerald-200 border-emerald-400/20',
     },
   ];
@@ -206,7 +198,7 @@ export const TaskKanban: React.FC<TaskKanbanProps> = ({
                         }}
                         className="mt-3 flex w-full items-start gap-2 rounded-lg border border-rose-400/20 bg-rose-500/[0.08] p-2.5 text-left transition-colors hover:bg-rose-500/[0.14]"
                       >
-                        <AlertOctagon className="mt-0.5 h-4 w-4 shrink-0 text-rose-400" />
+                        <IconTasksAlertOctagon className="mt-0.5 h-4 w-4 shrink-0 text-rose-400" />
 
                         <span className="line-clamp-2 text-xs font-medium leading-4 text-rose-200">
                           {task.blocker_reason || 'This task is blocked'}
@@ -259,7 +251,7 @@ export const TaskKanban: React.FC<TaskKanbanProps> = ({
                           className="flex shrink-0 items-center gap-1.5 text-[11px] text-[#A99DBD]"
                           title="Estimated effort"
                         >
-                          <Clock className="h-3.5 w-3.5 text-[#807493]" />
+                          <IconTasksClock className="h-3.5 w-3.5 text-[#807493]" />
                           {task.estimated_hours}h
                         </span>
 
@@ -269,7 +261,7 @@ export const TaskKanban: React.FC<TaskKanbanProps> = ({
                               className="flex shrink-0 items-center gap-1 text-[11px] text-[#A99DBD]"
                               title={`${task.dependencies.length} prerequisite task(s)`}
                             >
-                              <Link2 className="h-3.5 w-3.5 text-[#807493]" />
+                              <IconTasksLink2 className="h-3.5 w-3.5 text-[#807493]" />
                               {task.dependencies.length}
                             </span>
                           )}
@@ -316,7 +308,7 @@ export const TaskKanban: React.FC<TaskKanbanProps> = ({
 
                       {task.status === 'COMPLETED' && (
                         <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-300">
-                          <CheckCircle2 className="h-3 w-3" />
+                          <IconTasksCheckCircle2 className="h-3 w-3" />
                           Complete
                         </span>
                       )}

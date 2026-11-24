@@ -1,8 +1,6 @@
 
 import React, { useEffect } from 'react';
-import {
-  MdClose as X
-} from 'react-icons/md';
+import { IconX } from '../../icons';
 
 interface ModalProps {
   isOpen: boolean;
@@ -72,9 +70,9 @@ export const Modal: React.FC<ModalProps> = ({
           <button
             onClick={onClose}
             aria-label="Close modal"
-            className="p-1 rounded-lg text-[#B7ADC9] hover:text-white hover:bg-violet-500/15 transition-colors"
+            className="p-1 rounded-lg text-[#B7ADC9] hover:text-white hover:bg-violet-500/15 transition-colors" title="Close modal"
           >
-            <X className="w-5 h-5" />
+            <IconX className="w-5 h-5" />
           </button>
         </div>
 

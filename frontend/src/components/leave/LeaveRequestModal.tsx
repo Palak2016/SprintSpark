@@ -2,10 +2,7 @@
 import React, { useState } from 'react';
 import { Modal } from '../common/Modal';
 import { api } from '../../services/api';
-import {
-  MdCalendarMonth as CalendarDays,
-  MdError as AlertCircle
-} from 'react-icons/md';
+import { IconAlertCircle, IconCalendarDays } from '../../icons';
 
 interface LeaveRequestModalProps {
   isOpen: boolean;
@@ -80,7 +77,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
             role="alert"
             className="flex items-start gap-2.5 rounded-xl border border-rose-400/20 bg-rose-500/[0.08] p-3 text-xs text-rose-200"
           >
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
+            <IconAlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
             <span className="break-words">{errorMessage}</span>
           </div>
         )}
@@ -176,7 +173,7 @@ export const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({
             disabled={isSubmitting}
             className="inline-flex items-center gap-2 rounded-xl border border-violet-400/20 bg-violet-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <CalendarDays className="h-4 w-4" />
+            <IconCalendarDays className="h-4 w-4" />
             <span>
               {isSubmitting ? 'Submitting...' : 'Submit Request'}
             </span>

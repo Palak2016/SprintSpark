@@ -1,9 +1,6 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
-import {
-  MdError as AlertCircle,
-  MdRefresh as LoaderCircle
-} from 'react-icons/md';
+import { IconAlertCircle, IconSpinner } from '../../icons';
 import { formatIndianDateTime } from '../../utils/date';
 
 /** The company being administered, taken from /admin/:companyId/... */
@@ -94,7 +91,7 @@ export const ErrorBanner: React.FC<{ message: string | null }> = ({ message }) =
       role="alert"
       className="flex items-start gap-3 rounded-xl border border-rose-400/25 bg-rose-400/[0.08] p-4 text-sm text-rose-200"
     >
-      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+      <IconAlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
       <span>{message}</span>
     </div>
   ) : null;
@@ -111,7 +108,7 @@ export const SuccessBanner: React.FC<{ message: string | null }> = ({ message })
 
 export const Loading: React.FC<{ label?: string }> = ({ label = 'Loading...' }) => (
   <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-8 text-sm text-[#B7ADC9]">
-    <LoaderCircle className="h-5 w-5 animate-spin" />
+    <IconSpinner className="h-5 w-5 animate-spin" />
     {label}
   </div>
 );

@@ -6,24 +6,7 @@ import { ProvenanceBadge } from '../../components/risk/RecoveryInsights';
 import { RecoveryReviewModal } from '../../components/risk/RecoveryReviewModal';
 import { formatIndianDateTime } from '../../utils/date';
 
-import {
-  MdAssignment as ClipboardList,
-  MdCheckCircle as CheckCircle2,
-  MdCancel as XCircle,
-  MdAccessTime as Clock,
-  MdVerifiedUser as ShieldCheck,
-  MdArrowForward as ArrowRight,
-  MdRefresh as RefreshCw,
-  MdWarningAmber as AlertTriangle,
-  MdDescription as FileText,
-  MdEvent as CalendarClock,
-  MdAccountTree as Workflow,
-  MdMessage as MessageSquare,
-  MdPerson as UserRound,
-  MdFactCheck as ClipboardCheck,
-  MdInfo as Info,
-  MdRefresh as LoaderCircle
-} from 'react-icons/md';
+import { IconAlertTriangle, IconArrowRight, IconCalendarClock, IconCheckCircle2, IconClipboardCheck, IconClipboardList, IconClock, IconFileText, IconInfo, IconMessageSquare, IconRefresh, IconShieldCheck, IconSpinner, IconUserRound, IconWorkflow, IconXCircle } from '../../icons';
 
 const formatDate = (date?: string | null): string => {
   if (!date) return 'Date unavailable';
@@ -70,7 +53,7 @@ const FocusGuardianContextPanel: React.FC<{
     <section className="mt-5 overflow-hidden rounded-2xl border border-violet-400/20 bg-violet-500/[0.05]">
       <div className="flex items-start gap-3 border-b border-violet-400/10 px-4 py-4">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-violet-400/20 bg-violet-500/10">
-          <MessageSquare
+          <IconMessageSquare
             size={20}
             className="text-violet-300"
           />
@@ -103,7 +86,7 @@ const FocusGuardianContextPanel: React.FC<{
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet-200">
-                      <ClipboardCheck size={14} />
+                      <IconClipboardCheck size={14} />
                       {context.task_title ||
                         (context.task_id != null
                           ? `Task #${context.task_id}`
@@ -120,7 +103,7 @@ const FocusGuardianContextPanel: React.FC<{
 
                 {context.employee_name && (
                   <div className="flex shrink-0 items-center gap-1.5 text-[11px] text-[#A99DBD]">
-                    <UserRound size={13} />
+                    <IconUserRound size={13} />
                     {context.employee_name}
                   </div>
                 )}
@@ -143,7 +126,7 @@ const FocusGuardianContextPanel: React.FC<{
           ))
         ) : (
           <div className="flex items-start gap-2.5 rounded-xl border border-white/[0.06] bg-[#19112B]/70 p-3.5">
-            <Info
+            <IconInfo
               size={16}
               className="mt-0.5 shrink-0 text-[#A99DBD]"
             />
@@ -340,7 +323,7 @@ export const RecoveryPlansView: React.FC = () => {
 
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-violet-400/20 bg-violet-500/10">
-              <ClipboardList
+              <IconClipboardList
                 size={25}
                 className="text-violet-300"
               />
@@ -382,9 +365,9 @@ export const RecoveryPlansView: React.FC = () => {
             className="inline-flex items-center justify-center gap-2 rounded-xl border border-violet-400/20 bg-violet-500/10 px-3.5 py-3 text-xs font-semibold text-violet-200 transition hover:bg-violet-500/20 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isLoadingContexts ? (
-              <LoaderCircle size={16} className="animate-spin" />
+              <IconSpinner size={16} className="animate-spin" />
             ) : (
-              <MessageSquare size={16} />
+              <IconMessageSquare size={16} />
             )}
             {isLoadingContexts
               ? 'Loading Context...'
@@ -399,7 +382,7 @@ export const RecoveryPlansView: React.FC = () => {
             disabled={isLoading || !activeProject}
             className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/[0.08] bg-[#19112B] px-3.5 py-3 text-xs font-semibold text-[#D5CBE5] transition hover:border-violet-400/30 hover:bg-[#211633] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <RefreshCw
+            <IconRefresh
               size={16}
               className={isLoading ? 'animate-spin' : ''}
             />
@@ -413,12 +396,12 @@ export const RecoveryPlansView: React.FC = () => {
             className="inline-flex items-center justify-center gap-2 rounded-xl border border-violet-400/20 bg-violet-600 px-4 py-3 text-xs font-semibold text-white shadow-lg shadow-violet-950/20 transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isGenerating ? (
-              <LoaderCircle
+              <IconSpinner
                 size={16}
                 className="animate-spin"
               />
             ) : (
-              <ClipboardCheck size={16} />
+              <IconClipboardCheck size={16} />
             )}
 
             {isGenerating ? 'Generating Plan...' : 'Generate Recovery Plan'}
@@ -437,7 +420,7 @@ export const RecoveryPlansView: React.FC = () => {
       <section className="rounded-2xl border border-violet-400/20 bg-violet-500/[0.05] p-5 sm:p-6">
         <div className="flex items-start gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-violet-400/20 bg-violet-500/10">
-            <Workflow
+            <IconWorkflow
               size={21}
               className="text-violet-300"
             />
@@ -471,7 +454,7 @@ export const RecoveryPlansView: React.FC = () => {
           role="alert"
           className="flex items-start gap-3 rounded-xl border border-rose-400/20 bg-rose-500/[0.06] p-4"
         >
-          <AlertTriangle
+          <IconAlertTriangle
             size={18}
             className="mt-0.5 shrink-0 text-rose-300"
           />
@@ -509,7 +492,7 @@ export const RecoveryPlansView: React.FC = () => {
             </p>
 
             <div className="rounded-lg bg-violet-500/10 p-2">
-              <FileText size={17} className="text-violet-300" />
+              <IconFileText size={17} className="text-violet-300" />
             </div>
           </div>
 
@@ -529,7 +512,7 @@ export const RecoveryPlansView: React.FC = () => {
             </p>
 
             <div className="rounded-lg bg-amber-500/10 p-2">
-              <Clock size={17} className="text-amber-300" />
+              <IconClock size={17} className="text-amber-300" />
             </div>
           </div>
 
@@ -549,7 +532,7 @@ export const RecoveryPlansView: React.FC = () => {
             </p>
 
             <div className="rounded-lg bg-emerald-500/10 p-2">
-              <ShieldCheck size={17} className="text-emerald-300" />
+              <IconShieldCheck size={17} className="text-emerald-300" />
             </div>
           </div>
 
@@ -569,7 +552,7 @@ export const RecoveryPlansView: React.FC = () => {
             </p>
 
             <div className="rounded-lg bg-violet-500/10 p-2">
-              <MessageSquare size={17} className="text-violet-300" />
+              <IconMessageSquare size={17} className="text-violet-300" />
             </div>
           </div>
 
@@ -588,7 +571,7 @@ export const RecoveryPlansView: React.FC = () => {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h2 className="flex items-center gap-2 text-sm font-bold text-[#FAF8FF]">
-              <Clock size={17} className="text-amber-300" />
+              <IconClock size={17} className="text-amber-300" />
               Awaiting Manager Approval
             </h2>
 
@@ -605,7 +588,7 @@ export const RecoveryPlansView: React.FC = () => {
 
         {!activeProject ? (
           <div className="rounded-2xl border border-white/[0.08] bg-[#19112B] px-5 py-10 text-center">
-            <AlertTriangle
+            <IconAlertTriangle
               size={27}
               className="mx-auto text-amber-300"
             />
@@ -620,7 +603,7 @@ export const RecoveryPlansView: React.FC = () => {
           </div>
         ) : isLoading && proposals.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-2xl border border-white/[0.08] bg-[#19112B] py-12">
-            <LoaderCircle
+            <IconSpinner
               size={29}
               className="animate-spin text-violet-300"
             />
@@ -636,7 +619,7 @@ export const RecoveryPlansView: React.FC = () => {
         ) : pendingProposals.length === 0 ? (
           <div className="rounded-2xl border border-white/[0.08] bg-[#19112B] px-5 py-10 text-center">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10">
-              <CheckCircle2
+              <IconCheckCircle2
                 size={25}
                 className="text-emerald-300"
               />
@@ -662,7 +645,7 @@ export const RecoveryPlansView: React.FC = () => {
                 <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                   <div className="flex min-w-0 items-start gap-4">
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-violet-400/15 bg-violet-500/10">
-                      <ClipboardCheck
+                      <IconClipboardCheck
                         size={22}
                         className="text-violet-300"
                       />
@@ -691,7 +674,7 @@ export const RecoveryPlansView: React.FC = () => {
 
                       <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] text-[#A99DBD]">
                         <span className="inline-flex items-center gap-1.5">
-                          <FileText
+                          <IconFileText
                             size={14}
                             className="text-violet-300"
                           />
@@ -701,7 +684,7 @@ export const RecoveryPlansView: React.FC = () => {
                         </span>
 
                         <span className="inline-flex items-center gap-1.5">
-                          <CalendarClock
+                          <IconCalendarClock
                             size={14}
                             className="text-violet-300"
                           />
@@ -710,7 +693,7 @@ export const RecoveryPlansView: React.FC = () => {
                         </span>
 
                         <span className="inline-flex items-center gap-1.5">
-                          <MessageSquare
+                          <IconMessageSquare
                             size={14}
                             className="text-violet-300"
                           />
@@ -729,7 +712,7 @@ export const RecoveryPlansView: React.FC = () => {
                       className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-violet-400/20 bg-violet-600 px-4 py-3 text-xs font-semibold text-white transition hover:bg-violet-500 sm:w-auto"
                     >
                       Review &amp; Decide
-                      <ArrowRight size={16} />
+                      <IconArrowRight size={16} />
                     </button>
                   </div>
                 </div>
@@ -746,7 +729,7 @@ export const RecoveryPlansView: React.FC = () => {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h2 className="flex items-center gap-2 text-sm font-bold text-[#FAF8FF]">
-              <ShieldCheck size={17} className="text-violet-300" />
+              <IconShieldCheck size={17} className="text-violet-300" />
               Decision Archive
             </h2>
 
@@ -762,7 +745,7 @@ export const RecoveryPlansView: React.FC = () => {
 
         {pastProposals.length === 0 ? (
           <div className="rounded-2xl border border-white/[0.08] bg-[#19112B] p-6 text-center">
-            <Clock
+            <IconClock
               size={25}
               className="mx-auto text-[#827694]"
             />
@@ -802,17 +785,17 @@ export const RecoveryPlansView: React.FC = () => {
                         }`}
                       >
                         {isApproved ? (
-                          <CheckCircle2
+                          <IconCheckCircle2
                             size={18}
                             className="text-emerald-300"
                           />
                         ) : isRejected ? (
-                          <XCircle
+                          <IconXCircle
                             size={18}
                             className="text-rose-300"
                           />
                         ) : (
-                          <Clock
+                          <IconClock
                             size={18}
                             className="text-amber-300"
                           />
@@ -848,14 +831,14 @@ export const RecoveryPlansView: React.FC = () => {
                           </span>
 
                           <span className="inline-flex items-center gap-1">
-                            <MessageSquare size={12} />
+                            <IconMessageSquare size={12} />
                             {getFocusContexts(proposal).length} context note(s)
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    <ArrowRight
+                    <IconArrowRight
                       size={16}
                       className="shrink-0 text-[#827694]"
                     />

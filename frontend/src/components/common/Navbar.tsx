@@ -2,15 +2,7 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import {
-  MdArrowForward as ArrowRight,
-  MdExpandMore as ChevronDown,
-  MdDashboard as LayoutDashboard,
-  MdMenu as Menu,
-  MdVerifiedUser as ShieldCheck,
-  MdInsights as Activity,
-  MdClose as X
-} from 'react-icons/md';
+import { IconActivity, IconArrowRight, IconChevronDown, IconLayoutDashboard, IconMenu, IconShieldCheck, IconX } from '../../icons';
 
 import { Logo } from './Logo';
 import { useAuth } from '../../context/AuthContext';
@@ -95,7 +87,7 @@ export function Navbar() {
             >
               Product
 
-              <ChevronDown
+              <IconChevronDown
                 className={`h-3.5 w-3.5 transition-transform duration-200 ${
                   productOpen ? 'rotate-180 text-violet-300' : ''
                 }`}
@@ -130,7 +122,7 @@ export function Navbar() {
                     className="group flex gap-3 rounded-xl p-3 transition hover:bg-violet-300/[0.08]"
                   >
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-violet-300/15 bg-violet-400/10 text-violet-300">
-                      <LayoutDashboard className="h-4 w-4" />
+                      <IconLayoutDashboard className="h-4 w-4" />
                     </span>
 
                     <span>
@@ -151,7 +143,7 @@ export function Navbar() {
                     className="group flex gap-3 rounded-xl p-3 transition hover:bg-violet-300/[0.08]"
                   >
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-violet-300/15 bg-violet-400/10 text-violet-300">
-                      <Activity className="h-4 w-4" />
+                      <IconActivity className="h-4 w-4" />
                     </span>
 
                     <span>
@@ -172,7 +164,7 @@ export function Navbar() {
                     className="group flex gap-3 rounded-xl p-3 transition hover:bg-violet-300/[0.08]"
                   >
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-violet-300/15 bg-violet-400/10 text-violet-300">
-                      <ShieldCheck className="h-4 w-4" />
+                      <IconShieldCheck className="h-4 w-4" />
                     </span>
 
                     <span>
@@ -213,7 +205,7 @@ export function Navbar() {
               className="group inline-flex items-center gap-2 rounded-xl bg-forest-700 px-4 py-2.5 text-sm font-bold text-white shadow-subtle transition hover:bg-forest-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-forest-400"
             >
               Go to workspace
-              <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
+              <IconArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
             </Link>
           ) : (
             <>
@@ -230,7 +222,7 @@ export function Navbar() {
               >
                 <span>Get started</span>
 
-                <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
+                <IconArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
               </Link>
             </>
           )}
@@ -245,6 +237,7 @@ export function Navbar() {
               ? 'Close navigation menu'
               : 'Open navigation menu'
           }
+          title={mobileOpen ? 'Close navigation menu' : 'Open navigation menu'}
           aria-expanded={mobileOpen}
           className="flex h-10 w-10 items-center justify-center rounded-xl border border-violet-200/15 bg-white/[0.035] text-white transition hover:border-violet-300/35 hover:bg-violet-300/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-300 sm:hidden"
         >
@@ -266,9 +259,9 @@ export function Navbar() {
               className="flex"
             >
               {mobileOpen ? (
-                <X className="h-5 w-5" />
+                <IconX className="h-5 w-5" />
               ) : (
-                <Menu className="h-5 w-5" />
+                <IconMenu className="h-5 w-5" />
               )}
             </motion.span>
           </AnimatePresence>
@@ -311,7 +304,7 @@ export function Navbar() {
                 className="flex items-center justify-between rounded-xl px-3 py-3 text-sm font-semibold text-white transition hover:bg-violet-300/[0.07]"
               >
                 Product features
-                <ArrowRight className="h-4 w-4 text-violet-300" />
+                <IconArrowRight className="h-4 w-4 text-violet-300" />
               </Link>
 
               {/* Mobile navigation links */}
@@ -323,7 +316,7 @@ export function Navbar() {
                   className="flex items-center justify-between rounded-xl px-3 py-3 text-sm font-medium text-[#B7ADC9] transition hover:bg-violet-300/[0.07] hover:text-white"
                 >
                   {item.label}
-                  <ArrowRight className="h-4 w-4 text-[#827795]" />
+                  <IconArrowRight className="h-4 w-4 text-[#827795]" />
                 </a>
               ))}
 
@@ -348,13 +341,13 @@ export function Navbar() {
                 >
                   {user ? 'Go to workspace' : 'Get started'}
 
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  <IconArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </Link>
               </div>
 
               {/* Trust note */}
               <div className="mt-5 flex items-center justify-center gap-2 text-[10px] text-[#827795]">
-                <ShieldCheck className="h-3.5 w-3.5 text-violet-300" />
+                <IconShieldCheck className="h-3.5 w-3.5 text-violet-300" />
                 Project intelligence with human oversight
               </div>
             </motion.div>

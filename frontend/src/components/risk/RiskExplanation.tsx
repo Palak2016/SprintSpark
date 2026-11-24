@@ -1,12 +1,6 @@
 import React from 'react';
 import type { RiskAnalysis, RiskFactor } from '../../types';
-import {
-  MdArrowDownward as ArrowDownRight,
-  MdArrowOutward as ArrowUpRight,
-  MdLayers as Layers,
-  MdChecklist as ListChecks,
-  MdRemove as Minus
-} from 'react-icons/md';
+import { IconArrowDownRight, IconArrowUpRight, IconLayers, IconListChecks, IconMinus } from '../../icons';
 
 const TRIGGER_LABELS: Record<string, string> = {
   INITIAL: 'First evaluation',
@@ -28,10 +22,10 @@ export const triggerLabel = (trigger?: string | null): string =>
 
 const deltaStyle = (delta: number) =>
   delta > 0
-    ? { text: 'text-rose-300', Icon: ArrowUpRight }
+    ? { text: 'text-rose-300', Icon: IconArrowUpRight }
     : delta < 0
-      ? { text: 'text-emerald-300', Icon: ArrowDownRight }
-      : { text: 'text-[#A99DBD]', Icon: Minus };
+      ? { text: 'text-emerald-300', Icon: IconArrowDownRight }
+      : { text: 'text-[#A99DBD]', Icon: IconMinus };
 
 /** "Risk 34 → 41 (+7.0)" plus the factor changes that caused it. */
 export const RiskChangePanel: React.FC<{ analysis: RiskAnalysis }> = ({ analysis }) => {
@@ -128,7 +122,7 @@ export const RiskFactorBreakdown: React.FC<{ analysis: RiskAnalysis }> = ({ anal
       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-center gap-3">
           <div className="rounded-xl bg-violet-500/10 p-2.5">
-            <Layers className="h-5 w-5 text-violet-300" />
+            <IconLayers className="h-5 w-5 text-violet-300" />
           </div>
           <div>
             <h3 className="text-sm font-bold text-[#FAF8FF]">Score breakdown</h3>
@@ -140,7 +134,7 @@ export const RiskFactorBreakdown: React.FC<{ analysis: RiskAnalysis }> = ({ anal
         <div className="flex flex-wrap gap-1.5 text-[10px] text-[#A99DBD]">
           {confidence && (
             <span className="inline-flex items-center gap-1 rounded-md border border-white/[0.08] bg-[#130D21] px-2 py-1">
-              <ListChecks className="h-3 w-3" /> Data confidence: {confidence.toLowerCase()}
+              <IconListChecks className="h-3 w-3" /> Data confidence: {confidence.toLowerCase()}
             </span>
           )}
           {analysis.config_version && (

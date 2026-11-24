@@ -8,20 +8,7 @@ import { api } from '../services/api';
 import { InvitationPreview } from '../types';
 import { homePath } from '../utils/workspace';
 import { SignupRole, buildSignupDetails } from '../utils/signup';
-import {
-  MdError as AlertCircle,
-  MdArrowBack as ArrowLeft,
-  MdArrowForward as ArrowRight,
-  MdBusinessCenter as BriefcaseBusiness,
-  MdBusiness as Building2,
-  MdCheckCircle as CheckCircle2,
-  MdVisibility as Eye,
-  MdVisibilityOff as EyeOff,
-  MdLock as LockKeyhole,
-  MdMail as Mail,
-  MdVerifiedUser as ShieldCheck,
-  MdPerson as UserRound
-} from 'react-icons/md';
+import { IconAlertCircle, IconArrowLeft, IconArrowRight, IconBriefcaseBusiness, IconBuilding2, IconCheckCircle2, IconEye, IconEyeOff, IconLockKeyhole, IconMail, IconShieldCheck, IconUserRound } from '../icons';
 
 /**
  * Three separate signup paths:
@@ -246,19 +233,19 @@ export const Signup: React.FC = () => {
       value: 'ADMIN' as const,
       label: 'Create a company',
       description: 'New company. You become its Company Admin.',
-      Icon: Building2,
+      Icon: IconBuilding2,
     },
     {
       value: 'MANAGER' as const,
       label: 'Manager',
       description: 'Join your company to run projects.',
-      Icon: BriefcaseBusiness,
+      Icon: IconBriefcaseBusiness,
     },
     {
       value: 'EMPLOYEE' as const,
       label: 'Employee',
       description: 'Join your company for your daily work.',
-      Icon: UserRound,
+      Icon: IconUserRound,
     },
   ];
 
@@ -356,7 +343,7 @@ export const Signup: React.FC = () => {
                 role="alert"
                 className="mb-5 flex items-start gap-3 rounded-xl border border-rose-400/20 bg-rose-400/[0.08] p-3.5 text-sm text-rose-200"
               >
-                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
+                <IconAlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
                 <span>{errorMessage}</span>
               </div>
             )}
@@ -366,7 +353,7 @@ export const Signup: React.FC = () => {
                 role="alert"
                 className="mb-5 flex items-start gap-3 rounded-xl border border-rose-400/20 bg-rose-400/[0.08] p-3.5 text-sm text-rose-200"
               >
-                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
+                <IconAlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
                 <span>{inviteError}</span>
               </div>
             )}
@@ -425,7 +412,7 @@ export const Signup: React.FC = () => {
                                 }`}
                               >
                                 {selected && (
-                                  <CheckCircle2 className="h-4 w-4" />
+                                  <IconCheckCircle2 className="h-4 w-4" />
                                 )}
                               </span>
                             </div>
@@ -440,7 +427,7 @@ export const Signup: React.FC = () => {
 
                             {selected && (
                               <span className="mt-3 inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#D1D3D6]">
-                                <CheckCircle2 className="h-3 w-3" />
+                                <IconCheckCircle2 className="h-3 w-3" />
                                 Selected
                               </span>
                             )}
@@ -459,7 +446,7 @@ export const Signup: React.FC = () => {
                     className="space-y-4 rounded-2xl border border-white/[0.1] bg-white/[0.025] p-4"
                   >
                     <div className="flex items-start gap-2 text-xs leading-5 text-[#D1D3D6]">
-                      <Building2 className="mt-0.5 h-4 w-4 shrink-0" />
+                      <IconBuilding2 className="mt-0.5 h-4 w-4 shrink-0" />
                       <span>
                         This creates a <strong className="text-white">new company</strong> and
                         makes you its <strong className="text-white">Company Admin</strong>: you
@@ -525,7 +512,7 @@ export const Signup: React.FC = () => {
                     className="space-y-4 rounded-2xl border border-white/[0.1] bg-white/[0.025] p-4"
                   >
                     <div className="flex items-center gap-2 text-xs font-semibold text-[#D1D3D6]">
-                      <BriefcaseBusiness className="h-4 w-4" />
+                      <IconBriefcaseBusiness className="h-4 w-4" />
                       Join your company as a manager
                     </div>
 
@@ -619,7 +606,7 @@ export const Signup: React.FC = () => {
                   </label>
 
                   <div className="relative">
-                    <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#92979D]" />
+                    <IconMail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#92979D]" />
 
                     <input
                       id="email"
@@ -670,7 +657,7 @@ export const Signup: React.FC = () => {
                   </label>
 
                   <div className="relative">
-                    <LockKeyhole className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#92979D]" />
+                    <IconLockKeyhole className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#92979D]" />
 
                     <input
                       id="password"
@@ -689,13 +676,14 @@ export const Signup: React.FC = () => {
                       aria-label={
                         showPassword ? 'Hide password' : 'Show password'
                       }
+                      title={showPassword ? 'Hide password' : 'Show password'}
                       onClick={() => setShowPassword(!showPassword)}
                       className="signup-secondary-action absolute right-3.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-[#92979D] transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/70"
                     >
                       {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
+                        <IconEyeOff className="h-4 w-4" />
                       ) : (
-                        <Eye className="h-4 w-4" />
+                        <IconEye className="h-4 w-4" />
                       )}
                     </button>
                   </div>
@@ -775,7 +763,7 @@ export const Signup: React.FC = () => {
                       : 'Continue to verification'}
                   </span>
 
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  <IconArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </button>
               </form>
             ) : (
@@ -786,7 +774,7 @@ export const Signup: React.FC = () => {
               >
                 <div className="rounded-2xl border border-white/[0.1] bg-white/[0.035] p-5 text-center">
                   <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-white/15 bg-white/[0.06]">
-                    <Mail className="h-7 w-7 text-[#D1D3D6]" />
+                    <IconMail className="h-7 w-7 text-[#D1D3D6]" />
                   </div>
 
                   <h2 className="text-lg font-bold text-white">
@@ -802,7 +790,7 @@ export const Signup: React.FC = () => {
                   </p>
 
                   <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/[0.1] bg-[#0B0C0E]/60 px-3 py-1.5 text-[10px] text-[#BFC3C7]">
-                    <ShieldCheck className="h-3.5 w-3.5 text-[#D1D3D6]" />
+                    <IconShieldCheck className="h-3.5 w-3.5 text-[#D1D3D6]" />
                     Email verification
                   </div>
                 </div>
@@ -844,7 +832,7 @@ export const Signup: React.FC = () => {
                       : 'Verify & Create Account'}
                   </span>
 
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  <IconArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </button>
 
                 <div className="flex items-center justify-between gap-3 border-t border-white/[0.08] pt-5 text-xs">
@@ -858,7 +846,7 @@ export const Signup: React.FC = () => {
                     disabled={isSubmitting}
                     className="signup-secondary-action inline-flex items-center gap-1.5 rounded-lg py-2 text-[#AEB4BA] transition hover:text-white disabled:opacity-50"
                   >
-                    <ArrowLeft className="h-3.5 w-3.5" />
+                    <IconArrowLeft className="h-3.5 w-3.5" />
                     Edit details
                   </button>
 
@@ -890,12 +878,12 @@ export const Signup: React.FC = () => {
         {/* Trust footer */}
         <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[10px] text-[#92979D]">
           <span className="inline-flex items-center gap-1.5">
-            <ShieldCheck className="h-3.5 w-3.5 text-[#BFC3C7]" />
+            <IconShieldCheck className="h-3.5 w-3.5 text-[#BFC3C7]" />
             Secure account verification
           </span>
 
           <span className="inline-flex items-center gap-1.5">
-            <LockKeyhole className="h-3.5 w-3.5 text-[#BFC3C7]" />
+            <IconLockKeyhole className="h-3.5 w-3.5 text-[#BFC3C7]" />
             Role-aware workspace access
           </span>
         </div>

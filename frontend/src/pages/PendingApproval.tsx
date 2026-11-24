@@ -1,11 +1,6 @@
 import React, { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import {
-  MdAccessTime as Clock,
-  MdLogout as LogOut,
-  MdRefresh as RefreshCw,
-  MdCancel as XCircle
-} from 'react-icons/md';
+import { IconCheck, IconClock, IconLogOut, IconSpinner, IconXCircle } from '../icons';
 import { Logo } from '../components/common/Logo';
 import { useAuth } from '../context/AuthContext';
 
@@ -37,9 +32,9 @@ export const PendingApproval: React.FC = () => {
         <Logo size="sm" onDarkBackground />
         <div className="mt-6 flex items-center gap-3">
           {rejected || unlinked || deactivated ? (
-            <XCircle className="h-6 w-6 text-rose-300" />
+            <IconXCircle className="h-6 w-6 text-rose-300" />
           ) : (
-            <Clock className="h-6 w-6 text-amber-300" />
+            <IconClock className="h-6 w-6 text-amber-300" />
           )}
           <h1 className="text-xl font-semibold text-white">
             {unlinked
@@ -68,7 +63,7 @@ export const PendingApproval: React.FC = () => {
               disabled={checking}
               className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-indigo-500 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
             >
-              <RefreshCw className={`h-4 w-4 ${checking ? 'animate-spin' : ''}`} />
+              {checking ? <IconSpinner className="h-4 w-4 animate-spin" /> : <IconCheck className="h-4 w-4" />}
               Check again
             </button>
           )}
@@ -80,7 +75,7 @@ export const PendingApproval: React.FC = () => {
             }}
             className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 px-4 py-2.5 text-sm font-semibold text-[#D8D0E7] hover:bg-white/[0.05]"
           >
-            <LogOut className="h-4 w-4" /> Sign out
+            <IconLogOut className="h-4 w-4" /> Sign out
           </button>
         </div>
       </section>

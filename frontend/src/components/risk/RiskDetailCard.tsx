@@ -4,20 +4,7 @@ import type { RiskAnalysis } from '../../types';
 import { RiskBadge } from '../common/RiskBadge';
 import { formatIndianDateTime } from '../../utils/date';
 import { RiskChangePanel, RiskFactorBreakdown } from './RiskExplanation';
-import {
-  MdWarningAmber as AlertTriangle,
-  MdReportProblem as AlertOctagon,
-  MdInfo as Info,
-  MdCheckCircle as CheckCircle2,
-  MdCalendarMonth as Calendar,
-  MdGroup as Users,
-  MdLink as Link2,
-  MdFactCheck as ClipboardCheck,
-  MdHelp as HelpCircle,
-  MdVerifiedUser as ShieldCheck,
-  MdInsights as Activity,
-  MdSpeed as Gauge
-} from 'react-icons/md';
+import { IconActivity, IconAlertOctagon, IconAlertTriangle, IconCalendar, IconCheckCircle2, IconClipboardCheck, IconGauge, IconHelpCircle, IconInfo, IconLink2, IconShieldCheck, IconUsers } from '../../icons';
 
 interface RiskDetailCardProps {
   analysis: RiskAnalysis | null;
@@ -34,7 +21,7 @@ export const RiskDetailCard: React.FC<RiskDetailCardProps> = ({
     return (
       <div className="rounded-2xl border border-white/[0.08] bg-[#19112B] p-8 text-center">
         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-violet-500/10">
-          <Activity className="h-6 w-6 text-violet-300" />
+          <IconActivity className="h-6 w-6 text-violet-300" />
         </div>
 
         <p className="text-sm font-semibold text-[#FAF8FF]">
@@ -60,7 +47,7 @@ export const RiskDetailCard: React.FC<RiskDetailCardProps> = ({
         icon: 'text-rose-300',
         indicator: 'bg-rose-400',
         label: 'High delivery risk',
-        Icon: AlertOctagon,
+        Icon: IconAlertOctagon,
       }
     : isMediumRisk
       ? {
@@ -70,7 +57,7 @@ export const RiskDetailCard: React.FC<RiskDetailCardProps> = ({
           icon: 'text-amber-300',
           indicator: 'bg-amber-400',
           label: 'Moderate delivery risk',
-          Icon: AlertTriangle,
+          Icon: IconAlertTriangle,
         }
       : isInsufficient
         ? {
@@ -79,7 +66,7 @@ export const RiskDetailCard: React.FC<RiskDetailCardProps> = ({
             icon: 'text-slate-300',
             indicator: 'bg-slate-400',
             label: 'More data required',
-            Icon: Info,
+            Icon: IconInfo,
           }
         : {
             container:
@@ -88,7 +75,7 @@ export const RiskDetailCard: React.FC<RiskDetailCardProps> = ({
             icon: 'text-emerald-300',
             indicator: 'bg-emerald-400',
             label: 'Healthy delivery status',
-            Icon: ShieldCheck,
+            Icon: IconShieldCheck,
           };
 
   const RiskIcon = riskTheme.Icon;
@@ -169,7 +156,7 @@ export const RiskDetailCard: React.FC<RiskDetailCardProps> = ({
               disabled={isGenerating}
               className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-xs font-semibold text-white shadow-lg shadow-violet-950/20 transition-all hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
             >
-              <ClipboardCheck
+              <IconClipboardCheck
                 className={`h-4 w-4 ${isGenerating ? 'animate-pulse' : ''}`}
               />
               <span>
@@ -185,7 +172,7 @@ export const RiskDetailCard: React.FC<RiskDetailCardProps> = ({
         <div className="mt-5 grid grid-cols-1 gap-3 border-t border-white/[0.08] pt-4 sm:grid-cols-3">
           <div className="flex items-center gap-2.5">
             <div className="rounded-lg bg-violet-500/10 p-2">
-              <Gauge className="h-4 w-4 text-violet-300" />
+              <IconGauge className="h-4 w-4 text-violet-300" />
             </div>
 
             <div>
@@ -198,7 +185,7 @@ export const RiskDetailCard: React.FC<RiskDetailCardProps> = ({
 
           <div className="flex items-center gap-2.5">
             <div className="rounded-lg bg-sky-500/10 p-2">
-              <Activity className="h-4 w-4 text-sky-300" />
+              <IconActivity className="h-4 w-4 text-sky-300" />
             </div>
 
             <div>
@@ -214,7 +201,7 @@ export const RiskDetailCard: React.FC<RiskDetailCardProps> = ({
 
           <div className="flex items-center gap-2.5">
             <div className="rounded-lg bg-amber-500/10 p-2">
-              <HelpCircle className="h-4 w-4 text-amber-300" />
+              <IconHelpCircle className="h-4 w-4 text-amber-300" />
             </div>
 
             <div>
@@ -239,7 +226,7 @@ export const RiskDetailCard: React.FC<RiskDetailCardProps> = ({
         <section className="rounded-2xl border border-amber-400/20 bg-amber-500/[0.05] p-4 sm:p-5">
           <div className="mb-3 flex items-center gap-2.5">
             <div className="rounded-lg bg-amber-500/10 p-2">
-              <HelpCircle className="h-4 w-4 text-amber-300" />
+              <IconHelpCircle className="h-4 w-4 text-amber-300" />
             </div>
 
             <div>
@@ -290,7 +277,7 @@ export const RiskDetailCard: React.FC<RiskDetailCardProps> = ({
         {triggeredRules.length === 0 ? (
           <div className="rounded-2xl border border-emerald-400/15 bg-[#19112B] p-7 text-center">
             <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10">
-              <CheckCircle2 className="h-5 w-5 text-emerald-300" />
+              <IconCheckCircle2 className="h-5 w-5 text-emerald-300" />
             </div>
 
             <h4 className="text-sm font-semibold text-[#FAF8FF]">
@@ -368,7 +355,7 @@ export const RiskDetailCard: React.FC<RiskDetailCardProps> = ({
                     rule.affected_task_ids.length > 0 && (
                       <div className="mt-4 border-t border-white/[0.06] pt-3">
                         <div className="mb-2 flex items-center gap-2 text-xs text-[#A99DBD]">
-                          <Link2
+                          <IconLink2
                             className={`h-3.5 w-3.5 ${severityStyle.icon}`}
                           />
                           <span className="font-medium">
@@ -403,7 +390,7 @@ export const RiskDetailCard: React.FC<RiskDetailCardProps> = ({
         <section className="rounded-2xl border border-white/[0.08] bg-[#19112B] p-4 sm:p-5">
           <div className="mb-4 flex items-center gap-3">
             <div className="rounded-xl bg-violet-500/10 p-2.5">
-              <Activity className="h-5 w-5 text-violet-300" />
+              <IconActivity className="h-5 w-5 text-violet-300" />
             </div>
 
             <div>
@@ -422,7 +409,7 @@ export const RiskDetailCard: React.FC<RiskDetailCardProps> = ({
                 <span className="text-xs text-[#A99DBD]">
                   Total Active Tasks
                 </span>
-                <Users className="h-4 w-4 text-violet-300" />
+                <IconUsers className="h-4 w-4 text-violet-300" />
               </div>
 
               <p className="mt-3 text-2xl font-bold tabular-nums text-[#FAF8FF]">
@@ -440,7 +427,7 @@ export const RiskDetailCard: React.FC<RiskDetailCardProps> = ({
                   Blocked Bottlenecks
                 </span>
 
-                <AlertOctagon
+                <IconAlertOctagon
                   className={`h-4 w-4 ${
                     (evidence.blocked_tasks ?? 0) > 0
                       ? 'text-rose-300'
@@ -470,7 +457,7 @@ export const RiskDetailCard: React.FC<RiskDetailCardProps> = ({
                   Leave Conflicts
                 </span>
 
-                <Calendar
+                <IconCalendar
                   className={`h-4 w-4 ${
                     (evidence.tasks_with_leave_conflict ?? 0) > 0
                       ? 'text-amber-300'
@@ -499,7 +486,7 @@ export const RiskDetailCard: React.FC<RiskDetailCardProps> = ({
                 <span className="text-xs text-[#A99DBD]">
                   Dependency Conflicts
                 </span>
-                <Link2 className="h-4 w-4 text-sky-300" />
+                <IconLink2 className="h-4 w-4 text-sky-300" />
               </div>
 
               <p className="mt-3 text-2xl font-bold tabular-nums text-[#FAF8FF]">
@@ -516,7 +503,7 @@ export const RiskDetailCard: React.FC<RiskDetailCardProps> = ({
 
       {/* Explainability Note */}
       <div className="flex items-start gap-3 rounded-xl border border-white/[0.06] bg-[#130D21] p-4">
-        <Info className="mt-0.5 h-4 w-4 shrink-0 text-violet-300" />
+        <IconInfo className="mt-0.5 h-4 w-4 shrink-0 text-violet-300" />
 
         <p className="text-xs leading-5 text-[#A99DBD]">
           <span className="font-semibold text-[#D5CBE5]">

@@ -3,14 +3,7 @@ import React, { useState } from 'react';
 import type { LeaveRequest } from '../../types';
 import { api } from '../../services/api';
 import { formatIndianDate } from '../../utils/date';
-import {
-  MdCalendarMonth as CalendarDays,
-  MdCheckCircle as CheckCircle2,
-  MdCancel as XCircle,
-  MdAccessTime as Clock,
-  MdRefresh as LoaderCircle,
-  MdChat as MessageSquareText
-} from 'react-icons/md';
+import { IconCalendarDays, IconCheckCircle2, IconClock, IconMessageSquareText, IconSpinner, IconXCircle } from '../../icons';
 
 interface LeaveApprovalCardProps {
   request: LeaveRequest;
@@ -112,7 +105,7 @@ export const LeaveApprovalCard: React.FC<LeaveApprovalCardProps> = ({
         {/* Leave Dates */}
         <div className="my-3 rounded-xl border border-violet-400/10 bg-[#19112B]/80 p-3">
           <div className="mb-2 flex items-center gap-2 text-xs font-medium text-[#C5BDD5]">
-            <CalendarDays className="h-4 w-4 text-violet-300" />
+            <IconCalendarDays className="h-4 w-4 text-violet-300" />
             Leave period
           </div>
 
@@ -140,7 +133,7 @@ export const LeaveApprovalCard: React.FC<LeaveApprovalCardProps> = ({
       {isPending ? (
         <div className="mt-4 space-y-3 border-t border-white/10 pt-4">
           <label className="flex items-center gap-2 text-xs font-medium text-[#C5BDD5]">
-            <MessageSquareText className="h-3.5 w-3.5" />
+            <IconMessageSquareText className="h-3.5 w-3.5" />
             Review notes
             <span className="font-normal text-[#817694]">(optional)</span>
           </label>
@@ -171,9 +164,9 @@ export const LeaveApprovalCard: React.FC<LeaveApprovalCardProps> = ({
               className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-rose-400/20 bg-rose-400/10 px-3 py-2.5 text-xs font-semibold text-rose-300 transition-colors hover:bg-rose-400/20 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isSubmitting ? (
-                <LoaderCircle className="h-4 w-4 animate-spin" />
+                <IconSpinner className="h-4 w-4 animate-spin" />
               ) : (
-                <XCircle className="h-4 w-4" />
+                <IconXCircle className="h-4 w-4" />
               )}
               Reject
             </button>
@@ -185,9 +178,9 @@ export const LeaveApprovalCard: React.FC<LeaveApprovalCardProps> = ({
               className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-violet-500 px-3 py-2.5 text-xs font-semibold text-white shadow-md shadow-violet-950/20 transition-colors hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isSubmitting ? (
-                <LoaderCircle className="h-4 w-4 animate-spin" />
+                <IconSpinner className="h-4 w-4 animate-spin" />
               ) : (
-                <CheckCircle2 className="h-4 w-4" />
+                <IconCheckCircle2 className="h-4 w-4" />
               )}
               Approve
             </button>
@@ -203,7 +196,7 @@ export const LeaveApprovalCard: React.FC<LeaveApprovalCardProps> = ({
         /* Reviewed Request Details */
         <div className="mt-4 space-y-2 border-t border-white/10 pt-3">
           <div className="flex items-center gap-2 text-xs text-[#A99FBC]">
-            <Clock className="h-3.5 w-3.5" />
+            <IconClock className="h-3.5 w-3.5" />
             <span>
               Reviewed
               {request.reviewed_at

@@ -7,17 +7,7 @@ import { RiskAnalysis, RecoveryProposal } from '../../types';
 import { RiskDetailCard } from '../../components/risk/RiskDetailCard';
 import { RecoveryReviewModal } from '../../components/risk/RecoveryReviewModal';
 import { RiskHistoryPanel, RiskSuggestionsPanel } from '../../components/risk/RiskReviewPanels';
-import {
-  MdWarningAmber as AlertTriangle,
-  MdRefresh as RefreshCw,
-  MdFactCheck as ClipboardCheck,
-  MdVerifiedUser as ShieldCheck,
-  MdCheckCircle as CheckCircle2,
-  MdHelp as HelpCircle,
-  MdInsights as Activity,
-  MdViewKanban as FolderKanban,
-  MdArrowOutward as ArrowUpRight
-} from 'react-icons/md';
+import { IconManagerActivity, IconManagerAlertTriangle, IconManagerArrowUpRight, IconManagerCheckCircle2, IconManagerClipboardCheck, IconManagerFolderKanban, IconManagerHelpCircle, IconManagerRun, IconManagerShieldCheck, IconSpinner } from '../../icons';
 
 export const RiskIntelligenceView: React.FC = () => {
   const navigate = useNavigate();
@@ -101,7 +91,7 @@ export const RiskIntelligenceView: React.FC = () => {
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-violet-400/20 bg-violet-500/10">
-              <ShieldCheck className="h-5 w-5 text-violet-300" />
+              <IconManagerShieldCheck className="h-5 w-5 text-violet-300" />
             </div>
 
             <div>
@@ -122,7 +112,7 @@ export const RiskIntelligenceView: React.FC = () => {
 
           {activeProject && (
             <div className="inline-flex items-center gap-2 rounded-lg border border-white/[0.08] bg-[#19112B] px-3 py-1.5 text-xs text-[#B7ADC9]">
-              <FolderKanban className="h-3.5 w-3.5 text-violet-300" />
+              <IconManagerFolderKanban className="h-3.5 w-3.5 text-violet-300" />
               <span>Active project:</span>
               <span className="font-semibold text-[#FAF8FF]">
                 {activeProject.name}
@@ -137,9 +127,7 @@ export const RiskIntelligenceView: React.FC = () => {
           disabled={!activeProject || isEvaluating}
           className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-violet-400/20 bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-950/20 transition-all hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <RefreshCw
-            className={`h-4 w-4 ${isEvaluating ? 'animate-spin' : ''}`}
-          />
+          {isEvaluating ? <IconSpinner className="h-4 w-4 animate-spin" /> : <IconManagerRun className="h-4 w-4" />}
           {isEvaluating ? 'Evaluating Rules...' : 'Re-run Risk Engine'}
         </button>
       </div>
@@ -147,7 +135,7 @@ export const RiskIntelligenceView: React.FC = () => {
       {/* No Active Project */}
       {!activeProject && (
         <div className="rounded-2xl border border-white/[0.08] bg-[#19112B] p-8 text-center">
-          <FolderKanban className="mx-auto mb-3 h-9 w-9 text-violet-300" />
+          <IconManagerFolderKanban className="mx-auto mb-3 h-9 w-9 text-violet-300" />
           <h2 className="text-base font-semibold text-[#FAF8FF]">
             No project selected
           </h2>
@@ -164,7 +152,7 @@ export const RiskIntelligenceView: React.FC = () => {
           role="alert"
           className="flex items-start gap-3 rounded-xl border border-rose-400/20 bg-rose-500/[0.08] p-4"
         >
-          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-rose-300" />
+          <IconManagerAlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-rose-300" />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-rose-200">
               Something went wrong
@@ -199,11 +187,11 @@ export const RiskIntelligenceView: React.FC = () => {
               </p>
             </div>
             <div className="rounded-xl bg-violet-500/10 p-2.5">
-              <Activity className="h-5 w-5 text-violet-300" />
+              <IconManagerActivity className="h-5 w-5 text-violet-300" />
             </div>
           </div>
           <div className="mt-4 flex items-center gap-2 border-t border-white/[0.06] pt-3">
-            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-300" />
+            <IconManagerCheckCircle2 className="h-3.5 w-3.5 text-emerald-300" />
             <span className="text-xs text-[#B7ADC9]">
               Explainable evaluation logic
             </span>
@@ -224,11 +212,11 @@ export const RiskIntelligenceView: React.FC = () => {
               </p>
             </div>
             <div className="rounded-xl bg-amber-500/10 p-2.5">
-              <AlertTriangle className="h-5 w-5 text-amber-300" />
+              <IconManagerAlertTriangle className="h-5 w-5 text-amber-300" />
             </div>
           </div>
           <div className="mt-4 flex items-center gap-2 border-t border-white/[0.06] pt-3">
-            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-300" />
+            <IconManagerCheckCircle2 className="h-3.5 w-3.5 text-emerald-300" />
             <span className="text-xs text-[#B7ADC9]">
               Multiple delivery indicators
             </span>
@@ -249,11 +237,11 @@ export const RiskIntelligenceView: React.FC = () => {
               </p>
             </div>
             <div className="rounded-xl bg-sky-500/10 p-2.5">
-              <ClipboardCheck className="h-5 w-5 text-sky-300" />
+              <IconManagerClipboardCheck className="h-5 w-5 text-sky-300" />
             </div>
           </div>
           <div className="mt-4 flex items-center gap-2 border-t border-white/[0.06] pt-3">
-            <ArrowUpRight className="h-3.5 w-3.5 text-sky-300" />
+            <IconManagerArrowUpRight className="h-3.5 w-3.5 text-sky-300" />
             <span className="text-xs text-[#B7ADC9]">
               Risk-informed recovery workflow
             </span>
@@ -264,7 +252,7 @@ export const RiskIntelligenceView: React.FC = () => {
       {/* Analysis Loading State */}
       {isLoading && !analysis && (
         <div className="rounded-2xl border border-white/[0.08] bg-[#19112B] p-12 text-center">
-          <RefreshCw className="mx-auto mb-3 h-7 w-7 animate-spin text-violet-300" />
+          <IconSpinner className="mx-auto mb-3 h-7 w-7 animate-spin text-violet-300" />
           <p className="text-sm font-semibold text-[#FAF8FF]">
             Loading risk analysis...
           </p>
@@ -309,7 +297,7 @@ export const RiskIntelligenceView: React.FC = () => {
             !isLoading && (
               <div className="rounded-2xl border border-dashed border-white/10 bg-[#19112B]/70 px-6 py-12 text-center">
                 <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-500/10">
-                  <AlertTriangle className="h-6 w-6 text-violet-300" />
+                  <IconManagerAlertTriangle className="h-6 w-6 text-violet-300" />
                 </div>
                 <h3 className="text-base font-semibold text-[#FAF8FF]">
                   No risk analysis available
@@ -324,7 +312,7 @@ export const RiskIntelligenceView: React.FC = () => {
                   disabled={isEvaluating}
                   className="mt-5 inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-500 disabled:opacity-50"
                 >
-                  <Activity className="h-4 w-4" />
+                  <IconManagerActivity className="h-4 w-4" />
                   {isEvaluating ? 'Evaluating...' : 'Run Risk Analysis'}
                 </button>
               </div>
@@ -343,7 +331,7 @@ export const RiskIntelligenceView: React.FC = () => {
 
       {/* Explainability Footer */}
       <div className="flex items-start gap-3 rounded-2xl border border-white/[0.08] bg-[#130D21] p-4">
-        <HelpCircle className="mt-0.5 h-5 w-5 shrink-0 text-violet-300" />
+        <IconManagerHelpCircle className="mt-0.5 h-5 w-5 shrink-0 text-violet-300" />
         <div>
           <h3 className="text-sm font-semibold text-[#FAF8FF]">
             About risk intelligence

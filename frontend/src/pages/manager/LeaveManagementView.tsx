@@ -10,18 +10,7 @@ import { api } from '../../services/api';
 import type { LeaveRequest } from '../../types';
 import { LeaveApprovalCard } from '../../components/leave/LeaveApprovalCard';
 
-import {
-  MdCalendarMonth as CalendarDays,
-  MdFilterList as Filter,
-  MdRefresh as RefreshCw,
-  MdCheckCircle as CheckCircle2,
-  MdAccessTime as Clock,
-  MdCancel as XCircle,
-  MdGroup as Users,
-  MdError as AlertCircle,
-  MdRefresh as LoaderCircle,
-  MdFactCheck as ClipboardCheck
-} from 'react-icons/md';
+import { IconAlertCircle, IconCalendarDays, IconCheckCircle2, IconClipboardCheck, IconClock, IconFilter, IconRefresh, IconSpinner, IconUsers, IconXCircle } from '../../icons';
 
 type LeaveFilter = 'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED';
 
@@ -162,7 +151,7 @@ export const LeaveManagementView: React.FC = () => {
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="mb-2 flex items-center gap-2 text-sm text-[#B7ADC9]">
-            <CalendarDays className="h-4 w-4 text-violet-400" />
+            <IconCalendarDays className="h-4 w-4 text-violet-400" />
             <span>Workspace</span>
             <span>/</span>
             <span className="text-[#E5D9FF]">Leave Management</span>
@@ -189,7 +178,7 @@ export const LeaveManagementView: React.FC = () => {
           disabled={isLoading}
           className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-[#19112B] px-4 py-2.5 text-sm font-medium text-[#D8CDEF] transition hover:bg-[#211638] disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <RefreshCw
+          <IconRefresh
             className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`}
           />
           {isLoading ? 'Refreshing...' : 'Refresh'}
@@ -202,7 +191,7 @@ export const LeaveManagementView: React.FC = () => {
           role="alert"
           className="flex flex-col gap-3 rounded-xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-200 sm:flex-row sm:items-start"
         >
-          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <IconAlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
 
           <p className="min-w-0 flex-1 break-words">{pageError}</p>
 
@@ -226,7 +215,7 @@ export const LeaveManagementView: React.FC = () => {
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm text-[#B7ADC9]">Total Requests</p>
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/10">
-              <Users className="h-5 w-5 text-violet-300" />
+              <IconUsers className="h-5 w-5 text-violet-300" />
             </div>
           </div>
 
@@ -241,7 +230,7 @@ export const LeaveManagementView: React.FC = () => {
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm text-[#B7ADC9]">Pending Review</p>
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10">
-              <Clock className="h-5 w-5 text-amber-300" />
+              <IconClock className="h-5 w-5 text-amber-300" />
             </div>
           </div>
 
@@ -256,7 +245,7 @@ export const LeaveManagementView: React.FC = () => {
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm text-[#B7ADC9]">Approved</p>
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10">
-              <CheckCircle2 className="h-5 w-5 text-emerald-300" />
+              <IconCheckCircle2 className="h-5 w-5 text-emerald-300" />
             </div>
           </div>
 
@@ -271,7 +260,7 @@ export const LeaveManagementView: React.FC = () => {
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm text-[#B7ADC9]">Rejected</p>
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-500/10">
-              <XCircle className="h-5 w-5 text-rose-300" />
+              <IconXCircle className="h-5 w-5 text-rose-300" />
             </div>
           </div>
 
@@ -288,7 +277,7 @@ export const LeaveManagementView: React.FC = () => {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/10">
-              <ClipboardCheck className="h-5 w-5 text-violet-300" />
+              <IconClipboardCheck className="h-5 w-5 text-violet-300" />
             </div>
 
             <div>
@@ -327,7 +316,7 @@ export const LeaveManagementView: React.FC = () => {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-500/10">
-              <Filter className="h-4 w-4 text-violet-300" />
+              <IconFilter className="h-4 w-4 text-violet-300" />
             </div>
 
             <div>
@@ -392,7 +381,7 @@ export const LeaveManagementView: React.FC = () => {
       {/* Loading State */}
       {isLoading && leaves.length === 0 ? (
         <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-white/[0.08] bg-[#19112B] px-6 py-12">
-          <LoaderCircle className="h-8 w-8 animate-spin text-violet-300" />
+          <IconSpinner className="h-8 w-8 animate-spin text-violet-300" />
 
           <p className="mt-4 text-sm font-medium text-white">
             Loading leave requests...
@@ -420,7 +409,7 @@ export const LeaveManagementView: React.FC = () => {
         /* Empty State */
         <div className="rounded-2xl border border-dashed border-white/15 bg-[#19112B]/70 px-6 py-16 text-center">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-violet-400/20 bg-violet-500/10">
-            <CalendarDays className="h-7 w-7 text-violet-300" />
+            <IconCalendarDays className="h-7 w-7 text-violet-300" />
           </div>
 
           <h3 className="mt-4 text-lg font-semibold text-white">
@@ -468,7 +457,7 @@ export const LeaveManagementView: React.FC = () => {
       {/* Footer */}
       {!isLoading && visibleLeaves.length > 0 && (
         <div className="flex items-start gap-2.5 rounded-xl border border-white/[0.08] bg-[#19112B] px-4 py-3.5">
-          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-violet-300" />
+          <IconAlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-violet-300" />
 
           <p className="text-xs leading-relaxed text-[#B7ADC9]">
             Approved leave may affect team availability and task delivery

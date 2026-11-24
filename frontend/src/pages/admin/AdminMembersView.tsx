@@ -1,13 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  MdRefresh as LoaderCircle,
-  MdEdit as Pencil,
-  MdPowerSettingsNew as Power,
-  MdSearch as Search,
-  MdVerifiedUser as ShieldCheck,
-  MdClose as X
-} from 'react-icons/md';
+import { IconPencil, IconPower, IconSearch, IconShieldCheck, IconSpinner, IconX } from '../../icons';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { Company, CompanyMember } from '../../types';
@@ -112,7 +105,7 @@ export const AdminMembersView: React.FC = () => {
           <div className="flex flex-col gap-3 border-b border-white/[0.07] px-5 py-4 lg:flex-row">
             <label className="relative flex-1">
               <span className="sr-only">Search members</span>
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#76698D]" />
+              <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#76698D]" />
               <input
                 type="search"
                 value={query}
@@ -176,7 +169,7 @@ export const AdminMembersView: React.FC = () => {
                           <span className="text-white">{ROLE_LABELS[m.role] ?? m.role}</span>
                           {isAdmin && (
                             <span className="ml-2 inline-flex items-center gap-1 rounded-full border border-violet-300/25 bg-violet-400/10 px-2 py-0.5 text-[10px] font-semibold text-violet-100">
-                              <ShieldCheck className="h-3 w-3" /> Company Admin
+                              <IconShieldCheck className="h-3 w-3" /> Company Admin
                             </span>
                           )}
                         </td>
@@ -194,17 +187,17 @@ export const AdminMembersView: React.FC = () => {
                           <div className="flex justify-end gap-2">
                             {canEdit && (
                               <button type="button" onClick={() => { setNotice(null); setEditing(m); }} className={buttonClass} aria-label={`Edit ${m.full_name}`}>
-                                <Pencil className="h-3.5 w-3.5" /> Edit
+                                <IconPencil className="h-3.5 w-3.5" /> Edit
                               </button>
                             )}
                             {m.approval_status === 'APPROVED' && !isSelf && !isAdmin && (
                               <button type="button" onClick={() => { setNotice(null); setToggling(m); }} className={dangerButtonClass} aria-label={`Deactivate ${m.full_name}`}>
-                                <Power className="h-3.5 w-3.5" /> Deactivate
+                                <IconPower className="h-3.5 w-3.5" /> Deactivate
                               </button>
                             )}
                             {m.approval_status === 'DEACTIVATED' && (
                               <button type="button" onClick={() => { setNotice(null); setToggling(m); }} className={buttonClass} aria-label={`Reactivate ${m.full_name}`}>
-                                <Power className="h-3.5 w-3.5" /> Reactivate
+                                <IconPower className="h-3.5 w-3.5" /> Reactivate
                               </button>
                             )}
                           </div>
@@ -255,8 +248,8 @@ const Dialog: React.FC<{ title: string; onClose: () => void; children: React.Rea
       <section role="dialog" aria-modal="true" aria-label={title} className="w-full max-w-md rounded-2xl border border-violet-300/20 bg-[#19112B] p-6 text-white shadow-[0_20px_80px_rgba(0,0,0,0.55)]">
         <div className="mb-4 flex items-start justify-between gap-4">
           <h2 className="text-lg font-semibold text-white">{title}</h2>
-          <button type="button" onClick={onClose} aria-label="Close" className="rounded-lg p-1.5 text-[#B7ADC9] hover:bg-white/10 hover:text-white">
-            <X className="h-4 w-4" />
+          <button type="button" onClick={onClose} aria-label="Close" className="rounded-lg p-1.5 text-[#B7ADC9] hover:bg-white/10 hover:text-white" title="Close">
+            <IconX className="h-4 w-4" />
           </button>
         </div>
         {children}
@@ -348,7 +341,7 @@ const EditMemberDialog: React.FC<{
         <div className="flex justify-end gap-2">
           <button type="button" onClick={onClose} className={buttonClass} disabled={saving}>Cancel</button>
           <button type="submit" className={buttonClass} disabled={saving}>
-            {saving && <LoaderCircle className="h-3.5 w-3.5 animate-spin" />}
+            {saving && <IconSpinner className="h-3.5 w-3.5 animate-spin" />}
             {saving ? 'Saving...' : 'Save changes'}
           </button>
         </div>
@@ -400,7 +393,7 @@ const ToggleActiveDialog: React.FC<{
         <div className="flex justify-end gap-2">
           <button type="button" onClick={onClose} className={buttonClass} disabled={busy}>Cancel</button>
           <button type="button" onClick={() => void confirm()} className={deactivating ? dangerButtonClass : buttonClass} disabled={busy}>
-            {busy && <LoaderCircle className="h-3.5 w-3.5 animate-spin" />}
+            {busy && <IconSpinner className="h-3.5 w-3.5 animate-spin" />}
             {deactivating ? 'Deactivate account' : 'Reactivate account'}
           </button>
         </div>

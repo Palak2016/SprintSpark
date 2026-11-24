@@ -13,21 +13,7 @@ import {
   describeProvenance,
 } from './RecoveryInsights';
 import { formatIndianDateTime } from '../../utils/date';
-import {
-  MdFactCheck as ClipboardCheck,
-  MdCheckCircle as CheckCircle2,
-  MdCancel as XCircle,
-  MdArrowForward as ArrowRight,
-  MdVerifiedUser as ShieldCheck,
-  MdWarningAmber as AlertTriangle,
-  MdAccessTime as Clock,
-  MdGroup as Users,
-  MdArrowOutward as ArrowUpRight,
-  MdCalendarMonth as Calendar,
-  MdCompareArrows as GitCompareArrows,
-  MdInfo as Info,
-  MdRefresh as LoaderCircle
-} from 'react-icons/md';
+import { IconAlertTriangle, IconArrowRight, IconArrowUpRight, IconCheckCircle2, IconClipboardCheck, IconClock, IconGitCompareArrows, IconInfo, IconShieldCheck, IconSpinner, IconUsers, IconXCircle } from '../../icons';
 
 interface RecoveryReviewModalProps {
   isOpen: boolean;
@@ -132,7 +118,7 @@ export const RecoveryReviewModal: React.FC<RecoveryReviewModalProps> = ({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-violet-400/20 bg-violet-500/10">
-              <GitCompareArrows className="h-4 w-4 text-violet-300" />
+              <IconGitCompareArrows className="h-4 w-4 text-violet-300" />
             </div>
 
             <div>
@@ -165,7 +151,7 @@ export const RecoveryReviewModal: React.FC<RecoveryReviewModalProps> = ({
         <section className="rounded-2xl border border-violet-400/20 bg-gradient-to-br from-violet-500/[0.12] to-[#19112B] p-4 sm:p-5">
           <div className="flex items-start gap-3">
             <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-violet-400/20 bg-violet-500/10">
-              <ClipboardCheck className="h-5 w-5 text-violet-300" />
+              <IconClipboardCheck className="h-5 w-5 text-violet-300" />
             </div>
 
             <div className="min-w-0 flex-1">
@@ -195,7 +181,7 @@ export const RecoveryReviewModal: React.FC<RecoveryReviewModalProps> = ({
           <div className="mt-4 grid grid-cols-1 gap-3 border-t border-white/[0.08] pt-4 sm:grid-cols-2">
             <div className="flex items-center gap-2.5">
               <div className="rounded-lg bg-violet-500/10 p-2">
-                <GitCompareArrows className="h-4 w-4 text-violet-300" />
+                <IconGitCompareArrows className="h-4 w-4 text-violet-300" />
               </div>
               <div>
                 <p className="text-[10px] text-[#A99DBD]">
@@ -212,7 +198,7 @@ export const RecoveryReviewModal: React.FC<RecoveryReviewModalProps> = ({
 
             <div className="flex items-center gap-2.5">
               <div className="rounded-lg bg-sky-500/10 p-2">
-                <ShieldCheck className="h-4 w-4 text-sky-300" />
+                <IconShieldCheck className="h-4 w-4 text-sky-300" />
               </div>
               <div>
                 <p className="text-[10px] text-[#A99DBD]">
@@ -275,7 +261,7 @@ export const RecoveryReviewModal: React.FC<RecoveryReviewModalProps> = ({
 
           {proposal.proposed_actions.length === 0 ? (
             <div className="rounded-2xl border border-white/[0.08] bg-[#19112B] p-7 text-center">
-              <Info className="mx-auto mb-2 h-6 w-6 text-[#A99DBD]" />
+              <IconInfo className="mx-auto mb-2 h-6 w-6 text-[#A99DBD]" />
               <p className="text-sm font-semibold text-[#FAF8FF]">
                 No proposed actions
               </p>
@@ -318,7 +304,7 @@ export const RecoveryReviewModal: React.FC<RecoveryReviewModalProps> = ({
                     <ul className="space-y-1 border-b border-white/[0.06] bg-amber-500/[0.04] px-4 py-2.5">
                       {action.validation!.warnings.map((w) => (
                         <li key={w} className="flex items-start gap-1.5 text-[11px] leading-5 text-amber-100/90">
-                          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-300" /> {w}
+                          <IconAlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-300" /> {w}
                         </li>
                       ))}
                     </ul>
@@ -330,7 +316,7 @@ export const RecoveryReviewModal: React.FC<RecoveryReviewModalProps> = ({
                     <div className="min-w-0 rounded-xl border border-white/[0.07] bg-[#130D21] p-3.5">
                       <div className="mb-3 flex items-center gap-2">
                         <div className="rounded-lg bg-slate-500/10 p-1.5">
-                          <Clock className="h-3.5 w-3.5 text-slate-300" />
+                          <IconClock className="h-3.5 w-3.5 text-slate-300" />
                         </div>
                         <div>
                           <p className="text-[10px] font-bold uppercase tracking-wider text-[#A99DBD]">
@@ -371,7 +357,7 @@ export const RecoveryReviewModal: React.FC<RecoveryReviewModalProps> = ({
                     <div className="min-w-0 rounded-xl border border-violet-400/15 bg-violet-500/[0.05] p-3.5">
                       <div className="mb-3 flex items-center gap-2">
                         <div className="rounded-lg bg-violet-500/10 p-1.5">
-                          <ArrowUpRight className="h-3.5 w-3.5 text-violet-300" />
+                          <IconArrowUpRight className="h-3.5 w-3.5 text-violet-300" />
                         </div>
                         <div>
                           <p className="text-[10px] font-bold uppercase tracking-wider text-violet-300">
@@ -413,7 +399,7 @@ export const RecoveryReviewModal: React.FC<RecoveryReviewModalProps> = ({
                   <div className="mx-4 mb-4 space-y-3 rounded-xl border border-white/[0.06] bg-[#130D21]/70 p-3.5">
                     <div className="flex items-start gap-2.5">
                       <div className="mt-0.5 rounded-lg bg-sky-500/10 p-1.5">
-                        <Info className="h-3.5 w-3.5 text-sky-300" />
+                        <IconInfo className="h-3.5 w-3.5 text-sky-300" />
                       </div>
                       <div className="min-w-0">
                         <p className="text-xs font-semibold text-[#FAF8FF]">
@@ -427,7 +413,7 @@ export const RecoveryReviewModal: React.FC<RecoveryReviewModalProps> = ({
 
                     <div className="flex items-start gap-2.5 border-t border-white/[0.06] pt-3">
                       <div className="mt-0.5 rounded-lg bg-emerald-500/10 p-1.5">
-                        <ArrowRight className="h-3.5 w-3.5 text-emerald-300" />
+                        <IconArrowRight className="h-3.5 w-3.5 text-emerald-300" />
                       </div>
                       <div className="min-w-0">
                         <p className="text-xs font-semibold text-emerald-300">
@@ -450,7 +436,7 @@ export const RecoveryReviewModal: React.FC<RecoveryReviewModalProps> = ({
           <section className="rounded-2xl border border-sky-400/15 bg-sky-500/[0.04] p-4 sm:p-5">
             <div className="mb-3 flex items-start gap-3">
               <div className="rounded-xl bg-sky-500/10 p-2">
-                <ShieldCheck className="h-5 w-5 text-sky-300" />
+                <IconShieldCheck className="h-5 w-5 text-sky-300" />
               </div>
               <div>
                 <h3 className="text-sm font-semibold text-[#FAF8FF]">
@@ -484,7 +470,7 @@ export const RecoveryReviewModal: React.FC<RecoveryReviewModalProps> = ({
             role="alert"
             className="flex items-start gap-3 rounded-xl border border-rose-400/20 bg-rose-500/[0.08] p-4"
           >
-            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-rose-300" />
+            <IconAlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-rose-300" />
             <div>
               <p className="text-sm font-semibold text-rose-200">
                 Unable to process decision
@@ -506,7 +492,7 @@ export const RecoveryReviewModal: React.FC<RecoveryReviewModalProps> = ({
           <section className="space-y-4 border-t border-white/[0.08] pt-5">
             <div>
               <div className="mb-2 flex items-center gap-2">
-                <Users className="h-4 w-4 text-violet-300" />
+                <IconUsers className="h-4 w-4 text-violet-300" />
                 <label
                   htmlFor="recovery-decision-notes"
                   className="text-xs font-bold uppercase tracking-wider text-[#D5CBE5]"
@@ -535,7 +521,7 @@ export const RecoveryReviewModal: React.FC<RecoveryReviewModalProps> = ({
               <div className="space-y-4 rounded-2xl border border-amber-400/20 bg-amber-500/[0.06] p-4 sm:p-5">
                 <div className="flex items-start gap-3">
                   <div className="rounded-xl bg-amber-500/10 p-2">
-                    <AlertTriangle className="h-5 w-5 text-amber-300" />
+                    <IconAlertTriangle className="h-5 w-5 text-amber-300" />
                   </div>
 
                   <div className="min-w-0">
@@ -572,9 +558,9 @@ export const RecoveryReviewModal: React.FC<RecoveryReviewModalProps> = ({
                     className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {isSubmitting ? (
-                      <LoaderCircle className="h-4 w-4 animate-spin" />
+                      <IconSpinner className="h-4 w-4 animate-spin" />
                     ) : (
-                      <CheckCircle2 className="h-4 w-4" />
+                      <IconCheckCircle2 className="h-4 w-4" />
                     )}
                     {isSubmitting ? 'Applying Decision...' : 'Confirm Approval'}
                   </button>
@@ -583,7 +569,7 @@ export const RecoveryReviewModal: React.FC<RecoveryReviewModalProps> = ({
             ) : (
               <div className="space-y-4">
                 <div className="flex items-start gap-2 rounded-xl border border-white/[0.06] bg-[#19112B] p-3">
-                  <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-violet-300" />
+                  <IconShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-violet-300" />
                   <p className="text-xs leading-5 text-[#A99DBD]">
                     Manager authorization is required before the proposal can
                     be approved. Review the proposed changes before submitting
@@ -599,9 +585,9 @@ export const RecoveryReviewModal: React.FC<RecoveryReviewModalProps> = ({
                     className="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-400/20 bg-rose-500/[0.06] px-4 py-2.5 text-xs font-semibold text-rose-300 transition hover:bg-rose-500/[0.12] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {isSubmitting ? (
-                      <LoaderCircle className="h-4 w-4 animate-spin" />
+                      <IconSpinner className="h-4 w-4 animate-spin" />
                     ) : (
-                      <XCircle className="h-4 w-4" />
+                      <IconXCircle className="h-4 w-4" />
                     )}
                     Reject Proposal
                   </button>
@@ -615,7 +601,7 @@ export const RecoveryReviewModal: React.FC<RecoveryReviewModalProps> = ({
                     }}
                     className="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-violet-950/20 transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    <CheckCircle2 className="h-4 w-4" />
+                    <IconCheckCircle2 className="h-4 w-4" />
                     Approve & Review Confirmation
                   </button>
                 </div>
@@ -636,11 +622,11 @@ export const RecoveryReviewModal: React.FC<RecoveryReviewModalProps> = ({
                 }`}
               >
                 {proposal.status === 'APPROVED' ? (
-                  <CheckCircle2 className="h-5 w-5 text-emerald-300" />
+                  <IconCheckCircle2 className="h-5 w-5 text-emerald-300" />
                 ) : proposal.status === 'REJECTED' ? (
-                  <XCircle className="h-5 w-5 text-rose-300" />
+                  <IconXCircle className="h-5 w-5 text-rose-300" />
                 ) : (
-                  <Clock className="h-5 w-5 text-slate-300" />
+                  <IconClock className="h-5 w-5 text-slate-300" />
                 )}
               </div>
 

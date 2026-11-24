@@ -8,13 +8,7 @@ import {
   TaskStatus,
 } from '../../types';
 import { api } from '../../services/api';
-import {
-  MdError as AlertCircle,
-  MdLink as Link2,
-  MdCheck as Check,
-  MdCalendarMonth as CalendarDays,
-  MdExpandMore as ChevronDown
-} from 'react-icons/md';
+import { IconTasksAlertCircle, IconTasksCalendarDays, IconTasksCheck, IconTasksChevronDown, IconTasksLink2 } from '../../icons';
 
 interface TaskModalProps {
   isOpen: boolean;
@@ -193,7 +187,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
         {/* Error Message */}
         {errorMessage && (
           <div className="flex items-start gap-2 rounded-xl border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-200">
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-400" />
+            <IconTasksAlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-400" />
             <div>
               <p className="font-semibold">Unable to save task</p>
               <p className="mt-0.5 text-xs">{errorMessage}</p>
@@ -266,7 +260,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                 ))}
               </select>
 
-              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-300" />
+              <IconTasksChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-300" />
             </div>
 
             {availableUsers.length === 0 && (
@@ -294,7 +288,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                 <option value="CRITICAL" style={optionStyle}>Critical</option>
               </select>
 
-              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-300" />
+              <IconTasksChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-300" />
             </div>
           </div>
 
@@ -320,7 +314,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                 </option>
               </select>
 
-              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-300" />
+              <IconTasksChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-300" />
             </div>
           </div>
         </div>
@@ -380,7 +374,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                 style={{ colorScheme: 'dark' }}
               />
 
-              <CalendarDays className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-300" />
+              <IconTasksCalendarDays className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-300" />
             </div>
           </div>
 
@@ -398,7 +392,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                 style={{ colorScheme: 'dark' }}
               />
 
-              <CalendarDays className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-300" />
+              <IconTasksCalendarDays className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-300" />
             </div>
           </div>
         </div>
@@ -406,7 +400,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
         {/* Prerequisite Dependencies */}
         <div className="border-t border-white/[0.08] pt-4">
           <label className="mb-2 flex items-start gap-2 text-xs font-semibold uppercase tracking-wider text-[#B7ADC9]">
-            <Link2 className="mt-0.5 h-4 w-4 shrink-0 text-violet-300" />
+            <IconTasksLink2 className="mt-0.5 h-4 w-4 shrink-0 text-violet-300" />
 
             <span>
               Prerequisites
@@ -445,7 +439,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                     </span>
 
                     {isSelected && (
-                      <Check className="h-4 w-4 shrink-0 text-violet-300" />
+                      <IconTasksCheck className="h-4 w-4 shrink-0 text-violet-300" />
                     )}
                   </button>
                 );

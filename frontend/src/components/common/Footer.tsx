@@ -2,14 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Logo } from './Logo';
-import {
-  MdVerifiedUser as ShieldCheck,
-  MdArrowOutward as ArrowUpRight,
-  MdArrowForward as ArrowRight,
-  MdLock as LockKeyhole,
-  MdInsights as Activity,
-  MdFavorite as Heart
-} from 'react-icons/md';
+import { IconActivity, IconArrowRight, IconArrowUpRight, IconHeart, IconLockKeyhole, IconShieldCheck } from '../../icons';
 
 export const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
@@ -51,7 +44,7 @@ export const Footer: React.FC = () => {
             {/* Trust indicator */}
             <div className="inline-flex items-center gap-2.5 rounded-full border border-violet-300/15 bg-violet-300/[0.06] px-3.5 py-2">
               <span className="flex h-7 w-7 items-center justify-center rounded-full bg-violet-400/10">
-                <ShieldCheck className="h-4 w-4 text-violet-300" />
+                <IconShieldCheck className="h-4 w-4 text-violet-300" />
               </span>
 
               <div>
@@ -67,12 +60,12 @@ export const Footer: React.FC = () => {
             {/* Platform principles */}
             <div className="flex flex-wrap gap-4 pt-1 text-xs text-[#9287A8]">
               <span className="inline-flex items-center gap-1.5">
-                <LockKeyhole className="h-3.5 w-3.5 text-violet-300" />
+                <IconLockKeyhole className="h-3.5 w-3.5 text-violet-300" />
                 Role-aware access
               </span>
 
               <span className="inline-flex items-center gap-1.5">
-                <Activity className="h-3.5 w-3.5 text-violet-300" />
+                <IconActivity className="h-3.5 w-3.5 text-violet-300" />
                 Explainable signals
               </span>
             </div>
@@ -91,7 +84,7 @@ export const Footer: React.FC = () => {
                   className="group inline-flex items-center gap-1 transition-colors hover:text-violet-200"
                 >
                   Workspace Overview
-                  <ArrowUpRight className="h-3 w-3 opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-100" />
+                  <IconArrowUpRight className="h-3 w-3 opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-100" />
                 </a>
               </li>
 
@@ -101,7 +94,7 @@ export const Footer: React.FC = () => {
                   className="group inline-flex items-center gap-1 transition-colors hover:text-violet-200"
                 >
                   Platform Features
-                  <ArrowUpRight className="h-3 w-3 opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-100" />
+                  <IconArrowUpRight className="h-3 w-3 opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-100" />
                 </a>
               </li>
 
@@ -183,7 +176,7 @@ export const Footer: React.FC = () => {
           <div className="lg:col-span-3">
             <div className="rounded-2xl border border-violet-200/10 bg-gradient-to-br from-[#211638] to-[#171025] p-5 sm:p-6">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-violet-300/15 bg-violet-400/10 text-violet-300">
-                <ArrowRight className="h-5 w-5" />
+                <IconArrowRight className="h-5 w-5" />
               </div>
 
               <h3 className="mt-4 text-lg font-semibold tracking-tight text-white">
@@ -200,7 +193,7 @@ export const Footer: React.FC = () => {
                   className="group inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-400 to-[#C4B5FD] px-4 py-3 text-sm font-bold text-[#211638] shadow-[0_6px_24px_rgba(139,92,246,.15)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(139,92,246,.3)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-300"
                 >
                   Get started free
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  <IconArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </Link>
 
                 <Link
@@ -208,7 +201,7 @@ export const Footer: React.FC = () => {
                   className="inline-flex items-center justify-center gap-2 rounded-xl border border-violet-200/15 bg-white/[0.025] px-4 py-3 text-sm font-semibold text-[#E9DFFF] transition-colors hover:border-violet-300/30 hover:bg-violet-300/[0.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-300"
                 >
                   Sign in to workspace
-                  <ArrowUpRight className="h-4 w-4" />
+                  <IconArrowUpRight className="h-4 w-4" />
                 </Link>
               </div>
             </div>
@@ -232,7 +225,7 @@ export const Footer: React.FC = () => {
 
             <p className="flex flex-wrap items-center justify-center gap-1.5 text-[11px] text-[#756987] sm:justify-start">
               Built for smarter project delivery
-              <Heart className="h-3 w-3 fill-violet-400/50 text-violet-300" />
+              <IconHeart className="h-3 w-3 fill-violet-400/50 text-violet-300" />
               with responsible AI.
             </p>
           </div>

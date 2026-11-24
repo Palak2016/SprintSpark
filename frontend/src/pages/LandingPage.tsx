@@ -2,33 +2,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import {
-  MdInsights as Activity,
-  MdWarningAmber as AlertTriangle,
-  MdArrowDownward as ArrowDownRight,
-  MdArrowForward as ArrowRight,
-  MdArrowOutward as ArrowUpRight,
-  MdCalendarMonth as CalendarDays,
-  MdCheckCircle as CheckCircle2,
-  MdExpandMore as ChevronDown,
-  MdSchedule as Clock3,
-  MdExplore as Compass,
-  MdStorage as Database,
-  MdFactCheck as ClipboardCheck,
-  MdViewKanban as FolderKanban,
-  MdLayers as Layers3,
-  MdLock as LockKeyhole,
-  MdArrowOutward as MoveUpRight,
-  MdVerifiedUser as ShieldCheck,
-  MdGroup as Users,
-  MdAccountTree as Workflow,
-  MdBolt as Zap,
-  MdInsights as ChartNoAxesCombined,
-  MdHelp as CircleHelp,
-  MdSpeed as Gauge,
-  MdMenu as Menu,
-  MdClose as X
-} from 'react-icons/md';
+import { IconLandingActivity, IconLandingAlertTriangle, IconLandingArrowDownRight, IconLandingArrowRight, IconLandingCalendarDays, IconLandingChallengeBlockers, IconLandingChallengePlanning, IconLandingChallengeVisibility, IconLandingChartNoAxesCombined, IconLandingCheckCircle2, IconLandingChevronDown, IconLandingCircleHelp, IconLandingClock3, IconLandingCompass, IconLandingDatabase, IconLandingDemoApproval, IconLandingExampleRecovery, IconLandingExampleRisk, IconLandingFeatureRecovery, IconLandingFolderKanban, IconLandingGauge, IconLandingHeroApproval, IconLandingHeroEvidence, IconLandingMoveUpRight, IconLandingPreviewRecovery, IconLandingPreviewRisk, IconLandingPreviewSignal, IconLandingPreviewSignalReady, IconLandingTrustAccess, IconLandingTrustApproval, IconLandingTrustData, IconLandingTrustDataQuality, IconLandingTrustDesign, IconLandingTrustPeople, IconLandingTrustSignals, IconLandingTrustValidation, IconLandingTrustWorkflows, IconLandingUsers, IconLandingWorkflowEvidence, IconLandingWorkflowRecovery, IconLandingZap } from '../icons';
 
 import { Navbar } from '../components/common/Navbar';
 import { Footer } from '../components/common/Footer';
@@ -56,49 +30,49 @@ const reveal = {
 
 const features = [
   {
-    icon: FolderKanban,
+    icon: IconLandingFolderKanban,
     title: 'Intelligent workspace',
     description: 'Manage projects, milestones, priorities, deadlines, and dependencies in one connected workspace.',
     label: 'PROJECT VISIBILITY',
   },
   {
-    icon: AlertTriangle,
+    icon: IconLandingAlertTriangle,
     title: 'Explainable risk intelligence',
     description: 'Identify blockers and schedule pressure with evidence your team can inspect.',
     label: 'EVIDENCE-BACKED ALERTS',
   },
   {
-    icon: ClipboardCheck,
+    icon: IconLandingFeatureRecovery,
     title: 'AI recovery planner',
     description: 'Explore recovery proposals with clear reasoning, assumptions, and suggested actions.',
     label: 'AI-ASSISTED PLANNING',
   },
   {
-    icon: CalendarDays,
+    icon: IconLandingCalendarDays,
     title: 'Leave-aware capacity',
     description: 'Compare workload with approved leave to uncover capacity conflicts before delivery suffers.',
     label: 'TEAM AVAILABILITY',
   },
   {
-    icon: Clock3,
+    icon: IconLandingClock3,
     title: 'Progress and work logs',
     description: 'Keep task updates, blockers, work logs, and progress visible throughout execution.',
     label: 'LIVE WORK CONTEXT',
   },
   {
-    icon: Activity,
+    icon: IconLandingActivity,
     title: 'Decision audit trail',
     description: 'Track approvals and project changes so important actions remain traceable.',
     label: 'ACCOUNTABILITY',
   },
   {
-    icon: Users,
+    icon: IconLandingUsers,
     title: 'Role-based workspaces',
     description: 'Give managers project oversight while employees focus on their own tasks.',
     label: 'ROLE-AWARE ACCESS',
   },
   {
-    icon: Compass,
+    icon: IconLandingCompass,
     title: 'Guided decision-making',
     description: 'Explore solutions with AI while keeping consequential decisions under human control.',
     label: 'HUMAN IN THE LOOP',
@@ -106,11 +80,11 @@ const features = [
 ];
 
 const workflow = [
-  { icon: Database, title: 'Capture project reality', description: 'Collect tasks, dependencies, progress, blockers, and team availability.' },
-  { icon: ChartNoAxesCombined, title: 'Evaluate delivery risk', description: 'Identify schedule pressure and potential capacity conflicts.' },
-  { icon: ShieldCheck, title: 'Understand the evidence', description: 'Inspect the project data behind every important risk signal.' },
-  { icon: ClipboardCheck, title: 'Explore recovery options', description: 'Generate possible interventions and explain their trade-offs.' },
-  { icon: CheckCircle2, title: 'Review and approve', description: 'Let authorized managers review changes before they are applied.' },
+  { icon: IconLandingDatabase, title: 'Capture project reality', description: 'Collect tasks, dependencies, progress, blockers, and team availability.' },
+  { icon: IconLandingChartNoAxesCombined, title: 'Evaluate delivery risk', description: 'Identify schedule pressure and potential capacity conflicts.' },
+  { icon: IconLandingWorkflowEvidence, title: 'Understand the evidence', description: 'Inspect the project data behind every important risk signal.' },
+  { icon: IconLandingWorkflowRecovery, title: 'Explore recovery options', description: 'Generate possible interventions and explain their trade-offs.' },
+  { icon: IconLandingCheckCircle2, title: 'Review and approve', description: 'Let authorized managers review changes before they are applied.' },
 ];
 
 const faqs = [
@@ -343,7 +317,7 @@ function DashboardMockup() {
                   transition={{ duration: 2.8, repeat: Infinity }}
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-rose-400/10"
                 >
-                  <AlertTriangle className="h-4 w-4 text-rose-300" />
+                  <IconLandingPreviewRisk className="h-4 w-4 text-rose-300" />
                 </motion.div>
                 <div>
                   <p className="text-sm font-semibold text-rose-100">Delivery risk detected</p>
@@ -368,7 +342,7 @@ function DashboardMockup() {
                   animate={reduceMotion ? undefined : { rotate: 360 }}
                   transition={{ duration: 12, repeat: Infinity, ease: 'linear' }}
                 >
-                  <ClipboardCheck className="h-5 w-5 text-violet-300" />
+                  <IconLandingPreviewRecovery className="h-5 w-5 text-violet-300" />
                 </motion.div>
                 <p className="text-sm font-semibold text-white">AI recovery proposal</p>
                 <span className="ml-auto rounded-full border border-violet-300/20 px-2 py-1 text-[9px] text-violet-200">DRAFT</span>
@@ -382,7 +356,7 @@ function DashboardMockup() {
                   to="/login"
                   className="group inline-flex items-center justify-center gap-2 rounded-lg bg-[#E9DFFF] px-3 py-2 text-xs font-bold text-[#211638] transition hover:bg-white"
                 >
-                  Review proposal <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
+                  Review proposal <IconLandingArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
                 </Link>
               </div>
             </div>
@@ -400,13 +374,13 @@ function DashboardMockup() {
         <div className="rounded-xl border border-violet-200/20 bg-[#211638]/95 p-3 shadow-xl shadow-black/30 backdrop-blur-xl">
           <div className="flex items-center gap-2">
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-400/15">
-              <Activity className="h-4 w-4 text-violet-300" />
+              <IconLandingPreviewSignal className="h-4 w-4 text-violet-300" />
             </span>
             <div>
               <p className="text-[10px] font-semibold text-white">AI insight</p>
               <p className="text-[9px] text-[#B7ADC9]">Blocker identified</p>
             </div>
-            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-300" />
+            <IconLandingPreviewSignalReady className="h-3.5 w-3.5 text-emerald-300" />
           </div>
         </div>
       </FloatingCard>
@@ -415,7 +389,7 @@ function DashboardMockup() {
         <div className="rounded-xl border border-violet-200/20 bg-[#211638]/95 p-3 shadow-xl shadow-black/30 backdrop-blur-xl">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-400/10">
-              <Gauge className="h-4 w-4 text-emerald-300" />
+              <IconLandingGauge className="h-4 w-4 text-emerald-300" />
             </div>
             <div>
               <p className="text-xs font-semibold text-white">Project health</p>
@@ -487,20 +461,20 @@ export const LandingPage = () => {
                   className="absolute inset-y-0 w-1/3 skew-x-[-25deg] bg-gradient-to-r from-transparent via-white/35 to-transparent"
                 />
                 <span className="relative">{user ? 'Go to workspace' : 'Get started free'}</span>
-                <ArrowRight className="relative h-4 w-4 transition-transform group-hover:translate-x-1" />
+                <IconLandingArrowRight className="relative h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>
               <a
                 href="#preview"
                 className="group inline-flex items-center justify-center gap-2 rounded-xl border border-violet-200/20 bg-white/[0.035] px-6 py-3.5 text-sm font-semibold text-white backdrop-blur-sm transition duration-300 hover:-translate-y-1 hover:border-violet-300/50 hover:bg-violet-300/[0.08]"
               >
                 Explore the platform
-                <ArrowDownRight className="h-4 w-4 text-violet-300 transition-transform group-hover:translate-x-1 group-hover:translate-y-1" />
+                <IconLandingArrowDownRight className="h-4 w-4 text-violet-300 transition-transform group-hover:translate-x-1 group-hover:translate-y-1" />
               </a>
             </div>
 
             <div className="mt-8 flex flex-wrap gap-x-5 gap-y-3 text-sm text-[#B7ADC9]">
-              <span className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-violet-300" /> Explainable risk signals</span>
-              <span className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-violet-300" /> Manager-approved actions</span>
+              <span className="flex items-center gap-2"><IconLandingHeroEvidence className="h-4 w-4 text-violet-300" /> Explainable risk signals</span>
+              <span className="flex items-center gap-2"><IconLandingHeroApproval className="h-4 w-4 text-violet-300" /> Manager-approved actions</span>
             </div>
 
             <div className="mt-10 grid max-w-lg grid-cols-3 gap-4 border-t border-white/10 pt-6">
@@ -527,9 +501,9 @@ export const LandingPage = () => {
 
         <div className="mx-auto max-w-7xl px-5 pb-10 sm:px-8">
           <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4 border-t border-white/[0.07] pt-7 text-xs text-[#827795] sm:justify-between">
-            <span className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-violet-300" /> Explainable by design</span>
-            <span className="flex items-center gap-2"><Users className="h-4 w-4 text-violet-300" /> People stay in control</span>
-            <span className="flex items-center gap-2"><Database className="h-4 w-4 text-violet-300" /> Grounded in project data</span>
+            <span className="flex items-center gap-2"><IconLandingTrustDesign className="h-4 w-4 text-violet-300" /> Explainable by design</span>
+            <span className="flex items-center gap-2"><IconLandingTrustPeople className="h-4 w-4 text-violet-300" /> People stay in control</span>
+            <span className="flex items-center gap-2"><IconLandingTrustData className="h-4 w-4 text-violet-300" /> Grounded in project data</span>
           </div>
         </div>
       </section>
@@ -546,9 +520,9 @@ export const LandingPage = () => {
 
           <div className="grid gap-4 md:grid-cols-3">
             {[
-              { icon: Layers3, number: '01', title: 'Fragmented visibility', text: 'Task trackers, leave calendars, and progress notes often live separately, hiding the full delivery picture.' },
-              { icon: AlertTriangle, number: '02', title: 'Late blocker discovery', text: 'A blocked prerequisite can stall downstream work before the delay reaches a milestone.' },
-              { icon: Compass, number: '03', title: 'Slow recovery planning', text: 'Managers need to compare dependencies, workloads, and trade-offs before deciding how to recover.' },
+              { icon: IconLandingChallengeVisibility, number: '01', title: 'Fragmented visibility', text: 'Task trackers, leave calendars, and progress notes often live separately, hiding the full delivery picture.' },
+              { icon: IconLandingChallengeBlockers, number: '02', title: 'Late blocker discovery', text: 'A blocked prerequisite can stall downstream work before the delay reaches a milestone.' },
+              { icon: IconLandingChallengePlanning, number: '03', title: 'Slow recovery planning', text: 'Managers need to compare dependencies, workloads, and trade-offs before deciding how to recover.' },
             ].map((item, i) => {
               const Icon = item.icon;
               return (
@@ -646,7 +620,7 @@ export const LandingPage = () => {
                     <h3 className="mt-5 font-semibold text-white">{feature.title}</h3>
                     <p className="mt-2 flex-1 text-sm leading-7 text-[#B7ADC9]">{feature.description}</p>
                     <div className="mt-5 flex items-center gap-2 border-t border-white/[0.07] pt-4 text-[9px] font-bold tracking-[.12em] text-violet-300">
-                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      <IconLandingDemoApproval className="h-3.5 w-3.5" />
                       {feature.label}
                     </div>
                   </motion.article>
@@ -784,7 +758,7 @@ export const LandingPage = () => {
                 {activeTab === 'risk' && (
                   <div className="space-y-4">
                     <div className="flex items-start gap-3 rounded-xl border border-rose-300/20 bg-rose-400/[0.07] p-4">
-                      <AlertTriangle className="mt-1 h-5 w-5 shrink-0 text-rose-300" />
+                      <IconLandingExampleRisk className="mt-1 h-5 w-5 shrink-0 text-rose-300" />
                       <div>
                         <h3 className="font-semibold text-rose-100">High delivery risk · Sample score 88/100</h3>
                         <p className="mt-1 text-sm leading-6 text-[#B7ADC9]">This illustrative scenario contains signals that require manager review.</p>
@@ -810,7 +784,7 @@ export const LandingPage = () => {
                 {activeTab === 'recovery' && (
                   <div className="space-y-4">
                     <div className="rounded-xl border border-violet-300/20 bg-violet-400/[0.07] p-4">
-                      <div className="flex items-center gap-2 font-semibold text-violet-100"><ClipboardCheck className="h-5 w-5" /> Recovery proposal · Demo</div>
+                      <div className="flex items-center gap-2 font-semibold text-violet-100"><IconLandingExampleRecovery className="h-5 w-5" /> Recovery proposal · Demo</div>
                       <p className="mt-2 text-sm leading-6 text-[#B7ADC9]">Illustrative suggestions for a manager to review. This preview does not modify any task.</p>
                     </div>
                     {[
@@ -862,12 +836,12 @@ export const LandingPage = () => {
           />
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {[
-              { icon: LockKeyhole, title: 'Backend-enforced access', text: 'Authenticate requests and enforce role and project permissions on the server.' },
-              { icon: ShieldCheck, title: 'Validated AI proposals', text: 'Validate proposal schemas, task IDs, assignees, and constraints before review.' },
-              { icon: Users, title: 'Human approval gate', text: 'Require authorized approval before consequential schedule or assignment changes.' },
-              { icon: Activity, title: 'Transparent work signals', text: 'Use project progress and reported blockers rather than intrusive device surveillance.' },
-              { icon: Database, title: 'Missing-data awareness', text: 'Identify incomplete estimates and stale inputs instead of presenting unsupported predictions.' },
-              { icon: Workflow, title: 'Resilient workflows', text: 'Keep core project features independent of optional LLM services where possible.' },
+              { icon: IconLandingTrustAccess, title: 'Backend-enforced access', text: 'Authenticate requests and enforce role and project permissions on the server.' },
+              { icon: IconLandingTrustValidation, title: 'Validated AI proposals', text: 'Validate proposal schemas, task IDs, assignees, and constraints before review.' },
+              { icon: IconLandingTrustApproval, title: 'Human approval gate', text: 'Require authorized approval before consequential schedule or assignment changes.' },
+              { icon: IconLandingTrustSignals, title: 'Transparent work signals', text: 'Use project progress and reported blockers rather than intrusive device surveillance.' },
+              { icon: IconLandingTrustDataQuality, title: 'Missing-data awareness', text: 'Identify incomplete estimates and stale inputs instead of presenting unsupported predictions.' },
+              { icon: IconLandingTrustWorkflows, title: 'Resilient workflows', text: 'Keep core project features independent of optional LLM services where possible.' },
             ].map((item, i) => {
               const Icon = item.icon;
               return (
@@ -889,7 +863,7 @@ export const LandingPage = () => {
         <div className="mx-auto max-w-4xl px-5 sm:px-8">
           <Reveal className="mb-10 text-center">
             <motion.div whileHover={reduceMotion ? undefined : { rotate: 12, scale: 1.05 }} className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl border border-violet-200/15 bg-[#211638] text-violet-300">
-              <CircleHelp className="h-5 w-5" />
+              <IconLandingCircleHelp className="h-5 w-5" />
             </motion.div>
             <p className="mt-4 text-xs font-bold uppercase tracking-[.2em] text-violet-300">Frequently asked questions</p>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">Everything you need to know.</h2>
@@ -911,7 +885,7 @@ export const LandingPage = () => {
                   >
                     <span>{faq.question}</span>
                     <motion.span animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: .25 }} className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${isOpen ? 'bg-violet-400/15 text-violet-200' : 'bg-white/[0.04] text-[#9287A8]'}`}>
-                      <ChevronDown className="h-4 w-4" />
+                      <IconLandingChevronDown className="h-4 w-4" />
                     </motion.span>
                   </button>
                   <AnimatePresence initial={false}>
@@ -949,7 +923,7 @@ export const LandingPage = () => {
             transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
             className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-violet-200/20 bg-violet-400/10 text-violet-300 shadow-[0_0_35px_rgba(139,92,246,.18)]"
           >
-            <Zap className="h-6 w-6" />
+            <IconLandingZap className="h-6 w-6" />
           </motion.div>
 
           <p className="mt-6 text-xs font-bold uppercase tracking-[.22em] text-violet-300">Ready to move forward?</p>
@@ -962,11 +936,11 @@ export const LandingPage = () => {
           </p>
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
             <Link to={user ? workspacePath : '/signup'} className="group inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-400 to-[#C4B5FD] px-7 py-3.5 text-sm font-bold text-[#211638] shadow-[0_8px_35px_rgba(139,92,246,.2)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_12px_45px_rgba(139,92,246,.35)]">
-              {user ? 'Go to workspace' : 'Get started free'} <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              {user ? 'Go to workspace' : 'Get started free'} <IconLandingArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
             {!user && (
               <Link to="/login" className="inline-flex items-center justify-center gap-2 rounded-xl border border-violet-200/20 bg-white/[0.035] px-7 py-3.5 text-sm font-semibold text-white transition hover:-translate-y-1 hover:border-violet-300/40 hover:bg-violet-300/[0.06]">
-                Sign in <MoveUpRight className="h-4 w-4" />
+                Sign in <IconLandingMoveUpRight className="h-4 w-4" />
               </Link>
             )}
           </div>

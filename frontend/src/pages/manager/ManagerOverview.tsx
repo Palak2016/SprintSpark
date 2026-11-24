@@ -19,18 +19,7 @@ import { RecoveryReviewModal } from '../../components/risk/RecoveryReviewModal';
 import { ProjectAnalyticsPanel } from '../../components/analytics/ProjectAnalyticsPanel';
 import { ProvenanceBadge } from '../../components/risk/RecoveryInsights';
 import { formatIndianTime } from '../../utils/date';
-import {
-  MdCheckBox as CheckSquare,
-  MdReportProblem as AlertOctagon,
-  MdCalendarMonth as CalendarDays,
-  MdFactCheck as ClipboardCheck,
-  MdArrowForward as ArrowRight,
-  MdAccessTime as Clock,
-  MdArrowOutward as ArrowUpRight,
-  MdRefresh as RefreshCw,
-  MdBusiness as Building2,
-  MdGroups as UsersRound
-} from 'react-icons/md';
+import { IconManagerAlertOctagon, IconManagerArrowRight, IconManagerArrowUpRight, IconManagerBuilding2, IconManagerCalendarDays, IconManagerCheckSquare, IconManagerClipboardCheck, IconManagerClock, IconManagerUsersRound, IconSpinner } from '../../icons';
 
 export const ManagerOverview: React.FC = () => {
   const navigate = useNavigate();
@@ -239,7 +228,7 @@ export const ManagerOverview: React.FC = () => {
           </p>
 
           <p className="mt-2 flex items-center gap-2 text-xs text-[#A99DBD]">
-            <RefreshCw
+            <IconSpinner
               className={`h-3 w-3 ${
                 isLoading ? 'animate-spin' : ''
               }`}
@@ -265,7 +254,7 @@ export const ManagerOverview: React.FC = () => {
               title="Inspect Risk Details"
             >
               Details
-              <ArrowUpRight className="h-4 w-4" />
+              <IconManagerArrowUpRight className="h-4 w-4" />
             </Link>
           </div>
         )}
@@ -275,7 +264,7 @@ export const ManagerOverview: React.FC = () => {
         <section className="flex flex-col justify-between gap-4 rounded-2xl border border-violet-400/20 bg-violet-500/[0.06] p-5 sm:flex-row sm:items-center">
           <div>
             <div className="flex items-center gap-2 text-sm font-bold text-white">
-              <Building2 className="h-4 w-4 text-violet-300" />
+              <IconManagerBuilding2 className="h-4 w-4 text-violet-300" />
               {company?.name ?? 'Company workspace'}
             </div>
             {company ? (
@@ -289,7 +278,7 @@ export const ManagerOverview: React.FC = () => {
                     className="mt-3 inline-flex items-center gap-2 rounded-lg border border-violet-300/25 bg-violet-400/10 px-3.5 py-2 text-xs font-semibold text-violet-100 transition hover:bg-violet-400/20"
                   >
                     Open Admin console
-                    <ArrowRight className="h-3.5 w-3.5" />
+                    <IconManagerArrowRight className="h-3.5 w-3.5" />
                   </Link>
                 </>
               ) : (
@@ -305,7 +294,7 @@ export const ManagerOverview: React.FC = () => {
           </div>
           {company && (
             <div className="flex items-center gap-2 text-xs text-[#D1C7E0]">
-              <UsersRound className="h-4 w-4 text-violet-300" />
+              <IconManagerUsersRound className="h-4 w-4 text-violet-300" />
               {company.employee_count} employees · {company.manager_count} managers
             </div>
           )}
@@ -317,7 +306,7 @@ export const ManagerOverview: React.FC = () => {
         <section className="manager-recovery-proposal flex flex-col justify-between gap-5 rounded-2xl border border-violet-400/20 bg-gradient-to-r from-[#291849] via-[#211638] to-[#19112B] p-5 shadow-xl md:flex-row md:items-center">
           <div className="flex items-start gap-4">
             <div className="mt-0.5 rounded-xl border border-violet-300/20 bg-violet-500/15 p-3">
-              <ClipboardCheck className="h-6 w-6 text-violet-300" />
+              <IconManagerClipboardCheck className="h-6 w-6 text-violet-300" />
             </div>
 
             <div className="min-w-0">
@@ -346,7 +335,7 @@ export const ManagerOverview: React.FC = () => {
             className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-violet-300/30 bg-violet-500 px-5 py-3 text-sm font-bold text-white shadow-md transition-all hover:bg-violet-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300"
           >
             Review proposal
-            <ArrowRight className="h-4 w-4" />
+            <IconManagerArrowRight className="h-4 w-4" />
           </button>
         </section>
       )}
@@ -357,7 +346,7 @@ export const ManagerOverview: React.FC = () => {
           title="Overall Completion"
           value={`${completionPct}%`}
           subtitle="Average progress reported across tasks"
-          icon={CheckSquare}
+          icon={IconManagerCheckSquare}
           variant="forest"
           action={{
             label: 'View Tasks',
@@ -373,7 +362,7 @@ export const ManagerOverview: React.FC = () => {
               ? 'Impediments halting progress'
               : 'No active work blockers'
           }
-          icon={AlertOctagon}
+          icon={IconManagerAlertOctagon}
           variant={blockedTasks > 0 ? 'danger' : 'success'}
           action={{
             label: 'Inspect',
@@ -389,7 +378,7 @@ export const ManagerOverview: React.FC = () => {
               ? 'Awaiting manager review'
               : 'No pending time off'
           }
-          icon={CalendarDays}
+          icon={IconManagerCalendarDays}
           variant={
             pendingLeaves.length > 0 ? 'warning' : 'default'
           }
@@ -407,7 +396,7 @@ export const ManagerOverview: React.FC = () => {
               ? 'Past scheduled due date'
               : 'All tasks within schedule'
           }
-          icon={Clock}
+          icon={IconManagerClock}
           variant={overdueTasks > 0 ? 'danger' : 'success'}
           action={{
             label: 'Reschedule',
@@ -439,7 +428,7 @@ export const ManagerOverview: React.FC = () => {
               className="inline-flex items-center gap-2 rounded-lg border border-violet-400/30 bg-violet-500/10 px-3 py-2 text-sm font-bold text-violet-200 transition-all hover:border-violet-300/60 hover:bg-violet-500/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
             >
               View All Tasks
-              <ArrowRight className="h-4 w-4" />
+              <IconManagerArrowRight className="h-4 w-4" />
             </Link>
           </div>
 
@@ -450,7 +439,7 @@ export const ManagerOverview: React.FC = () => {
               </p>
             ) : tasks.length === 0 ? (
               <div className="p-8 text-center">
-                <CheckSquare className="mx-auto h-8 w-8 text-violet-300" />
+                <IconManagerCheckSquare className="mx-auto h-8 w-8 text-violet-300" />
 
                 <p className="mt-3 text-sm font-semibold text-white">
                   No tasks found
@@ -571,7 +560,7 @@ export const ManagerOverview: React.FC = () => {
               className="inline-flex items-center gap-2 rounded-lg border border-violet-400/30 bg-violet-500/10 px-3 py-2 text-sm font-bold text-violet-200 transition-all hover:border-violet-300/60 hover:bg-violet-500/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
             >
               Full Audit Trail
-              <ArrowUpRight className="h-4 w-4" />
+              <IconManagerArrowUpRight className="h-4 w-4" />
             </Link>
           </div>
 

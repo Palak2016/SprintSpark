@@ -3,18 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import { WorkLog, Task } from '../../types';
-import {
-  MdAccessTime as Clock,
-  MdAdd as Plus,
-  MdCalendarMonth as CalendarDays,
-  MdDescription as FileText,
-  MdCheckCircle as CheckCircle2,
-  MdAssignment as ClipboardList,
-  MdTimer as Timer,
-  MdClose as X,
-  MdRefresh as LoaderCircle,
-  MdDownload as Download
-} from 'react-icons/md';
+import { IconCalendarDays, IconCheckCircle2, IconClipboardList, IconClock, IconDownload, IconFileText, IconPlus, IconSpinner, IconTimer, IconX } from '../../icons';
 import { Modal } from '../../components/common/Modal';
 import {
   formatIndianDate,
@@ -187,9 +176,9 @@ export const WorkLogsView: React.FC = () => {
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-[#19112B] px-4 py-3 text-sm font-semibold text-[#D5CBE5] transition-all hover:border-violet-300/40 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isDownloading ? (
-                <LoaderCircle className="h-4 w-4 animate-spin" />
+                <IconSpinner className="h-4 w-4 animate-spin" />
               ) : (
-                <Download className="h-4 w-4" />
+                <IconDownload className="h-4 w-4" />
               )}
               {isDownloading ? 'Preparing…' : 'Download Excel'}
             </button>
@@ -200,7 +189,7 @@ export const WorkLogsView: React.FC = () => {
               disabled={myTasks.length === 0}
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-violet-400/30 bg-violet-500/15 px-4 py-3 text-sm font-semibold text-violet-200 transition-all hover:border-violet-300/60 hover:bg-violet-500/25 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <Plus className="h-4 w-4" />
+              <IconPlus className="h-4 w-4" />
               Log Work Session
             </button>
           </div>
@@ -235,7 +224,7 @@ export const WorkLogsView: React.FC = () => {
             </div>
 
             <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-violet-400/20 bg-violet-500/10">
-              <Timer className="h-5 w-5 text-violet-300" />
+              <IconTimer className="h-5 w-5 text-violet-300" />
             </div>
           </div>
         </div>
@@ -257,7 +246,7 @@ export const WorkLogsView: React.FC = () => {
             </div>
 
             <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-sky-400/20 bg-sky-500/10">
-              <ClipboardList className="h-5 w-5 text-sky-300" />
+              <IconClipboardList className="h-5 w-5 text-sky-300" />
             </div>
           </div>
         </div>
@@ -279,7 +268,7 @@ export const WorkLogsView: React.FC = () => {
             </div>
 
             <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-emerald-400/20 bg-emerald-500/10">
-              <CheckCircle2 className="h-5 w-5 text-emerald-300" />
+              <IconCheckCircle2 className="h-5 w-5 text-emerald-300" />
             </div>
           </div>
         </div>
@@ -308,7 +297,7 @@ export const WorkLogsView: React.FC = () => {
         <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#19112B] shadow-[0_10px_35px_rgba(0,0,0,0.15)]">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center gap-3 p-12">
-              <LoaderCircle className="h-6 w-6 animate-spin text-violet-300" />
+              <IconSpinner className="h-6 w-6 animate-spin text-violet-300" />
               <p className="text-sm text-[#B7ADC9]">
                 Loading your work logs...
               </p>
@@ -316,7 +305,7 @@ export const WorkLogsView: React.FC = () => {
           ) : logs.length === 0 ? (
             <div className="p-10 text-center sm:p-14">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-violet-400/20 bg-violet-500/10">
-                <FileText className="h-6 w-6 text-violet-300" />
+                <IconFileText className="h-6 w-6 text-violet-300" />
               </div>
 
               <h3 className="mt-4 text-sm font-semibold text-white">
@@ -334,7 +323,7 @@ export const WorkLogsView: React.FC = () => {
                   onClick={() => setIsLogModalOpen(true)}
                   className="mt-5 inline-flex items-center gap-2 rounded-xl border border-violet-400/30 bg-violet-500/10 px-4 py-2.5 text-sm font-semibold text-violet-200 transition-colors hover:bg-violet-500/20 hover:text-white"
                 >
-                  <Plus className="h-4 w-4" />
+                  <IconPlus className="h-4 w-4" />
                   Record First Session
                 </button>
               )}
@@ -364,7 +353,7 @@ export const WorkLogsView: React.FC = () => {
                         <td className="whitespace-nowrap px-5 py-4">
                           <div className="flex items-center gap-2.5">
                             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/10">
-                              <CalendarDays className="h-4 w-4 text-violet-300" />
+                              <IconCalendarDays className="h-4 w-4 text-violet-300" />
                             </div>
 
                             <span className="font-medium text-white">
@@ -387,7 +376,7 @@ export const WorkLogsView: React.FC = () => {
 
                         <td className="whitespace-nowrap px-5 py-4">
                           <span className="inline-flex items-center gap-1.5 rounded-lg border border-sky-400/20 bg-sky-500/10 px-2.5 py-1.5 font-bold text-sky-200">
-                            <Clock className="h-3.5 w-3.5" />
+                            <IconClock className="h-3.5 w-3.5" />
                             {log.hours_spent}h
                           </span>
                         </td>
@@ -426,7 +415,7 @@ export const WorkLogsView: React.FC = () => {
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex min-w-0 items-start gap-3">
                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-violet-400/20 bg-violet-500/10">
-                          <FileText className="h-5 w-5 text-violet-300" />
+                          <IconFileText className="h-5 w-5 text-violet-300" />
                         </div>
 
                         <div className="min-w-0">
@@ -462,7 +451,7 @@ export const WorkLogsView: React.FC = () => {
                     </div>
 
                     <div className="mt-3 flex items-center gap-2 text-xs text-[#A99DBD]">
-                      <Clock className="h-3.5 w-3.5 text-violet-300" />
+                      <IconClock className="h-3.5 w-3.5 text-violet-300" />
                       Logged at {formatIndianTime(log.created_at)} IST
                     </div>
                   </article>
@@ -531,7 +520,7 @@ export const WorkLogsView: React.FC = () => {
               </label>
 
               <div className="relative">
-                <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-300" />
+                <IconCalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-300" />
 
                 <input
                   type="date"
@@ -549,7 +538,7 @@ export const WorkLogsView: React.FC = () => {
               </label>
 
               <div className="relative">
-                <Clock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-300" />
+                <IconClock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-300" />
 
                 <input
                   type="number"
@@ -592,7 +581,7 @@ export const WorkLogsView: React.FC = () => {
               onClick={() => setIsLogModalOpen(false)}
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-[#B7ADC9] transition-colors hover:bg-white/[0.08] hover:text-white disabled:opacity-50"
             >
-              <X className="h-4 w-4" />
+              <IconX className="h-4 w-4" />
               Cancel
             </button>
 
@@ -603,12 +592,12 @@ export const WorkLogsView: React.FC = () => {
             >
               {isSubmitting ? (
                 <>
-                  <LoaderCircle className="h-4 w-4 animate-spin" />
+                  <IconSpinner className="h-4 w-4 animate-spin" />
                   Recording...
                 </>
               ) : (
                 <>
-                  <Plus className="h-4 w-4" />
+                  <IconPlus className="h-4 w-4" />
                   Record Work Log
                 </>
               )}

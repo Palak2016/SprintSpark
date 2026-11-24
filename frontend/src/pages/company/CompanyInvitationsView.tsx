@@ -1,10 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import {
-  MdCheck as Check,
-  MdContentPaste as Clipboard,
-  MdSend as Send,
-  MdCancel as XCircle
-} from 'react-icons/md';
+import { IconCheck, IconClipboard, IconSend, IconXCircle } from '../../icons';
 import { api } from '../../services/api';
 import { CompanyInvitation, CompanyInvitationCreated } from '../../types';
 import {
@@ -127,7 +122,7 @@ export const CompanyInvitationsView: React.FC = () => {
             </select>
           </label>
           <button type="submit" className={buttonClass} disabled={isSending}>
-            <Send className="h-3.5 w-3.5" /> {isSending ? 'Sending...' : 'Send invitation'}
+            <IconSend className="h-3.5 w-3.5" /> {isSending ? 'Sending...' : 'Send invitation'}
           </button>
         </form>
         {created && (
@@ -143,8 +138,8 @@ export const CompanyInvitationsView: React.FC = () => {
               <code className="min-w-0 flex-1 break-all rounded-lg border border-white/10 bg-black/20 p-2 text-[11px] text-[#D1C7E0]">
                 {created.invite_url}
               </code>
-              <button type="button" onClick={copyLink} className={buttonClass} aria-label="Copy invitation link">
-                {copied ? <Check className="h-3.5 w-3.5" /> : <Clipboard className="h-3.5 w-3.5" />}
+              <button type="button" onClick={copyLink} className={buttonClass} aria-label="Copy invitation link" title="Copy invitation link">
+                {copied ? <IconCheck className="h-3.5 w-3.5" /> : <IconClipboard className="h-3.5 w-3.5" />}
               </button>
             </div>
             <p className="text-[11px]">This link is shown only once. Anyone with it can sign up only as {created.email}.</p>
@@ -179,7 +174,7 @@ export const CompanyInvitationsView: React.FC = () => {
                       disabled={busyId === inv.id}
                       onClick={() => void revoke(inv)}
                     >
-                      <XCircle className="h-3.5 w-3.5" /> Revoke
+                      <IconXCircle className="h-3.5 w-3.5" /> Revoke
                     </button>
                   )}
                 </li>

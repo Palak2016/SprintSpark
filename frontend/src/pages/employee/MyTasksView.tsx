@@ -7,24 +7,7 @@ import type { Task } from '../../types';
 import { BlockerModal } from '../../components/tasks/BlockerModal';
 import { Modal } from '../../components/common/Modal';
 import { formatIndianDate } from '../../utils/date';
-import {
-  MdCheckBox as CheckSquare,
-  MdAccessTime as Clock,
-  MdReportProblem as AlertOctagon,
-  MdCheckCircle as CheckCircle2,
-  MdCalendarMonth as CalendarDays,
-  MdLink as Link2,
-  MdSend as Send,
-  MdEdit as Edit3,
-  MdPlayCircle as PlayCircle,
-  MdRefresh as LoaderCircle,
-  MdError as AlertCircle,
-  MdRefresh as RefreshCw,
-  MdTimer as Timer,
-  MdGpsFixed as Target,
-  MdVerifiedUser as ShieldCheck,
-  MdDescription as FileText
-} from 'react-icons/md';
+import { IconAlertCircle, IconAlertOctagon, IconCalendarDays, IconCheck, IconCheckCircle2, IconCheckSquare, IconClock, IconEdit3, IconFileText, IconLink2, IconPlayCircle, IconRefresh, IconSend, IconShieldCheck, IconSpinner, IconTarget, IconTimer } from '../../icons';
 
 type TaskWithBlockerStatus = Task & {
   blocker_status?: 'OPEN' | 'RESOLVED' | null;
@@ -384,7 +367,7 @@ export const MyTasksView: React.FC = () => {
         <div>
           <div className="mb-2 flex items-center gap-2">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-violet-400/15 bg-violet-500/10">
-              <CheckSquare className="h-4 w-4 text-violet-300" />
+              <IconCheckSquare className="h-4 w-4 text-violet-300" />
             </div>
             <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-300">
               Personal Workspace
@@ -408,7 +391,7 @@ export const MyTasksView: React.FC = () => {
           disabled={isLoading}
           className={`${secondaryButtonClass} task-queue-refresh-button`}
         >
-          <RefreshCw
+          <IconRefresh
             className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`}
           />
           Refresh Tasks
@@ -422,7 +405,7 @@ export const MyTasksView: React.FC = () => {
           className="flex flex-col gap-3 rounded-2xl border border-rose-400/20 bg-rose-500/[0.07] p-4 sm:flex-row sm:items-center sm:justify-between"
         >
           <div className="flex items-start gap-3">
-            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-rose-300" />
+            <IconAlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-rose-300" />
             <div>
               <p className="text-sm font-semibold text-rose-200">
                 Unable to load tasks
@@ -445,7 +428,7 @@ export const MyTasksView: React.FC = () => {
 
       {isLoading ? (
         <div className="flex min-h-[260px] flex-col items-center justify-center rounded-2xl border border-white/[0.08] bg-[#19112B]">
-          <LoaderCircle className="h-8 w-8 animate-spin text-violet-300" />
+          <IconSpinner className="h-8 w-8 animate-spin text-violet-300" />
           <p className="mt-4 text-sm font-medium text-[#E5D9FF]">
             Loading your tasks...
           </p>
@@ -461,7 +444,7 @@ export const MyTasksView: React.FC = () => {
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs text-[#A99DBD]">Total Tasks</span>
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-violet-500/10">
-                  <CheckSquare className="h-4 w-4 text-violet-300" />
+                  <IconCheckSquare className="h-4 w-4 text-violet-300" />
                 </div>
               </div>
               <p className="mt-3 text-2xl font-bold text-[#FAF8FF]">
@@ -476,7 +459,7 @@ export const MyTasksView: React.FC = () => {
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs text-[#A99DBD]">Completed</span>
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500/10">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-300" />
+                  <IconCheckCircle2 className="h-4 w-4 text-emerald-300" />
                 </div>
               </div>
               <p className="mt-3 text-2xl font-bold text-emerald-300">
@@ -491,7 +474,7 @@ export const MyTasksView: React.FC = () => {
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs text-[#A99DBD]">In Progress</span>
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-500/10">
-                  <PlayCircle className="h-4 w-4 text-sky-300" />
+                  <IconPlayCircle className="h-4 w-4 text-sky-300" />
                 </div>
               </div>
               <p className="mt-3 text-2xl font-bold text-sky-300">
@@ -506,7 +489,7 @@ export const MyTasksView: React.FC = () => {
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs text-[#A99DBD]">Active Blockers</span>
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-500/10">
-                  <AlertOctagon className="h-4 w-4 text-rose-300" />
+                  <IconAlertOctagon className="h-4 w-4 text-rose-300" />
                 </div>
               </div>
               <p className="mt-3 text-2xl font-bold text-rose-300">
@@ -524,7 +507,7 @@ export const MyTasksView: React.FC = () => {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-violet-400/15 bg-violet-500/10">
-                    <Target className="h-5 w-5 text-violet-300" />
+                    <IconTarget className="h-5 w-5 text-violet-300" />
                   </div>
                   <div>
                     <h2 className="text-sm font-semibold text-[#FAF8FF]">
@@ -560,7 +543,7 @@ export const MyTasksView: React.FC = () => {
           {tasks.length === 0 ? (
             <div className="rounded-2xl border border-white/[0.08] bg-[#19112B] px-5 py-14 text-center">
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-violet-400/15 bg-violet-500/10">
-                <CheckSquare className="h-7 w-7 text-violet-300" />
+                <IconCheckSquare className="h-7 w-7 text-violet-300" />
               </div>
               <h3 className="mt-5 text-base font-semibold text-[#FAF8FF]">
                 {activeProject ? 'No Tasks Assigned' : 'No Project Selected'}
@@ -575,7 +558,7 @@ export const MyTasksView: React.FC = () => {
                 onClick={() => void loadMyTasks()}
                 className={`${secondaryButtonClass} mt-5`}
               >
-                <RefreshCw className="h-3.5 w-3.5" />
+                <IconCheck className="h-3.5 w-3.5" />
                 Check Again
               </button>
             </div>
@@ -642,7 +625,7 @@ export const MyTasksView: React.FC = () => {
 
                             {resolvedBlocker && (
                               <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold text-emerald-300">
-                                <ShieldCheck className="h-3 w-3" />
+                                <IconShieldCheck className="h-3 w-3" />
                                 ISSUE RESOLVED
                               </span>
                             )}
@@ -673,7 +656,7 @@ export const MyTasksView: React.FC = () => {
                                 : 'border-white/[0.07] bg-white/[0.03] text-[#B7ADC9]'
                             }`}
                           >
-                            <CalendarDays className="h-3 w-3" />
+                            <IconCalendarDays className="h-3 w-3" />
                             {isOverdue(task) ? 'Overdue · ' : 'Due '}
                             {formatDate(task.due_date)}
                           </span>
@@ -682,7 +665,7 @@ export const MyTasksView: React.FC = () => {
                         {activeBlocker && (
                           <div className="mt-4 rounded-xl border border-rose-400/20 bg-rose-500/[0.07] p-3">
                             <div className="flex items-start gap-2.5">
-                              <AlertOctagon className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
+                              <IconAlertOctagon className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
                               <div className="min-w-0">
                                 <p className="text-[10px] font-bold uppercase tracking-wider text-rose-300">
                                   Active Blocker
@@ -699,7 +682,7 @@ export const MyTasksView: React.FC = () => {
                         {resolvedBlocker && (
                           <div className="mt-4 rounded-xl border border-emerald-400/20 bg-emerald-500/[0.07] p-3">
                             <div className="flex items-start gap-2.5">
-                              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
+                              <IconCheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
                               <div className="min-w-0">
                                 <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">
                                   Issue Resolved
@@ -716,7 +699,7 @@ export const MyTasksView: React.FC = () => {
                         {task.dependencies &&
                           task.dependencies.length > 0 && (
                             <div className="mt-3 flex items-start gap-2 text-[11px] text-[#A99DBD]">
-                              <Link2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-violet-300" />
+                              <IconLink2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-violet-300" />
                               <span>
                                 {task.dependencies.length}{' '}
                                 {task.dependencies.length === 1
@@ -762,7 +745,7 @@ export const MyTasksView: React.FC = () => {
                           <div className="mt-4 rounded-xl border border-violet-400/20 bg-[#211833] p-4">
                             <div className="flex items-start gap-3">
                               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-violet-400/15 bg-violet-500/10">
-                                <FileText className="h-4 w-4 text-violet-300" />
+                                <IconFileText className="h-4 w-4 text-violet-300" />
                               </div>
 
                               <div className="min-w-0 flex-1">
@@ -786,7 +769,7 @@ export const MyTasksView: React.FC = () => {
                         <div className="mt-4 grid grid-cols-2 gap-3">
                           <div className="rounded-xl border border-white/[0.06] bg-[#130D21]/70 p-3">
                             <div className="flex items-center gap-1.5 text-[10px] text-[#807493]">
-                              <Timer className="h-3.5 w-3.5 text-violet-300" />
+                              <IconTimer className="h-3.5 w-3.5 text-violet-300" />
                               Time Logged
                             </div>
                             <p className="mt-1.5 text-sm font-semibold text-[#E5D9FF]">
@@ -799,7 +782,7 @@ export const MyTasksView: React.FC = () => {
 
                           <div className="rounded-xl border border-white/[0.06] bg-[#130D21]/70 p-3">
                             <div className="flex items-center gap-1.5 text-[10px] text-[#807493]">
-                              <Clock className="h-3.5 w-3.5 text-violet-300" />
+                              <IconClock className="h-3.5 w-3.5 text-violet-300" />
                               Estimated
                             </div>
                             <p className="mt-1.5 text-sm font-semibold text-[#E5D9FF]">
@@ -826,9 +809,9 @@ export const MyTasksView: React.FC = () => {
                           }`}
                         >
                           {resolvedBlocker ? (
-                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            <IconCheckCircle2 className="h-3.5 w-3.5" />
                           ) : (
-                            <AlertOctagon className="h-3.5 w-3.5" />
+                            <IconAlertOctagon className="h-3.5 w-3.5" />
                           )}
                           {resolvedBlocker
                             ? 'Issue Resolved'
@@ -843,7 +826,7 @@ export const MyTasksView: React.FC = () => {
                             onClick={() => handleOpenWorkLog(task)}
                             className={secondaryButtonClass}
                           >
-                            <Clock className="h-3.5 w-3.5" />
+                            <IconClock className="h-3.5 w-3.5" />
                             Log Time
                           </button>
                           <button
@@ -851,7 +834,7 @@ export const MyTasksView: React.FC = () => {
                             onClick={() => handleOpenProgress(task)}
                             className={primaryButtonClass}
                           >
-                            <Edit3 className="h-3.5 w-3.5" />
+                            <IconEdit3 className="h-3.5 w-3.5" />
                             Update
                           </button>
                         </div>
@@ -867,7 +850,7 @@ export const MyTasksView: React.FC = () => {
           {resolvedCount > 0 && (
             <section className="rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.04] p-4 sm:p-5">
               <div className="flex items-start gap-3">
-                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-300" />
+                <IconCheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-300" />
                 <div>
                   <h2 className="text-sm font-semibold text-emerald-200">
                     Resolved Issues
@@ -895,7 +878,7 @@ export const MyTasksView: React.FC = () => {
                         {task.title}
                       </span>
                       <span className="inline-flex shrink-0 items-center gap-1.5 text-[10px] font-semibold text-emerald-300">
-                        <ShieldCheck className="h-3.5 w-3.5" />
+                        <IconShieldCheck className="h-3.5 w-3.5" />
                         ISSUE RESOLVED
                       </span>
                     </div>
@@ -958,9 +941,9 @@ export const MyTasksView: React.FC = () => {
 
               <div className="mt-4 flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
                 {progressPct === 100 ? (
-                  <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-300" />
+                  <IconCheckCircle2 className="h-4 w-4 shrink-0 text-emerald-300" />
                 ) : (
-                  <PlayCircle className="h-4 w-4 shrink-0 text-[#64748B]" />
+                  <IconPlayCircle className="h-4 w-4 shrink-0 text-[#64748B]" />
                 )}
                 <p className="text-xs text-[#B7ADC9]">
                   {progressPct === 100
@@ -1002,7 +985,7 @@ export const MyTasksView: React.FC = () => {
                 role="alert"
                 className="flex items-start gap-2 rounded-xl border border-rose-400/20 bg-rose-500/10 p-3 text-xs leading-5 text-rose-200"
               >
-                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                <IconAlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                 {formError}
               </div>
             )}
@@ -1022,9 +1005,9 @@ export const MyTasksView: React.FC = () => {
                 className={primaryButtonClass}
               >
                 {isSubmitting ? (
-                  <LoaderCircle className="h-4 w-4 animate-spin" />
+                  <IconSpinner className="h-4 w-4 animate-spin" />
                 ) : (
-                  <CheckCircle2 className="h-4 w-4" />
+                  <IconCheckCircle2 className="h-4 w-4" />
                 )}
                 {isSubmitting ? 'Saving...' : 'Save Progress'}
               </button>
@@ -1046,7 +1029,7 @@ export const MyTasksView: React.FC = () => {
             <div className="rounded-2xl border border-violet-400/15 bg-violet-500/[0.06] p-4">
               <div className="flex items-start gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-violet-400/15 bg-violet-500/10">
-                  <Timer className="h-5 w-5 text-violet-300" />
+                  <IconTimer className="h-5 w-5 text-violet-300" />
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-[#FAF8FF]">
@@ -1116,7 +1099,7 @@ export const MyTasksView: React.FC = () => {
                 role="alert"
                 className="flex items-start gap-2 rounded-xl border border-rose-400/20 bg-rose-500/10 p-3 text-xs leading-5 text-rose-200"
               >
-                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                <IconAlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                 {formError}
               </div>
             )}
@@ -1142,9 +1125,9 @@ export const MyTasksView: React.FC = () => {
                 className={primaryButtonClass}
               >
                 {isSubmitting ? (
-                  <LoaderCircle className="h-4 w-4 animate-spin" />
+                  <IconSpinner className="h-4 w-4 animate-spin" />
                 ) : (
-                  <Send className="h-4 w-4" />
+                  <IconSend className="h-4 w-4" />
                 )}
                 {isSubmitting ? 'Recording...' : 'Record Work Log'}
               </button>

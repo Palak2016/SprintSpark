@@ -5,29 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import type { UserSimple } from '../../types';
 import { formatIndianDate } from '../../utils/date';
-import {
-  MdViewKanban as FolderKanban,
-  MdGroup as Users,
-  MdDelete as Trash2,
-  MdCheckCircle as CheckCircle2,
-  MdHub as Network,
-  MdSave as Save,
-  MdPersonAdd as UserPlus,
-  MdVerifiedUser as ShieldCheck,
-  MdRefresh as RefreshCw,
-  MdSettings as Settings,
-  MdWorkspacePremium as Crown,
-  MdMail as Mail,
-  MdCheckCircle as CircleCheck,
-  MdError as AlertCircle,
-  MdCalendarMonth as CalendarDays,
-  MdSchedule as Clock3,
-  MdChevronRight as ChevronRight,
-  MdLock as LockKeyhole,
-  MdInsights as Activity,
-  MdAccountTree as Workflow,
-  MdClose as X
-} from 'react-icons/md';
+import { IconActivity, IconAlertCircle, IconCalendarDays, IconCheckCircle2, IconChevronRight, IconCircleCheck, IconClock3, IconCrown, IconFolderKanban, IconLockKeyhole, IconMail, IconNetwork, IconSave, IconSettings, IconShieldCheck, IconSpinner, IconTrash2, IconUserPlus, IconUsers, IconWorkflow, IconX } from '../../icons';
 
 const PROJECT_STATUSES = [
   'ACTIVE',
@@ -255,7 +233,7 @@ export const SettingsView: React.FC = () => {
 
           <div className={`${cardClass} px-6 py-16 text-center sm:px-10`}>
             <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-violet-400/20 bg-violet-500/10 shadow-[0_0_35px_rgba(139,92,246,.12)]">
-              <FolderKanban className="h-7 w-7 text-violet-300" />
+              <IconFolderKanban className="h-7 w-7 text-violet-300" />
             </div>
 
             <h2 className="text-lg font-semibold text-[#FAF8FF]">
@@ -283,7 +261,7 @@ export const SettingsView: React.FC = () => {
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-violet-400/20 bg-violet-500/[0.08] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-violet-300">
-              <Settings className="h-3.5 w-3.5" />
+              <IconSettings className="h-3.5 w-3.5" />
               Workspace Management
             </div>
 
@@ -322,21 +300,21 @@ export const SettingsView: React.FC = () => {
         {/* Project summary */}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <SummaryCard
-            icon={<FolderKanban className="h-4 w-4" />}
+            icon={<IconFolderKanban className="h-4 w-4" />}
             label="Current project"
             value={activeProject.name}
             detail="Workspace configuration"
           />
 
           <SummaryCard
-            icon={<Users className="h-4 w-4" />}
+            icon={<IconUsers className="h-4 w-4" />}
             label="Team members"
             value={String(projectMembers.length)}
             detail="People assigned to this project"
           />
 
           <SummaryCard
-            icon={<Activity className="h-4 w-4" />}
+            icon={<IconActivity className="h-4 w-4" />}
             label="Project status"
             value={getStatusLabel(status)}
             detail="Current project lifecycle"
@@ -349,16 +327,16 @@ export const SettingsView: React.FC = () => {
             role="status"
             className="flex items-start gap-3 rounded-xl border border-emerald-400/20 bg-emerald-400/[0.08] p-4 text-sm text-emerald-200"
           >
-            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+            <IconCheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
             <span>{message}</span>
 
             <button
               type="button"
               onClick={() => setMessage(null)}
               className="ml-auto rounded-md p-1 text-emerald-200/70 transition hover:bg-emerald-300/10 hover:text-emerald-100"
-              aria-label="Dismiss success message"
+              aria-label="Dismiss success message" title="Dismiss success message"
             >
-              <X className="h-4 w-4" />
+              <IconX className="h-4 w-4" />
             </button>
           </div>
         )}
@@ -369,16 +347,16 @@ export const SettingsView: React.FC = () => {
             role="alert"
             className="flex items-start gap-3 rounded-xl border border-rose-400/20 bg-rose-400/[0.08] p-4 text-sm text-rose-200"
           >
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <IconAlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
             <span>{errorMessage}</span>
 
             <button
               type="button"
               onClick={() => setErrorMessage(null)}
               className="ml-auto rounded-md p-1 text-rose-200/70 transition hover:bg-rose-300/10 hover:text-rose-100"
-              aria-label="Dismiss error message"
+              aria-label="Dismiss error message" title="Dismiss error message"
             >
-              <X className="h-4 w-4" />
+              <IconX className="h-4 w-4" />
             </button>
           </div>
         )}
@@ -386,7 +364,7 @@ export const SettingsView: React.FC = () => {
         {/* Project configuration */}
         <section className={cardClass}>
           <SectionHeader
-            icon={<FolderKanban className="h-5 w-5" />}
+            icon={<IconFolderKanban className="h-5 w-5" />}
             title="Project Configuration"
             description="Update your project's basic information and lifecycle."
             tag="General"
@@ -476,14 +454,14 @@ export const SettingsView: React.FC = () => {
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-purple-500 px-5 py-3 text-sm font-semibold text-white shadow-[0_5px_24px_rgba(139,92,246,.2)] transition hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(139,92,246,.3)] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
               >
                 {isUpdating ? (
-                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  <IconSpinner className="h-4 w-4 animate-spin" />
                 ) : (
-                  <Save className="h-4 w-4" />
+                  <IconSave className="h-4 w-4" />
                 )}
 
                 {isUpdating ? 'Saving Changes...' : 'Save Changes'}
 
-                {!isUpdating && <ChevronRight className="h-4 w-4" />}
+                {!isUpdating && <IconChevronRight className="h-4 w-4" />}
               </button>
             </div>
           </form>
@@ -492,7 +470,7 @@ export const SettingsView: React.FC = () => {
         {/* Team roster */}
         <section className={cardClass}>
           <SectionHeader
-            icon={<Users className="h-5 w-5" />}
+            icon={<IconUsers className="h-5 w-5" />}
             title="Project Team"
             description="Manage the people working on this project and their access."
             tag={`${projectMembers.length} ${
@@ -530,7 +508,7 @@ export const SettingsView: React.FC = () => {
 
                           {isManager && (
                             <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-[#19112B] bg-amber-400">
-                              <Crown className="h-2.5 w-2.5 text-[#2A1738]" />
+                              <IconCrown className="h-2.5 w-2.5 text-[#2A1738]" />
                             </span>
                           )}
                         </div>
@@ -549,7 +527,7 @@ export const SettingsView: React.FC = () => {
 
                             {isManager && (
                               <span className="inline-flex items-center gap-1 rounded-md border border-amber-400/20 bg-amber-400/10 px-2 py-0.5 text-[10px] font-semibold text-amber-300">
-                                <ShieldCheck className="h-3 w-3" />
+                                <IconShieldCheck className="h-3 w-3" />
                                 Project Manager
                               </span>
                             )}
@@ -557,7 +535,7 @@ export const SettingsView: React.FC = () => {
 
                           <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-[#A99BBF]">
                             <span className="inline-flex min-w-0 items-center gap-1.5">
-                              <Mail className="h-3 w-3 shrink-0 text-[#8E82A5]" />
+                              <IconMail className="h-3 w-3 shrink-0 text-[#8E82A5]" />
                               <span className="break-all">
                                 {m.user?.email || 'No email provided'}
                               </span>
@@ -572,7 +550,7 @@ export const SettingsView: React.FC = () => {
 
                       {isManager ? (
                         <span className="inline-flex shrink-0 items-center gap-2 self-start rounded-lg border border-white/[0.08] bg-white/[0.035] px-3 py-2 text-xs text-[#A99BBF] sm:self-center">
-                          <LockKeyhole className="h-3.5 w-3.5" />
+                          <IconLockKeyhole className="h-3.5 w-3.5" />
                           Protected
                         </span>
                       ) : (
@@ -584,9 +562,9 @@ export const SettingsView: React.FC = () => {
                           title="Remove member from project"
                         >
                           {isRemoving ? (
-                            <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                            <IconSpinner className="h-3.5 w-3.5 animate-spin" />
                           ) : (
-                            <Trash2 className="h-3.5 w-3.5" />
+                            <IconTrash2 className="h-3.5 w-3.5" />
                           )}
 
                           {isRemoving ? 'Removing...' : 'Remove'}
@@ -599,7 +577,7 @@ export const SettingsView: React.FC = () => {
             ) : (
               <div className="rounded-xl border border-dashed border-violet-300/20 bg-[#100B1D]/40 px-5 py-12 text-center">
                 <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl border border-violet-400/20 bg-violet-500/10">
-                  <Users className="h-5 w-5 text-violet-300" />
+                  <IconUsers className="h-5 w-5 text-violet-300" />
                 </div>
 
                 <p className="mt-4 text-sm font-semibold text-[#FAF8FF]">
@@ -617,7 +595,7 @@ export const SettingsView: React.FC = () => {
             <div className="mt-6 rounded-2xl border border-white/[0.08] bg-[#19112B] p-4 sm:p-5">
               <div className="mb-5 flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-violet-300/20 bg-violet-500/10">
-                  <UserPlus className="h-4 w-4 text-violet-300" />
+                  <IconUserPlus className="h-4 w-4 text-violet-300" />
                 </div>
 
                 <div>
@@ -710,9 +688,9 @@ export const SettingsView: React.FC = () => {
                     className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-purple-500 px-5 py-3 text-sm font-semibold text-white shadow-[0_5px_24px_rgba(139,92,246,.18)] transition hover:-translate-y-0.5 hover:shadow-[0_8px_28px_rgba(139,92,246,.28)] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 sm:w-auto"
                   >
                     {isAddingMember ? (
-                      <RefreshCw className="h-4 w-4 animate-spin" />
+                      <IconSpinner className="h-4 w-4 animate-spin" />
                     ) : (
-                      <UserPlus className="h-4 w-4" />
+                      <IconUserPlus className="h-4 w-4" />
                     )}
 
                     {isAddingMember ? 'Adding Member...' : 'Add Member'}
@@ -726,7 +704,7 @@ export const SettingsView: React.FC = () => {
         {/* Platform architecture */}
         <section className={cardClass}>
           <SectionHeader
-            icon={<Network className="h-5 w-5" />}
+            icon={<IconNetwork className="h-5 w-5" />}
             title="Platform Architecture"
             description="A quick overview of the systems powering WorkPilot."
             tag="System overview"
@@ -734,7 +712,7 @@ export const SettingsView: React.FC = () => {
 
           <div className="grid grid-cols-1 gap-3 p-5 sm:grid-cols-2 sm:p-6 lg:p-7">
             <ArchitectureCard
-              icon={<Activity className="h-4 w-4" />}
+              icon={<IconActivity className="h-4 w-4" />}
               label="Risk Analyzer"
               title="Deterministic Rule Base"
               description="Rule-based project risk assessment and risk scoring."
@@ -742,7 +720,7 @@ export const SettingsView: React.FC = () => {
             />
 
             <ArchitectureCard
-              icon={<Workflow className="h-4 w-4" />}
+              icon={<IconWorkflow className="h-4 w-4" />}
               label="Workflow Orchestrator"
               title="LangGraph Multi-Node State Machine"
               description="Coordinates workflow, decision-making, and recovery steps."
@@ -758,7 +736,7 @@ export const SettingsView: React.FC = () => {
             />
 
             <ArchitectureCard
-              icon={<ShieldCheck className="h-4 w-4" />}
+              icon={<IconShieldCheck className="h-4 w-4" />}
               label="Access Control"
               title="JWT & Role-Based Access"
               description="Authenticated sessions with server-side authorization."
@@ -768,7 +746,7 @@ export const SettingsView: React.FC = () => {
 
           <div className="flex flex-col gap-3 border-t border-white/[0.07] bg-[#100B1D]/35 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7">
             <div className="flex items-center gap-2 text-xs text-[#A99BBF]">
-              <CircleCheck className="h-4 w-4 text-emerald-300" />
+              <IconCircleCheck className="h-4 w-4 text-emerald-300" />
               Core platform components configured
             </div>
 
@@ -782,14 +760,14 @@ export const SettingsView: React.FC = () => {
         {/* Project metadata: shared Indian date formatter */}
         <div className="flex flex-col gap-3 rounded-xl border border-white/[0.07] bg-[#19112B]/55 px-4 py-3 text-xs text-[#8E82A5] sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
-            <CalendarDays className="h-3.5 w-3.5" />
+            <IconCalendarDays className="h-3.5 w-3.5" />
             <span>
               Created {formatIndianDate(activeProject.created_at)}
             </span>
           </div>
 
           <div className="flex items-center gap-2">
-            <Clock3 className="h-3.5 w-3.5" />
+            <IconClock3 className="h-3.5 w-3.5" />
             <span>
               Last updated {formatIndianDate(activeProject.updated_at)}
             </span>
@@ -803,7 +781,7 @@ export const SettingsView: React.FC = () => {
 const PageHeading: React.FC = () => (
   <div>
     <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-violet-400/20 bg-violet-500/[0.08] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-violet-300">
-      <Settings className="h-3.5 w-3.5" />
+      <IconSettings className="h-3.5 w-3.5" />
       Workspace Management
     </div>
 

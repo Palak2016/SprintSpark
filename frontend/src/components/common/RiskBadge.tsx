@@ -1,11 +1,6 @@
 
 import React from 'react';
-import {
-  MdWarningAmber as AlertTriangle,
-  MdCheckCircle as CheckCircle2,
-  MdReportProblem as AlertOctagon,
-  MdHelp as HelpCircle
-} from 'react-icons/md';
+import { IconAlertOctagon, IconAlertTriangle, IconCheckCircle2, IconHelpCircle } from '../../icons';
 
 interface RiskBadgeProps {
   level?: 'LOW' | 'MEDIUM' | 'HIGH' | 'INSUFFICIENT_DATA';
@@ -18,25 +13,25 @@ const configs = {
   LOW: {
     bg: 'bg-emerald-400/10 border-emerald-400/20 text-emerald-300',
     dot: 'bg-emerald-400',
-    icon: CheckCircle2,
+    icon: IconCheckCircle2,
     label: 'On Track / Low Risk',
   },
   MEDIUM: {
     bg: 'bg-amber-400/10 border-amber-400/20 text-amber-300',
     dot: 'bg-amber-400',
-    icon: AlertTriangle,
+    icon: IconAlertTriangle,
     label: 'Attention / Medium Risk',
   },
   HIGH: {
     bg: 'bg-rose-400/10 border-rose-400/20 text-rose-300',
     dot: 'bg-rose-400',
-    icon: AlertOctagon,
+    icon: IconAlertOctagon,
     label: 'Critical / High Risk',
   },
   INSUFFICIENT_DATA: {
     bg: 'bg-violet-400/10 border-violet-300/20 text-violet-200',
     dot: 'bg-violet-300',
-    icon: HelpCircle,
+    icon: IconHelpCircle,
     label: 'Insufficient Data',
   },
 } as const;

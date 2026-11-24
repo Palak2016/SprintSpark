@@ -1,7 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import {
-  MdKey as KeyRound
-} from 'react-icons/md';
+import { IconKeyRound } from '../../icons';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { CompanyAdminTransfer, CompanyMember } from '../../types';
@@ -141,7 +139,7 @@ export const CompanyOwnershipView: React.FC = () => {
                   />
                 </label>
                 <button type="submit" className={buttonClass} disabled={isSubmitting}>
-                  <KeyRound className="h-3.5 w-3.5" /> {isSubmitting ? 'Requesting...' : 'Request transfer'}
+                  <IconKeyRound className="h-3.5 w-3.5" /> {isSubmitting ? 'Requesting...' : 'Request transfer'}
                 </button>
               </form>
             )}

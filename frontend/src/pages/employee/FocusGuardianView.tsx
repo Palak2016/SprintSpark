@@ -4,19 +4,7 @@ import { api } from '../../services/api';
 import type { Task } from '../../types';
 import { useVisibleInterval } from '../../hooks/useVisibleInterval';
 
-import {
-  MdVisibility as Eye,
-  MdVerifiedUser as ShieldCheck,
-  MdCheckCircle as CheckCircle2,
-  MdMessage as MessageSquare,
-  MdError as AlertCircle,
-  MdRefresh as LoaderCircle,
-  MdRefresh as RefreshCw,
-  MdExpandMore as ChevronDown,
-  MdFactCheck as ClipboardCheck,
-  MdCalendarMonth as CalendarDays,
-  MdInfo as Info
-} from 'react-icons/md';
+import { IconAlertCircle, IconCheckCircle2, IconChevronDown, IconClipboardCheck, IconEye, IconInfo, IconMessageSquare, IconRefresh, IconShieldCheck, IconSpinner } from '../../icons';
 
 const REASON_TAGS = [
   'Refactoring Legacy Architecture',
@@ -152,7 +140,7 @@ export const FocusGuardianView: React.FC = () => {
           <div>
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-violet-400/20 bg-violet-500/10">
-                <Eye
+                <IconEye
                   size={25}
                   strokeWidth={2}
                   className="text-violet-300"
@@ -178,7 +166,7 @@ export const FocusGuardianView: React.FC = () => {
           </div>
 
           <div className="inline-flex w-fit shrink-0 items-center gap-2 rounded-xl border border-emerald-400/20 bg-emerald-500/[0.07] px-3 py-2 text-xs font-semibold text-emerald-300">
-            <ShieldCheck size={16} />
+            <IconShieldCheck size={16} />
             Privacy First
           </div>
         </div>
@@ -188,7 +176,7 @@ export const FocusGuardianView: React.FC = () => {
       <section className={`${cardClass} p-5 sm:p-6`}>
         <div className="flex items-start gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-emerald-400/20 bg-emerald-500/10">
-            <ShieldCheck
+            <IconShieldCheck
               size={22}
               className="text-emerald-300"
             />
@@ -215,7 +203,7 @@ export const FocusGuardianView: React.FC = () => {
             </p>
 
             <div className="mt-4 flex items-start gap-2 border-t border-white/[0.07] pt-4">
-              <CheckCircle2
+              <IconCheckCircle2
                 size={16}
                 className="mt-0.5 shrink-0 text-emerald-300"
               />
@@ -235,7 +223,7 @@ export const FocusGuardianView: React.FC = () => {
           role="status"
           className="flex items-start gap-3 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.07] p-4"
         >
-          <CheckCircle2
+          <IconCheckCircle2
             size={21}
             className="mt-0.5 shrink-0 text-emerald-300"
           />
@@ -257,7 +245,7 @@ export const FocusGuardianView: React.FC = () => {
           role="alert"
           className="flex items-start gap-3 rounded-2xl border border-rose-400/20 bg-rose-500/[0.07] p-4"
         >
-          <AlertCircle
+          <IconAlertCircle
             size={20}
             className="mt-0.5 shrink-0 text-rose-300"
           />
@@ -287,7 +275,7 @@ export const FocusGuardianView: React.FC = () => {
         <div className="border-b border-white/[0.07] px-5 py-5 sm:px-6">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/10">
-              <MessageSquare
+              <IconMessageSquare
                 size={20}
                 className="text-violet-300"
               />
@@ -349,7 +337,7 @@ export const FocusGuardianView: React.FC = () => {
                 ))}
               </select>
 
-              <ChevronDown
+              <IconChevronDown
                 size={17}
                 className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#A99DBD]"
               />
@@ -357,7 +345,7 @@ export const FocusGuardianView: React.FC = () => {
 
             {selectedTask && (
               <div className="mt-3 flex items-start gap-2 rounded-xl border border-violet-400/15 bg-violet-500/[0.06] p-3">
-                <ClipboardCheck
+                <IconClipboardCheck
                   size={16}
                   className="mt-0.5 shrink-0 text-violet-300"
                 />
@@ -380,7 +368,7 @@ export const FocusGuardianView: React.FC = () => {
 
             {isLoadingTasks && (
               <p className="mt-2 flex items-center gap-2 text-xs text-[#A99DBD]">
-                <LoaderCircle size={14} className="animate-spin" />
+                <IconSpinner size={14} className="animate-spin" />
                 Retrieving your tasks...
               </p>
             )}
@@ -391,7 +379,7 @@ export const FocusGuardianView: React.FC = () => {
                 onClick={() => void loadTasks()}
                 className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-violet-300 hover:text-violet-200"
               >
-                <RefreshCw size={13} />
+                <IconRefresh size={13} />
                 Refresh tasks
               </button>
             )}
@@ -436,7 +424,7 @@ export const FocusGuardianView: React.FC = () => {
                       }`}
                     >
                       {isSelected && (
-                        <CheckCircle2
+                        <IconCheckCircle2
                           size={12}
                           className="text-white"
                         />
@@ -491,7 +479,7 @@ export const FocusGuardianView: React.FC = () => {
           {/* AI and manager workflow information */}
           <div className="rounded-xl border border-violet-400/15 bg-violet-500/[0.05] p-4">
             <div className="flex items-start gap-3">
-              <Info
+              <IconInfo
                 size={18}
                 className="mt-0.5 shrink-0 text-violet-300"
               />
@@ -529,12 +517,12 @@ export const FocusGuardianView: React.FC = () => {
               className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-violet-400/20 bg-violet-600 px-5 py-3 text-xs font-bold text-white shadow-lg shadow-violet-950/20 transition hover:bg-violet-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#19112B] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isSubmitting ? (
-                <LoaderCircle
+                <IconSpinner
                   size={16}
                   className="animate-spin"
                 />
               ) : (
-                <MessageSquare size={16} />
+                <IconMessageSquare size={16} />
               )}
 
               {isSubmitting
@@ -553,7 +541,7 @@ export const FocusGuardianView: React.FC = () => {
           disabled={isLoadingTasks || isSubmitting}
           className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-[#A99DBD] transition hover:bg-white/[0.03] hover:text-violet-200 disabled:opacity-50"
         >
-          <RefreshCw
+          <IconRefresh
             size={14}
             className={isLoadingTasks ? 'animate-spin' : ''}
           />

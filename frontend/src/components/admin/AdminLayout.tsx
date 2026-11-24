@@ -1,16 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
-import {
-  MdInsights as Activity,
-  MdBarChart as BarChart3,
-  MdBusiness as Building2,
-  MdKey as KeyRound,
-  MdDashboard as LayoutDashboard,
-  MdMail as Mail,
-  MdSettings as Settings,
-  MdHowToReg as UserCheck,
-  MdGroups as UsersRound
-} from 'react-icons/md';
+import { IconAdminNavActivity, IconAdminNavBarChart3, IconAdminNavBuilding2, IconAdminNavKeyRound, IconAdminNavLayoutDashboard, IconAdminNavMail, IconAdminNavSettings, IconAdminNavUserCheck, IconAdminNavUsersRound } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import { AdministeredCompany } from '../../types';
@@ -84,20 +74,20 @@ export const AdminLayout: React.FC = () => {
   const section = (name: string) => (currentId ? adminPath(currentId, name) : '/admin');
 
   const navItems: NavItem[] = [
-    { name: 'Overview', href: section('overview'), icon: LayoutDashboard },
-    { name: 'Members', href: section('members'), icon: UsersRound },
+    { name: 'Overview', href: section('overview'), icon: IconAdminNavLayoutDashboard },
+    { name: 'Members', href: section('members'), icon: IconAdminNavUsersRound },
     {
       name: 'Approvals',
       href: section('approvals'),
-      icon: UserCheck,
+      icon: IconAdminNavUserCheck,
       highlight: Boolean(current?.pending_approvals),
       badge: current?.pending_approvals ? String(current.pending_approvals) : undefined,
     },
-    { name: 'Invitations', href: section('invitations'), icon: Mail },
-    { name: 'Analytics', href: section('analytics'), icon: BarChart3 },
-    { name: 'Activity', href: section('activity'), icon: Activity },
-    { name: 'Ownership', href: section('ownership'), icon: KeyRound },
-    { name: 'Settings', href: section('settings'), icon: Settings },
+    { name: 'Invitations', href: section('invitations'), icon: IconAdminNavMail },
+    { name: 'Analytics', href: section('analytics'), icon: IconAdminNavBarChart3 },
+    { name: 'Activity', href: section('activity'), icon: IconAdminNavActivity },
+    { name: 'Ownership', href: section('ownership'), icon: IconAdminNavKeyRound },
+    { name: 'Settings', href: section('settings'), icon: IconAdminNavSettings },
   ];
 
   const switchCompany = (nextId: number) => {
@@ -109,7 +99,7 @@ export const AdminLayout: React.FC = () => {
   const companyPicker = (
     <div className="dashboard-control flex min-w-0 items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.025] px-2.5 py-2 text-sm sm:px-3">
       <span className="dashboard-project-icon flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-violet-400/15 bg-violet-500/15">
-        <Building2 className="dashboard-topbar-icon h-4 w-4 text-violet-300" />
+        <IconAdminNavBuilding2 className="dashboard-topbar-icon h-4 w-4 text-violet-300" />
       </span>
       <span className="min-w-0 text-left">
         <span className="hidden text-[9px] font-semibold uppercase tracking-[0.12em] text-[#8F83A7] sm:block">

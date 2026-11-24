@@ -1,9 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import {
-  MdCheck as Check,
-  MdClose as X
-} from 'react-icons/md';
+import { IconCheck, IconX } from '../../icons';
 import { api } from '../../services/api';
 import { CompanyMember } from '../../types';
 import { AdminConsoleContext } from '../../components/admin/AdminLayout';
@@ -129,7 +126,7 @@ const MemberList: React.FC<{
                 disabled={busyId === member.id}
                 onClick={() => onApprove(member)}
               >
-                <Check className="h-3.5 w-3.5" /> Approve
+                <IconCheck className="h-3.5 w-3.5" /> Approve
               </button>
               {onReject && (
                 <button
@@ -138,7 +135,7 @@ const MemberList: React.FC<{
                   disabled={busyId === member.id}
                   onClick={() => onReject(member)}
                 >
-                  <X className="h-3.5 w-3.5" /> Reject
+                  <IconX className="h-3.5 w-3.5" /> Reject
                 </button>
               )}
             </div>

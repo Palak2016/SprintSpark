@@ -2,20 +2,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { api } from '../../services/api';
 import type { TeamMemberAvailability } from '../../types';
-import {
-  MdGroup as Users,
-  MdCalendarMonth as Calendar,
-  MdAccessTime as Clock,
-  MdCheckCircle as CheckCircle2,
-  MdCalendarMonth as CalendarDays,
-  MdRefresh as RefreshCw,
-  MdBusinessCenter as BriefcaseBusiness,
-  MdError as AlertCircle,
-  MdRefresh as LoaderCircle,
-  MdArrowOutward as ArrowUpRight,
-  MdHowToReg as UserCheck,
-  MdWarningAmber as AlertTriangle
-} from 'react-icons/md';
+import { IconAlertCircle, IconAlertTriangle, IconArrowUpRight, IconBriefcaseBusiness, IconCalendar, IconCalendarDays, IconCheckCircle2, IconClock, IconManagerArrowRight, IconRefresh, IconSpinner, IconUserCheck, IconUsers } from '../../icons';
 
 export const TeamAvailabilityView: React.FC = () => {
   const [teamMembers, setTeamMembers] = useState<TeamMemberAvailability[]>([]);
@@ -177,7 +164,7 @@ export const TeamAvailabilityView: React.FC = () => {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="mb-2 flex items-center gap-2 text-sm text-[#B7ADC9]">
-            <BriefcaseBusiness className="h-4 w-4 text-[#A78BFA]" />
+            <IconBriefcaseBusiness className="h-4 w-4 text-[#A78BFA]" />
             <span>Workspace</span>
             <span>/</span>
             <span className="text-[#E5D9FF]">Workforce Operations</span>
@@ -199,7 +186,7 @@ export const TeamAvailabilityView: React.FC = () => {
           disabled={isLoading}
           className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-[#19112B] px-4 py-2.5 text-sm font-medium text-[#D8CDEF] transition hover:bg-[#211638] disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <RefreshCw
+          <IconRefresh
             className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`}
           />
           {isLoading ? 'Refreshing...' : 'Refresh'}
@@ -212,7 +199,7 @@ export const TeamAvailabilityView: React.FC = () => {
           role="alert"
           className="flex items-start gap-3 rounded-xl border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-200"
         >
-          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <IconAlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           <span className="flex-1">{pageError}</span>
           <button
             type="button"
@@ -230,7 +217,7 @@ export const TeamAvailabilityView: React.FC = () => {
           <div className="flex items-center justify-between">
             <p className="text-sm text-[#B7ADC9]">Team Members</p>
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/10">
-              <Users className="h-5 w-5 text-violet-300" />
+              <IconUsers className="h-5 w-5 text-violet-300" />
             </div>
           </div>
           <p className="mt-4 text-2xl font-bold">{teamMembers.length}</p>
@@ -243,7 +230,7 @@ export const TeamAvailabilityView: React.FC = () => {
           <div className="flex items-center justify-between">
             <p className="text-sm text-[#B7ADC9]">Available Today</p>
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10">
-              <UserCheck className="h-5 w-5 text-emerald-300" />
+              <IconUserCheck className="h-5 w-5 text-emerald-300" />
             </div>
           </div>
           <p className="mt-4 text-2xl font-bold">{availableCount}</p>
@@ -256,7 +243,7 @@ export const TeamAvailabilityView: React.FC = () => {
           <div className="flex items-center justify-between">
             <p className="text-sm text-[#B7ADC9]">Remaining Effort</p>
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/10">
-              <Clock className="h-5 w-5 text-sky-300" />
+              <IconClock className="h-5 w-5 text-sky-300" />
             </div>
           </div>
           <p className="mt-4 text-2xl font-bold">
@@ -274,7 +261,7 @@ export const TeamAvailabilityView: React.FC = () => {
           <div className="flex items-center justify-between">
             <p className="text-sm text-[#B7ADC9]">Overloaded</p>
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-500/10">
-              <AlertTriangle className="h-5 w-5 text-rose-300" />
+              <IconAlertTriangle className="h-5 w-5 text-rose-300" />
             </div>
           </div>
           <p className="mt-4 text-2xl font-bold">{overloadedCount}</p>
@@ -296,17 +283,17 @@ export const TeamAvailabilityView: React.FC = () => {
 
           <div className="flex flex-wrap gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-400/20 bg-emerald-500/10 px-2.5 py-1.5 text-xs text-emerald-300">
-              <CheckCircle2 className="h-3.5 w-3.5" />
+              <IconCheckCircle2 className="h-3.5 w-3.5" />
               {optimalCount} optimal
             </span>
 
             <span className="inline-flex items-center gap-1.5 rounded-lg border border-rose-400/20 bg-rose-500/10 px-2.5 py-1.5 text-xs text-rose-300">
-              <AlertTriangle className="h-3.5 w-3.5" />
+              <IconAlertTriangle className="h-3.5 w-3.5" />
               {overloadedCount} overloaded
             </span>
 
             <span className="inline-flex items-center gap-1.5 rounded-lg border border-amber-400/20 bg-amber-500/10 px-2.5 py-1.5 text-xs text-amber-300">
-              <CalendarDays className="h-3.5 w-3.5" />
+              <IconCalendarDays className="h-3.5 w-3.5" />
               {onLeaveCount} on leave
             </span>
           </div>
@@ -379,7 +366,7 @@ export const TeamAvailabilityView: React.FC = () => {
       {/* Loading / Empty / Team Member Cards */}
       {isLoading && teamMembers.length === 0 ? (
         <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-white/[0.08] bg-[#19112B] px-6 py-12">
-          <LoaderCircle className="h-8 w-8 animate-spin text-violet-300" />
+          <IconSpinner className="h-8 w-8 animate-spin text-violet-300" />
           <p className="mt-4 text-sm font-medium text-white">
             Loading team availability...
           </p>
@@ -390,7 +377,7 @@ export const TeamAvailabilityView: React.FC = () => {
       ) : teamMembers.length === 0 && !pageError ? (
         <div className="rounded-2xl border border-dashed border-white/15 bg-[#19112B]/70 px-6 py-16 text-center">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-violet-400/20 bg-violet-500/10">
-            <Users className="h-7 w-7 text-violet-300" />
+            <IconUsers className="h-7 w-7 text-violet-300" />
           </div>
           <h3 className="mt-4 text-lg font-semibold text-white">
             No Team Members Found
@@ -404,7 +391,7 @@ export const TeamAvailabilityView: React.FC = () => {
             onClick={() => void loadAvailability()}
             className="mt-5 inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-500"
           >
-            <RefreshCw className="h-4 w-4" />
+            <IconManagerArrowRight className="h-4 w-4" />
             Try Again
           </button>
         </div>
@@ -463,7 +450,7 @@ export const TeamAvailabilityView: React.FC = () => {
                   <div className="mt-5 grid grid-cols-2 gap-3">
                     <div className="rounded-xl border border-white/[0.06] bg-[#130D21] p-3.5">
                       <div className="flex items-center gap-1.5 text-[#B7ADC9]">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-violet-300" />
+                        <IconCheckCircle2 className="h-3.5 w-3.5 text-violet-300" />
                         <span className="text-[10px] font-bold uppercase tracking-wide">
                           Active Tasks
                         </span>
@@ -478,7 +465,7 @@ export const TeamAvailabilityView: React.FC = () => {
 
                     <div className="rounded-xl border border-violet-400/10 bg-violet-500/[0.07] p-3.5">
                       <div className="flex items-center gap-1.5 text-[#C4B5FD]">
-                        <Clock className="h-3.5 w-3.5" />
+                        <IconClock className="h-3.5 w-3.5" />
                         <span className="text-[10px] font-bold uppercase tracking-wide">
                           Remaining
                         </span>
@@ -499,7 +486,7 @@ export const TeamAvailabilityView: React.FC = () => {
                   <div className="mt-4">
                     {member.is_on_leave_today ? (
                       <div className="flex items-start gap-2.5 rounded-xl border border-amber-400/15 bg-amber-500/[0.07] p-3">
-                        <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
+                        <IconCalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
                         <div>
                           <p className="text-xs font-semibold text-amber-200">
                             On Approved Leave Today
@@ -511,7 +498,7 @@ export const TeamAvailabilityView: React.FC = () => {
                       </div>
                     ) : (
                       <div className="flex items-start gap-2.5 rounded-xl border border-emerald-400/15 bg-emerald-500/[0.06] p-3">
-                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
+                        <IconCheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
                         <div>
                           <p className="text-xs font-semibold text-emerald-200">
                             Available Today
@@ -528,7 +515,7 @@ export const TeamAvailabilityView: React.FC = () => {
                   <div className="mt-5 border-t border-white/[0.08] pt-4">
                     <div className="mb-3 flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-violet-300" />
+                        <IconCalendar className="h-4 w-4 text-violet-300" />
                         <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#D8CDEF]">
                           Scheduled Leaves
                         </h4>
@@ -553,7 +540,7 @@ export const TeamAvailabilityView: React.FC = () => {
                             className="flex items-start gap-3 rounded-xl border border-white/[0.06] bg-[#130D21] p-3 transition hover:border-violet-400/20"
                           >
                             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-violet-400/10 bg-violet-500/10">
-                              <CalendarDays className="h-4 w-4 text-violet-300" />
+                              <IconCalendarDays className="h-4 w-4 text-violet-300" />
                             </div>
 
                             <div className="min-w-0 flex-1">
@@ -568,7 +555,7 @@ export const TeamAvailabilityView: React.FC = () => {
                               </p>
                             </div>
 
-                            <ArrowUpRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#807493]" />
+                            <IconArrowUpRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#807493]" />
                           </div>
                         ))}
                       </div>
@@ -584,7 +571,7 @@ export const TeamAvailabilityView: React.FC = () => {
       {/* Footer Note */}
       {!isLoading && teamMembers.length > 0 && (
         <div className="flex items-start gap-2.5 rounded-xl border border-white/[0.08] bg-[#19112B] px-4 py-3.5">
-          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-violet-300" />
+          <IconAlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-violet-300" />
           <p className="text-xs leading-relaxed text-[#B7ADC9]">
             Capacity indicators are based on the availability data returned
             by WorkPilot AI. Review overloaded team members and approved leave

@@ -2,20 +2,7 @@
 import React, { useState } from 'react';
 import { Task } from '../../types';
 import { formatIndianDate } from '../../utils/date';
-import {
-  MdSearch as Search,
-  MdReportProblem as AlertOctagon,
-  MdLink as Link2,
-  MdEdit as Edit2,
-  MdExpandMore as ChevronDown,
-  MdTune as SlidersHorizontal,
-  MdCalendarMonth as CalendarDays,
-  MdAccessTime as Clock,
-  MdCheckCircle as CheckCircle2,
-  MdCircle as Circle,
-  MdPlayCircle as PlayCircle,
-  MdError as AlertCircle
-} from 'react-icons/md';
+import { IconTasksAlertCircle, IconTasksAlertOctagon, IconTasksCalendarDays, IconTasksCheckCircle2, IconTasksChevronDown, IconTasksCircle, IconTasksClock, IconTasksEdit2, IconTasksLink2, IconTasksPlayCircle, IconTasksSearch, IconTasksSlidersHorizontal } from '../../icons';
 
 interface TaskListProps {
   tasks: Task[];
@@ -111,7 +98,7 @@ export const TaskList: React.FC<TaskListProps> = ({
       <div className="flex flex-col gap-4 border-b border-white/[0.08] bg-[#211638]/70 p-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-violet-400/15 bg-violet-500/10">
-            <SlidersHorizontal className="h-4 w-4 text-violet-300" />
+            <IconTasksSlidersHorizontal className="h-4 w-4 text-violet-300" />
           </div>
 
           <div>
@@ -127,7 +114,7 @@ export const TaskList: React.FC<TaskListProps> = ({
         <div className="flex w-full flex-col gap-3 sm:flex-row lg:w-auto">
           {/* Search */}
           <div className="relative w-full sm:min-w-[240px] sm:max-w-xs">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#807493]" />
+            <IconTasksSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#807493]" />
 
             <input
               type="text"
@@ -175,7 +162,7 @@ export const TaskList: React.FC<TaskListProps> = ({
               </option>
             </select>
 
-            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-violet-300" />
+            <IconTasksChevronDown className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-violet-300" />
           </div>
 
           {/* Priority filter */}
@@ -203,7 +190,7 @@ export const TaskList: React.FC<TaskListProps> = ({
               </option>
             </select>
 
-            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-violet-300" />
+            <IconTasksChevronDown className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-violet-300" />
           </div>
         </div>
       </div>
@@ -306,7 +293,7 @@ export const TaskList: React.FC<TaskListProps> = ({
                 <td colSpan={7} className="px-4 py-16 text-center">
                   <div className="mx-auto flex max-w-xs flex-col items-center">
                     <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-violet-400/15 bg-violet-500/10">
-                      <Search className="h-5 w-5 text-violet-300" />
+                      <IconTasksSearch className="h-5 w-5 text-violet-300" />
                     </div>
 
                     <p className="text-sm font-medium text-[#FAF8FF]">
@@ -354,13 +341,13 @@ export const TaskList: React.FC<TaskListProps> = ({
                     <div className="flex items-start gap-3">
                       <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-violet-400/15 bg-violet-500/10">
                         {task.status === 'COMPLETED' ? (
-                          <CheckCircle2 className="h-4 w-4 text-emerald-300" />
+                          <IconTasksCheckCircle2 className="h-4 w-4 text-emerald-300" />
                         ) : task.status === 'BLOCKED' ? (
-                          <AlertOctagon className="h-4 w-4 text-rose-300" />
+                          <IconTasksAlertOctagon className="h-4 w-4 text-rose-300" />
                         ) : task.status === 'IN_PROGRESS' ? (
-                          <PlayCircle className="h-4 w-4 text-violet-300" />
+                          <IconTasksPlayCircle className="h-4 w-4 text-violet-300" />
                         ) : (
-                          <Circle className="h-4 w-4 text-[#A99DBD]" />
+                          <IconTasksCircle className="h-4 w-4 text-[#A99DBD]" />
                         )}
                       </div>
 
@@ -377,7 +364,7 @@ export const TaskList: React.FC<TaskListProps> = ({
 
                         {task.is_blocked && (
                           <span className="mt-2 inline-flex max-w-full items-start gap-1.5 rounded-lg border border-rose-400/20 bg-rose-500/[0.08] px-2 py-1 text-[10px] font-medium leading-4 text-rose-300">
-                            <AlertOctagon className="mt-0.5 h-3 w-3 shrink-0" />
+                            <IconTasksAlertOctagon className="mt-0.5 h-3 w-3 shrink-0" />
                             <span className="break-words">
                               {task.blocker_reason || 'Blocked'}
                             </span>
@@ -387,7 +374,7 @@ export const TaskList: React.FC<TaskListProps> = ({
                         {task.dependencies &&
                           task.dependencies.length > 0 && (
                             <div className="mt-2 flex items-center gap-1.5 text-[10px] text-[#A99DBD]">
-                              <Link2 className="h-3 w-3 shrink-0 text-violet-300" />
+                              <IconTasksLink2 className="h-3 w-3 shrink-0 text-violet-300" />
                               <span>
                                 Depends on #
                                 {task.dependencies
@@ -459,7 +446,7 @@ export const TaskList: React.FC<TaskListProps> = ({
                       )}`}
                     >
                       {task.priority === 'CRITICAL' && (
-                        <AlertCircle className="mr-1 h-3 w-3" />
+                        <IconTasksAlertCircle className="mr-1 h-3 w-3" />
                       )}
                       {task.priority}
                     </span>
@@ -473,7 +460,7 @@ export const TaskList: React.FC<TaskListProps> = ({
                           {task.progress_pct}%
                         </span>
                         <span className="inline-flex items-center gap-1 whitespace-nowrap text-[10px] text-[#807493]">
-                          <Clock className="h-3 w-3" />
+                          <IconTasksClock className="h-3 w-3" />
                           {task.estimated_hours}h
                         </span>
                       </div>
@@ -514,7 +501,7 @@ export const TaskList: React.FC<TaskListProps> = ({
                           : 'text-[#B7ADC9]'
                       }`}
                     >
-                      <CalendarDays
+                      <IconTasksCalendarDays
                         className={`h-3.5 w-3.5 shrink-0 ${
                           isOverdue(task.due_date, task.status)
                             ? 'text-rose-300'
@@ -554,7 +541,7 @@ export const TaskList: React.FC<TaskListProps> = ({
                             : 'border-white/[0.08] bg-white/[0.03] text-[#A99DBD] hover:border-rose-400/20 hover:bg-rose-500/10 hover:text-rose-300'
                         }`}
                       >
-                        <AlertOctagon className="h-3.5 w-3.5" />
+                        <IconTasksAlertOctagon className="h-3.5 w-3.5" />
                       </button>
 
                       <button
@@ -564,7 +551,7 @@ export const TaskList: React.FC<TaskListProps> = ({
                         aria-label={`Edit ${task.title}`}
                         className="rounded-lg border border-white/[0.08] bg-white/[0.03] p-2 text-[#A99DBD] transition-colors hover:border-violet-400/20 hover:bg-violet-500/10 hover:text-violet-200"
                       >
-                        <Edit2 className="h-3.5 w-3.5" />
+                        <IconTasksEdit2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   </td>

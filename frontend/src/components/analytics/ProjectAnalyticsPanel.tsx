@@ -1,10 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  MdWarningAmber as AlertTriangle,
-  MdEvent as CalendarClock,
-  MdCheckCircle as CheckCircle2,
-  MdRefresh as RefreshCw
-} from 'react-icons/md';
+import { IconAnalyticsAlertTriangle, IconAnalyticsCalendarClock, IconAnalyticsCheckCircle2, IconAnalyticsRefreshCw } from '../../icons';
 import { api } from '../../services/api';
 import type { PortfolioHealth, ProjectAnalytics } from '../../types';
 import { formatIndianDate, formatIndianDateTime } from '../../utils/date';
@@ -107,7 +102,7 @@ export const ProjectAnalyticsPanel: React.FC<{ projectId: number }> = ({ project
           disabled={isRefreshing || loading}
           className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-[#19112B] px-3 py-2 text-xs font-medium text-[#D8CDEF] transition hover:bg-[#211638] disabled:opacity-50"
         >
-          <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+          <IconAnalyticsRefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
           Refresh
         </button>
       </div>
@@ -168,7 +163,7 @@ export const ProjectAnalyticsPanel: React.FC<{ projectId: number }> = ({ project
                     projection.feasible ? 'bg-[#0ca30c]/10 text-[#7ee2a0]' : 'bg-[#d03b3b]/10 text-rose-200'
                   }`}
                 >
-                  {projection.feasible ? <CheckCircle2 className="h-3.5 w-3.5" /> : <AlertTriangle className="h-3.5 w-3.5" />}
+                  {projection.feasible ? <IconAnalyticsCheckCircle2 className="h-3.5 w-3.5" /> : <IconAnalyticsAlertTriangle className="h-3.5 w-3.5" />}
                   {daysVsTarget === null
                     ? 'No target date'
                     : daysVsTarget > 0
@@ -257,7 +252,7 @@ export const ProjectAnalyticsPanel: React.FC<{ projectId: number }> = ({ project
                         overdue ? 'text-[#ec835a]' : 'text-[#D8CFE7]'
                       }`}
                     >
-                      {overdue ? <AlertTriangle className="h-3.5 w-3.5" /> : <CalendarClock className="h-3.5 w-3.5 text-[#8f84a3]" />}
+                      {overdue ? <IconAnalyticsAlertTriangle className="h-3.5 w-3.5" /> : <IconAnalyticsCalendarClock className="h-3.5 w-3.5 text-[#8f84a3]" />}
                       {overdue
                         ? `${-row.days_from_today}d overdue`
                         : row.days_from_today === 0
