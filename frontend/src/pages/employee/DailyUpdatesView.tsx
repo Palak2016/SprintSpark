@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { IconActivity, IconAlertOctagon, IconArrowUpRight, IconCalendar, IconChartNoAxesCombined, IconCheckCircle2, IconCircleAlert, IconClipboardList, IconClock, IconDownload, IconInfo, IconMessageSquare, IconRefresh, IconSend, IconShieldCheck, IconSpinner, IconTarget } from '../../icons';
 
 import { useAuth } from '../../context/AuthContext';
+import { useProject } from '../../context/ProjectContext';
 import { api } from '../../services/api';
 import type { DailyUpdate, ExtractedSignal, Task } from '../../types';
 import { formatIndianDate } from '../../utils/date';
@@ -31,6 +32,10 @@ const C = {
 
 export const DailyUpdatesView: React.FC = () => {
   const { user, isManager } = useAuth();
+  const { activeProject } = useProject();
+  const activeProjectId = activeProject?.id;
+  const activeProjectIdRef = React.useRef(activeProjectId);
+  activeProjectIdRef.current = activeProjectId;
 
   const [updates, setUpdates] = useState<DailyUpdate[]>([]);
   const [myTasks, setMyTasks] = useState<Task[]>([]);
@@ -55,18 +60,34 @@ export const DailyUpdatesView: React.FC = () => {
   const [removedSignals, setRemovedSignals] = useState<number[]>([]);
 
   const loadUpdates = useCallback(async () => {
-    if (!user) return;
+    if (!user || activeProjectId === undefined) {
+      setUpdates([]);
+      return;
+    }
 
-    const data = await api.getDailyUpdates({ user_id: user.id });
+    const data = await api.getDailyUpdates({
+      project_id: activeProjectId,
+      user_id: user.id,
+    });
+    if (activeProjectIdRef.current !== activeProjectId) return;
     setUpdates(data);
-  }, [user]);
+  }, [user, activeProjectId]);
 
   const loadTasks = useCallback(async (syncForm = true) => {
-    if (!user) return;
+    if (!user || activeProjectId === undefined) {
+      setMyTasks([]);
+      setSelectedTaskId(undefined);
+      setProgressPct(0);
+      setIsBlocked(false);
+      setBlockerNotes('');
+      return;
+    }
 
-    const data = await api.getTasks(
-      user.role === 'MANAGER' ? undefined : { assignee_id: user.id },
-    );
+    const data = await api.getTasks({
+      project_id: activeProjectId,
+      ...(user.role === 'MANAGER' ? {} : { assignee_id: user.id }),
+    });
+    if (activeProjectIdRef.current !== activeProjectId) return;
     setMyTasks(data);
 
     const selected = data.find((task) => task.id === selectedTaskId);
@@ -88,7 +109,7 @@ export const DailyUpdatesView: React.FC = () => {
       setIsBlocked(false);
       setBlockerNotes('');
     }
-  }, [user, selectedTaskId]);
+  }, [user, activeProjectId, selectedTaskId]);
 
   const refreshData = useCallback(async () => {
     await Promise.all([loadUpdates(), loadTasks()]);
@@ -104,22 +125,41 @@ export const DailyUpdatesView: React.FC = () => {
     let cancelled = false;
 
     const initialize = async () => {
-      if (!user) {
+      if (!user || activeProjectId === undefined) {
         setUpdates([]);
         setMyTasks([]);
         setSelectedTaskId(undefined);
+        setAnalysisToken(null);
+        setManualProgressMode(false);
+        setProgressAnalysis(null);
+        setSignals([]);
+        setRemovedSignals([]);
         setIsLoading(false);
         return;
       }
 
       setIsLoading(true);
       setErrorMsg(null);
+      setUpdates([]);
+      setMyTasks([]);
+      setSelectedTaskId(undefined);
+      setAnalysisToken(null);
+      setManualProgressMode(false);
+      setProgressAnalysis(null);
+      setSignals([]);
+      setRemovedSignals([]);
 
       try {
         const [updateData, taskData] = await Promise.all([
-          api.getDailyUpdates({ user_id: user.id }),
+          api.getDailyUpdates({
+            project_id: activeProjectId,
+            user_id: user.id,
+          }),
           api.getTasks(
-            user.role === 'MANAGER' ? undefined : { assignee_id: user.id },
+            {
+              project_id: activeProjectId,
+              ...(user.role === 'MANAGER' ? {} : { assignee_id: user.id }),
+            },
           ),
         ]);
 
@@ -164,7 +204,7 @@ export const DailyUpdatesView: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [user, activeProjectId]);
 
   const handleDownload = async () => {
     if (!user || isDownloading) return;
@@ -175,7 +215,10 @@ export const DailyUpdatesView: React.FC = () => {
     try {
       // Managers get every employee's updates on the projects they can see;
       // employees get only their own (the server enforces both).
-      await api.downloadDailyUpdates(isManager ? undefined : { user_id: user.id });
+      await api.downloadDailyUpdates({
+        project_id: activeProjectId,
+        ...(isManager ? {} : { user_id: user.id }),
+      });
     } catch (error: unknown) {
       setErrorMsg(
         error instanceof Error ? error.message : 'Download failed. Please try again.',
@@ -728,7 +771,9 @@ export const DailyUpdatesView: React.FC = () => {
                     Submit today's update
                   </h2>
                   <p className="mt-1 text-xs" style={{ color: C.muted }}>
-                    Share where things stand.
+                          {activeProject
+                            ? `Project: ${activeProject.name}. Choose a task from this project.`
+                            : 'Select a project to view its tasks and submit an update.'}
                   </p>
                 </div>
               </div>

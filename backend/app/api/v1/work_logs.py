@@ -9,6 +9,7 @@ from sqlalchemy import false
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, joinedload
 
+from app.core.company_access import is_company_admin
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.core.tenancy import is_manager_role, require_project_manager, require_task_access, visible_projects_clause
@@ -60,6 +61,13 @@ router = APIRouter(tags=["Work Logs & Daily Updates"])
 logger = logging.getLogger(__name__)
 
 
+def _can_view_project_activity(current_user: User, db: Session) -> bool:
+    return is_manager_role(current_user) or (
+        current_user.company_id is not None
+        and is_company_admin(db, current_user, current_user.company_id)
+    )
+
+
 def _visible_work_logs(
     current_user: User,
     db: Session,
@@ -70,9 +78,8 @@ def _visible_work_logs(
 ):
     """Work logs this user may see; shared by the list and the Excel export."""
     query = db.query(WorkLog)
-    if is_manager_role(current_user):
-        # Only entries for projects this manager leads, is assigned to,
-        # or administers as Company Admin.
+    if _can_view_project_activity(current_user, db):
+        # Managers see their projects; Company Admins see their company.
         query = query.join(Task, Task.id == WorkLog.task_id).join(
             Project, Project.id == Task.project_id
         ).filter(visible_projects_clause(current_user, db))
@@ -101,12 +108,12 @@ def _visible_daily_updates(
     user_id: Optional[int] = None,
     date_from: Optional[date] = None,
     date_to: Optional[date] = None,
+    project_id: Optional[int] = None,
 ):
     """Daily updates this user may see; shared by the list and the Excel export."""
     query = db.query(DailyUpdate)
-    if is_manager_role(current_user):
-        # Only entries for projects this manager leads, is assigned to,
-        # or administers as Company Admin.
+    if _can_view_project_activity(current_user, db):
+        # Managers see their projects; Company Admins see their company.
         query = query.join(Task, Task.id == DailyUpdate.task_id).join(
             Project, Project.id == Task.project_id
         ).filter(visible_projects_clause(current_user, db))
@@ -115,6 +122,13 @@ def _visible_daily_updates(
 
     if task_id:
         query = query.filter(DailyUpdate.task_id == task_id)
+
+    if project_id is not None:
+        query = query.filter(
+            DailyUpdate.task_id.in_(
+                db.query(Task.id).filter(Task.project_id == project_id)
+            )
+        )
 
     if user_id:
         query = query.filter(DailyUpdate.user_id == user_id)
@@ -282,12 +296,19 @@ def create_work_log(
     response_model=List[DailyUpdateOut],
 )
 def list_daily_updates(
+    project_id: Optional[int] = None,
     task_id: Optional[int] = None,
     user_id: Optional[int] = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    updates = _visible_daily_updates(current_user, db, task_id, user_id).all()
+    updates = _visible_daily_updates(
+        current_user,
+        db,
+        task_id=task_id,
+        user_id=user_id,
+        project_id=project_id,
+    ).all()
 
     return [
         DailyUpdateOut.model_validate(update)
@@ -297,6 +318,7 @@ def list_daily_updates(
 
 @router.get("/daily-updates/export")
 def export_daily_updates(
+    project_id: Optional[int] = None,
     task_id: Optional[int] = None,
     user_id: Optional[int] = None,
     date_from: Optional[date] = Query(None),
@@ -307,7 +329,15 @@ def export_daily_updates(
     """Excel download of the same daily updates the list returns for this user."""
     _check_range(date_from, date_to)
     updates = (
-        _visible_daily_updates(current_user, db, task_id, user_id, date_from, date_to)
+        _visible_daily_updates(
+            current_user,
+            db,
+            task_id,
+            user_id,
+            date_from,
+            date_to,
+            project_id,
+        )
         .options(
             joinedload(DailyUpdate.task).joinedload(Task.project),
             joinedload(DailyUpdate.user),

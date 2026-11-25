@@ -160,6 +160,58 @@ def test_company_admin_sees_every_project_in_own_company_only(client, org):
     assert {org["t1"].id, org["t2"].id} <= tasks and org["tb"].id not in tasks
 
 
+def test_admin_only_company_admin_sees_company_project_activity(client, org, db_session):
+    admin = org["admin_a"]
+    admin.role = "ADMIN"
+    db_session.commit()
+    headers = _auth(admin)
+
+    assert _ours(org, _project_ids(client, admin)) == {org["p1"].id, org["p2"].id}
+    assert client.get(
+        f"/api/v1/projects/{org['p2'].id}", headers=headers
+    ).status_code == 200
+    tasks = client.get("/api/v1/tasks", headers=headers)
+    assert tasks.status_code == 200, tasks.text
+    assert org["t2"].id in {task["id"] for task in tasks.json()}
+
+    logs = client.get("/api/v1/work-logs", headers=headers)
+    updates = client.get("/api/v1/daily-updates", headers=headers)
+
+    assert logs.status_code == 200, logs.text
+    assert updates.status_code == 200, updates.text
+    assert org["t2"].id in {item["task_id"] for item in logs.json()}
+    assert org["t2"].id in {item["task_id"] for item in updates.json()}
+    assert org["tb"].id not in {item["task_id"] for item in logs.json()}
+    assert org["tb"].id not in {item["task_id"] for item in updates.json()}
+
+
+def test_daily_update_project_filter_only_returns_updates_for_that_project(
+    client, org, db_session
+):
+    db_session.add(DailyUpdate(
+        task_id=org["t1"].id,
+        user_id=org["member_emp"].id,
+        progress_pct=20,
+        date=TODAY,
+    ))
+    db_session.commit()
+    headers = _auth(org["admin_a"])
+
+    p1_updates = client.get(
+        f"/api/v1/daily-updates?project_id={org['p1'].id}",
+        headers=headers,
+    )
+    p2_updates = client.get(
+        f"/api/v1/daily-updates?project_id={org['p2'].id}",
+        headers=headers,
+    )
+
+    assert p1_updates.status_code == 200, p1_updates.text
+    assert p2_updates.status_code == 200, p2_updates.text
+    assert {update["task_id"] for update in p1_updates.json()} == {org["t1"].id}
+    assert {update["task_id"] for update in p2_updates.json()} == {org["t2"].id}
+
+
 def test_no_cross_company_access(client, org):
     for who in ("lead", "admin_a"):
         assert org["pb"].id not in _project_ids(client, org[who])
@@ -263,6 +315,31 @@ def test_assigned_manager_keeps_existing_workflows(client, org, db_session):
     assert client.post(f"/api/v1/projects/{p1}/members", headers=headers, json={"user_id": org["loose_emp"].id}).status_code == 201
     # The newly added employee can now see the project.
     assert org["p1"].id in _project_ids(client, org["loose_emp"])
+
+
+def test_added_manager_can_see_project_and_gets_assignment_notification(client, org):
+    project = org["p2"]
+    manager = org["outsider_mgr"]
+    response = client.post(
+        f"/api/v1/projects/{project.id}/members",
+        headers=_auth(org["other_lead"]),
+        json={"user_id": manager.id, "role_in_project": "Project Manager"},
+    )
+    assert response.status_code == 201, response.text
+
+    assert project.id in _project_ids(client, manager)
+    tasks = client.get("/api/v1/tasks", headers=_auth(manager))
+    assert tasks.status_code == 200, tasks.text
+    assert org["t2"].id in {task["id"] for task in tasks.json()}
+
+    notifications = client.get("/api/v1/notifications", headers=_auth(manager))
+    assert notifications.status_code == 200, notifications.text
+    assert any(
+        notification["type"] == "PROJECT_ASSIGNED"
+        and notification["title"] == f"Project Assigned: {project.name}"
+        and notification["link"] == "/manager/projects"
+        for notification in notifications.json()
+    )
 
 
 def test_creating_a_project_makes_it_visible_to_creator_only(client, org):

@@ -55,6 +55,7 @@ export class ApiError extends Error {
 }
 
 export interface ExportParams {
+  project_id?: number;
   task_id?: number;
   user_id?: number;
   /** YYYY-MM-DD */
@@ -207,6 +208,7 @@ class ApiService {
 
   private exportQuery(params?: ExportParams): string {
     const search = new URLSearchParams();
+    if (params?.project_id != null) search.append('project_id', params.project_id.toString());
     if (params?.task_id != null) search.append('task_id', params.task_id.toString());
     if (params?.user_id != null) search.append('user_id', params.user_id.toString());
     if (params?.date_from) search.append('date_from', params.date_from);
@@ -684,10 +686,18 @@ class ApiService {
   }
 
   async getDailyUpdates(params?: {
+    project_id?: number;
     task_id?: number;
     user_id?: number;
   }): Promise<DailyUpdate[]> {
     const searchParams = new URLSearchParams();
+
+    if (params?.project_id != null) {
+      searchParams.append(
+        'project_id',
+        params.project_id.toString()
+      );
+    }
 
     if (params?.task_id != null) {
       searchParams.append(

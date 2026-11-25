@@ -414,7 +414,12 @@ def add_project_member(
 
     try:
         db.add(member)
-        if assigned_user and assigned_user.role == "EMPLOYEE":
+        if assigned_user and assigned_user.role in {"EMPLOYEE", "MANAGER"}:
+            workspace_link = (
+                "/manager/projects"
+                if assigned_user.role == "MANAGER"
+                else "/employee"
+            )
             db.add(
                 Notification(
                     user_id=assigned_user.id,
@@ -424,7 +429,7 @@ def add_project_member(
                         f"{current_user.full_name} added you to the project "
                         f"'{project.name}'."
                     ),
-                    link="/employee",
+                    link=workspace_link,
                 )
             )
         db.commit()
