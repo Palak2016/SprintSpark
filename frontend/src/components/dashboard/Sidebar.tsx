@@ -1,15 +1,14 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { IconFocusGuardian, IconSidebarActivityHistory, IconSidebarAdminTransfer, IconSidebarArrowLeftRight, IconSidebarArrowUpRight, IconSidebarBuilding2, IconSidebarCheck, IconSidebarChevronLeft, IconSidebarChevronRight, IconSidebarCircleHelp, IconSidebarCompass, IconSidebarEmployeeAgenda, IconSidebarEmployeeLeave, IconSidebarEmployeeTasks, IconSidebarEmployeeUpdates, IconSidebarEmployeeWorkLogs, IconSidebarLogOut, IconSidebarManagerAgenda, IconSidebarManagerLeave, IconSidebarManagerTasks, IconSidebarManagerUpdates, IconSidebarManagerWorkLogs, IconSidebarMoon, IconSidebarMyOverview, IconSidebarOverview, IconSidebarProjects, IconSidebarRecoveryPlans, IconSidebarSettings, IconSidebarSun, IconSidebarTaskBoard, IconSidebarTeamCapacity, IconSidebarUserRound, IconSidebarUsersRound, IconSidebarX } from '../../icons';
+import { IconFocusGuardian, IconSidebarActivityHistory, IconSidebarAdminTransfer, IconSidebarArrowLeftRight, IconSidebarArrowUpRight, IconSidebarBuilding2, IconSidebarCheck, IconSidebarChevronRight, IconSidebarCircleHelp, IconSidebarCompass, IconSidebarEmployeeAgenda, IconSidebarEmployeeLeave, IconSidebarEmployeeTasks, IconSidebarEmployeeUpdates, IconSidebarEmployeeWorkLogs, IconSidebarLogOut, IconSidebarManagerAgenda, IconSidebarManagerLeave, IconSidebarManagerTasks, IconSidebarManagerUpdates, IconSidebarManagerWorkLogs, IconSidebarMoon, IconSidebarMyOverview, IconSidebarOverview, IconSidebarProjects, IconSidebarRecoveryPlans, IconSidebarSettings, IconSidebarSun, IconSidebarTaskBoard, IconSidebarTeamCapacity, IconSidebarUserRound, IconSidebarUsersRound, IconSidebarX } from '../../icons';
 import { Logo } from '../common/Logo';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import { WORKSPACE_LABELS, Workspace, workspaceHome } from '../../utils/workspace';
+import { profilePhotoStorageKey } from '../../utils/profilePhoto';
 
 interface SidebarProps {
-  collapsed: boolean;
-  setCollapsed: (collapsed: boolean) => void;
   /** Overrides the workspace navigation (used by the Admin console). */
   navItems?: NavItem[];
   workspaceLabel?: string;
@@ -24,9 +23,44 @@ export interface NavItem {
   badge?: string;
 }
 
+const AccountAvatar: React.FC<{
+  email?: string;
+  avatarUrl?: string;
+  size: 'small' | 'large';
+}> = ({ email, avatarUrl, size }) => {
+  const [localAvatarUrl] = useState(() => {
+    if (!email) return undefined;
+
+    try {
+      return window.localStorage.getItem(profilePhotoStorageKey(email)) ?? undefined;
+    } catch (error) {
+      console.error('Could not load the local profile photo:', error);
+      return undefined;
+    }
+  });
+  const photoUrl = localAvatarUrl
+    || (avatarUrl?.includes('api.dicebear.com/7.x/initials') ? undefined : avatarUrl);
+  const dimensions = size === 'small' ? 'h-9 w-9' : 'h-11 w-11';
+  const iconDimensions = size === 'small' ? 'h-5 w-5' : 'h-6 w-6';
+
+  return (
+    <span className={`relative flex ${dimensions} shrink-0 items-center justify-center overflow-hidden rounded-full border border-violet-300/25 bg-linear-to-br from-violet-500 to-indigo-700 text-white`}>
+      <IconSidebarUserRound aria-hidden="true" className={`${iconDimensions} text-white/80`} />
+      {photoUrl && (
+        <img
+          src={photoUrl}
+          alt=""
+          className="absolute inset-0 h-full w-full rounded-full object-cover"
+          onError={(event) => {
+            event.currentTarget.style.display = 'none';
+          }}
+        />
+      )}
+    </span>
+  );
+};
+
 export const Sidebar: React.FC<SidebarProps> = ({
-  collapsed,
-  setCollapsed,
   navItems: customNavItems,
   workspaceLabel,
   isAdminConsole = false,
@@ -35,6 +69,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
   const accountMenuRef = useRef<HTMLDivElement>(null);
+  const navigationRef = useRef<HTMLDivElement>(null);
 
   // Pending "become Company Admin" requests addressed to this user.
   const [incomingTransfers, setIncomingTransfers] = useState(0);
@@ -67,6 +102,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
   const [quickstartOpen, setQuickstartOpen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const savedTheme = window.localStorage.getItem('workpilot_theme');
@@ -84,7 +120,36 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }, [theme]);
 
   useEffect(() => {
-    if (!accountMenuOpen && !quickstartOpen) return;
+    const closeOpenMenus = () => {
+      navigationRef.current
+        ?.querySelectorAll<HTMLDetailsElement>('details[open]')
+        .forEach((menu) => {
+          menu.open = false;
+        });
+    };
+
+    const closeNavigationMenus = (event: MouseEvent) => {
+      if (!(event.target instanceof Element) || event.target.closest('details')) {
+        return;
+      }
+
+      closeOpenMenus();
+    };
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') closeOpenMenus();
+    };
+
+    document.addEventListener('mousedown', closeNavigationMenus);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('mousedown', closeNavigationMenus);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!accountMenuOpen && !quickstartOpen && !mobileNavOpen) return;
 
     const closeOnOutsideClick = (event: MouseEvent) => {
       if (
@@ -94,6 +159,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
         setAccountMenuOpen(false);
         setThemeMenuOpen(false);
       }
+
+      if (
+        event.target instanceof Node &&
+        !navigationRef.current?.contains(event.target)
+      ) {
+        setMobileNavOpen(false);
+      }
     };
 
     const closeOnEscape = (event: KeyboardEvent) => {
@@ -101,6 +173,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         setAccountMenuOpen(false);
         setThemeMenuOpen(false);
         setQuickstartOpen(false);
+        setMobileNavOpen(false);
       }
     };
 
@@ -111,7 +184,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       document.removeEventListener('mousedown', closeOnOutsideClick);
       window.removeEventListener('keydown', closeOnEscape);
     };
-  }, [accountMenuOpen, quickstartOpen]);
+  }, [accountMenuOpen, quickstartOpen, mobileNavOpen]);
 
   const managerNav: NavItem[] = [
     { name: 'Overview', href: '/manager', icon: IconSidebarOverview },
@@ -158,6 +231,33 @@ export const Sidebar: React.FC<SidebarProps> = ({
     ...(incomingTransfers > 0 ? [transferItem] : []),
     ...workspaceNav,
   ];
+  const navGroupDefinitions = isAdminConsole
+    ? [
+        { label: 'Company', names: ['Admin Transfer', 'Overview', 'Members', 'Approvals', 'Invitations'] },
+        { label: 'Insights & governance', names: ['Analytics', 'Activity', 'Ownership', 'Settings'] },
+      ]
+    : isManager
+      ? [
+          { label: 'Workspace', names: ['Admin Transfer', 'Overview'] },
+          { label: 'Project delivery', names: ['Projects', 'Tasks Board', 'My Tasks', 'Daily Updates', 'Agenda Alignment', 'Work Logs'] },
+          { label: 'Team operations', names: ['Team & Capacity', 'Leave Requests', 'Recovery Plans', 'Activity History', 'Settings'] },
+        ]
+      : [
+          { label: 'My workspace', names: ['Admin Transfer', 'My Overview', 'My Tasks'] },
+          { label: 'Collaboration', names: ['Work Logs', 'Daily Updates', 'Agenda Alignment'] },
+          { label: 'Personal tools', names: ['Leave Requests', 'Focus Guardian'] },
+        ];
+  const navigationGroups: { label: string; items: NavItem[] }[] = navGroupDefinitions
+    .map((group) => ({
+      label: group.label,
+      items: navItems.filter((item) => group.names.includes(item.name)),
+    }))
+    .filter((group) => group.items.length > 0);
+  const groupedNames = new Set(navGroupDefinitions.flatMap((group) => group.names));
+  const ungroupedItems = navItems.filter((item) => !groupedNames.has(item.name));
+  if (ungroupedItems.length > 0) {
+    navigationGroups.push({ label: 'More', items: ungroupedItems });
+  }
 
   // Other workspaces this account may open (server-decided).
   const currentWorkspace: Workspace = isAdminConsole
@@ -191,12 +291,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
     setAccountMenuOpen(false);
     setThemeMenuOpen(false);
     setQuickstartOpen(false);
+    setMobileNavOpen(false);
     navigate(path);
   };
 
   const switchAccount = async () => {
     setAccountMenuOpen(false);
     setThemeMenuOpen(false);
+    setMobileNavOpen(false);
     await logout();
     navigate('/login', { replace: true });
   };
@@ -204,184 +306,187 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const handleLogout = async () => {
     setAccountMenuOpen(false);
     setThemeMenuOpen(false);
+    setMobileNavOpen(false);
     await logout();
     navigate('/login', { replace: true });
   };
 
-  const initials =
-    user?.full_name
-      ?.trim()
-      .split(/\s+/)
-      .slice(0, 2)
-      .map((part) => part.charAt(0))
-      .join('')
-      .toUpperCase() || 'U';
-
-  const iconButtonClass =
-    'rounded-lg p-1.5 text-[#B7ADC9] transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400';
-
   const menuItemClass =
     'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-[#D8D0E7] transition-colors hover:bg-violet-500/15 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400';
 
-  return (
-    <aside
-      className={`fixed inset-y-0 left-0 z-30 flex flex-col border-r border-white/[0.08] bg-[#100B1D] text-[#D8D0E7] shadow-[8px_0_32px_rgba(0,0,0,0.12)] transition-[width] duration-200 ${
-        collapsed ? 'w-20' : 'w-64'
-      }`}
+  const renderNavItem = (item: NavItem) => (
+    <NavLink
+      key={item.name}
+      to={item.href}
+      end={item.href === '/manager' || item.href === '/employee'}
+      onClick={(event) => {
+        setMobileNavOpen(false);
+        event.currentTarget.closest('details')?.removeAttribute('open');
+      }}
+      className={({ isActive }) =>
+        `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+          isActive
+            ? 'bg-violet-500/15 text-white'
+            : 'text-[#B7ADC9] hover:bg-white/5 hover:text-white'
+        }`
+      }
     >
-      {/* Brand Header */}
-      <div className="flex h-16 shrink-0 items-center justify-between border-b border-white/[0.08] px-4">
+      {({ isActive }) => (
+        <>
+          <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+            isActive ? 'bg-violet-500/20 text-violet-200' : 'bg-white/4 text-[#9487AA]'
+          }`}>
+            <item.icon className="h-4 w-4" />
+          </span>
+          <span className="min-w-0 flex-1 truncate">{item.name}</span>
+          {item.badge && (
+            <span className="rounded-md border border-violet-400/25 bg-violet-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-violet-200">
+              {item.badge}
+            </span>
+          )}
+          {isActive && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-violet-300" />}
+        </>
+      )}
+    </NavLink>
+  );
+
+  const renderWorkspaceItem = (target: Workspace) => {
+    const Icon = target === 'admin' ? IconSidebarBuilding2 : IconSidebarArrowLeftRight;
+    return (
+      <NavLink
+        key={target}
+        to={workspaceHome(target)}
+        onClick={() => setMobileNavOpen(false)}
+        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-[#D8D0E7] transition-colors hover:bg-white/5 hover:text-white"
+      >
+        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/4 text-violet-200">
+          <Icon className="h-4 w-4" />
+        </span>
+        <span className="min-w-0 flex-1 truncate">{WORKSPACE_LABELS[target]}</span>
+        <IconSidebarArrowUpRight className="h-4 w-4 text-[#8F83A7]" />
+      </NavLink>
+    );
+  };
+
+  return (
+    <div
+      ref={navigationRef}
+      className="dashboard-app-navigation relative border-b border-white/8 bg-[#100B1D] text-[#D8D0E7]"
+    >
+      <div className="mx-auto flex min-h-17 max-w-450 items-center gap-4 px-4 sm:px-6 lg:px-8">
         <div className="flex min-w-0 items-center overflow-hidden">
-          <Logo size="sm" showText={!collapsed} onDarkBackground />
+          <Logo size="sm" showText onDarkBackground />
         </div>
+
+        <div className="hidden min-w-0 items-center gap-2 border-l border-white/10 pl-4 xl:flex">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-violet-200">
+            {isAdminConsole
+              ? <IconSidebarBuilding2 className="h-4 w-4" />
+              : <IconSidebarCompass className="h-4 w-4" />}
+          </span>
+          <span className="min-w-0">
+            <span className="block text-[9px] font-semibold uppercase tracking-[0.14em] text-[#8F83A7]">
+              Workspace
+            </span>
+            <span className="mt-0.5 block max-w-37.5 truncate text-xs font-semibold text-white">
+              {workspaceLabel ?? (isManager ? 'Manager workspace' : 'My workspace')}
+            </span>
+          </span>
+        </div>
+
+        <nav className="hidden min-w-0 flex-1 items-center justify-center gap-1 lg:flex" aria-label="Primary navigation">
+          {navigationGroups.map((group) => {
+            const groupActive = group.items.some((item) =>
+              location.pathname === item.href
+              || (item.href !== '/manager' && item.href !== '/employee' && location.pathname.startsWith(`${item.href}/`))
+            );
+            return (
+              <details key={group.label} name="workspace-navigation" className="group relative">
+                <summary className={`flex cursor-pointer list-none items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-semibold transition-colors [&::-webkit-details-marker]:hidden ${
+                  groupActive ? 'bg-white/8 text-white' : 'text-[#B7ADC9] hover:bg-white/5 hover:text-white'
+                }`}>
+                  {group.label}
+                  <IconSidebarChevronRight className="h-3.5 w-3.5 rotate-90 transition-transform group-open:-rotate-90" />
+                </summary>
+                <div className="absolute left-0 top-full z-50 mt-2 w-64 rounded-2xl border border-white/9 bg-[#19112B] p-2 shadow-[0_18px_55px_rgba(0,0,0,0.4)]">
+                  <p className="px-3 pb-2 pt-1 text-[9px] font-bold uppercase tracking-[0.16em] text-[#76698D]">
+                    {group.label}
+                  </p>
+                  {group.items.map(renderNavItem)}
+                </div>
+              </details>
+            );
+          })}
+          {switchTargets.length > 0 && (
+            <details name="workspace-navigation" className="group relative">
+              <summary className="flex cursor-pointer list-none items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-semibold text-[#B7ADC9] transition-colors hover:bg-white/5 hover:text-white [&::-webkit-details-marker]:hidden">
+                <IconSidebarArrowLeftRight className="h-4 w-4" />
+                Workspaces
+                <IconSidebarChevronRight className="h-3.5 w-3.5 rotate-90 transition-transform group-open:-rotate-90" />
+              </summary>
+              <div className="absolute right-0 top-full z-50 mt-2 w-64 rounded-2xl border border-white/9 bg-[#19112B] p-2 shadow-[0_18px_55px_rgba(0,0,0,0.4)]">
+                <p className="px-3 pb-2 pt-1 text-[9px] font-bold uppercase tracking-[0.16em] text-[#76698D]">Switch workspace</p>
+                {switchTargets.map(renderWorkspaceItem)}
+              </div>
+            </details>
+          )}
+        </nav>
 
         <button
           type="button"
-          onClick={() => setCollapsed(!collapsed)}
-          className={`${iconButtonClass} hidden md:flex`}
-          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-label="Toggle workspace navigation"
+          aria-expanded={mobileNavOpen}
+          onClick={() => {
+            setMobileNavOpen((open) => !open);
+            setAccountMenuOpen(false);
+            setThemeMenuOpen(false);
+          }}
+          className="ml-auto inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/4 px-3 py-2 text-xs font-semibold text-[#D8D0E7] transition hover:bg-white/8 lg:hidden"
         >
-          {collapsed ? (
-            <IconSidebarChevronRight className="h-4 w-4" />
-          ) : (
-            <IconSidebarChevronLeft className="h-4 w-4" />
-          )}
+          Menu
+          <IconSidebarChevronRight className={`h-3.5 w-3.5 transition-transform ${mobileNavOpen ? '-rotate-90' : 'rotate-90'}`} />
         </button>
-      </div>
 
-      {/* Workspace Role */}
-      {!collapsed && (
-        <div className="border-b border-white/[0.06] bg-white/[0.02] px-4 py-3">
-          <div className="flex flex-col gap-2">
-            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8F83A7]">
-              Workspace
-            </span>
-
-            <span className="inline-flex w-fit max-w-full items-center gap-1.5 rounded-full border border-violet-400/20 bg-violet-500/10 px-2.5 py-1 text-[11px] font-medium text-violet-200">
-              <span className="h-1.5 w-1.5 rounded-full bg-violet-400" />
-              {workspaceLabel ?? (isManager ? 'Manager workspace' : 'My workspace')}
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* Navigation */}
-      <nav
-        className="flex-1 space-y-1 overflow-y-auto px-3 py-5"
-        aria-label="Dashboard navigation"
-      >
-        {!collapsed && (
-          <p className="mb-3 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#76698D]">
-            Main Menu
-          </p>
-        )}
-
-        {navItems.map((item) => (
-          <NavLink
-            key={item.name}
-            to={item.href}
-            end={item.href === '/manager' || item.href === '/employee'}
-            title={collapsed ? item.name : undefined}
-            className={({ isActive }) =>
-              `group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
-                isActive
-                  ? 'bg-gradient-to-r from-violet-500/25 via-violet-500/15 to-transparent text-white shadow-[inset_2px_0_0_#A78BFA]'
-                  : 'text-[#A99DBD] hover:bg-white/[0.055] hover:text-white'
-              }`
-            }
+        <div ref={accountMenuRef} className="relative shrink-0">
+          <button
+            type="button"
+            aria-label="Open account menu"
+            aria-haspopup="menu"
+            aria-expanded={accountMenuOpen}
+            onClick={() => {
+              setAccountMenuOpen(!accountMenuOpen);
+              setThemeMenuOpen(false);
+              setMobileNavOpen(false);
+            }}
+            className="flex items-center gap-2 rounded-xl border border-white/8 bg-white/3.5 p-1.5 pr-2.5 text-left transition hover:bg-white/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
           >
-            {({ isActive }) => (
-              <>
-                <item.icon
-                  className={`h-5 w-5 shrink-0 transition-colors ${
-                    isActive
-                      ? 'text-[#C4B5FD]'
-                      : item.highlight
-                        ? 'text-amber-300 group-hover:text-amber-200'
-                        : 'text-[#8F83A7] group-hover:text-[#D8CCF5]'
-                  }`}
-                />
+            <AccountAvatar
+              key={user?.email}
+              email={user?.email}
+              avatarUrl={user?.avatar_url}
+              size="small"
+            />
+            <span className="hidden min-w-0 text-left xl:block">
+              <span className="dashboard-account-name block max-w-32.5 truncate text-xs font-semibold text-[#E9D5FF]">{user?.full_name || 'Your account'}</span>
+              <span className="dashboard-account-label mt-0.5 block text-[9px] font-semibold uppercase tracking-[0.12em] text-violet-200">Account</span>
+            </span>
+            <IconSidebarChevronRight className={`hidden h-3.5 w-3.5 text-[#8F83A7] transition-transform xl:block ${accountMenuOpen ? '-rotate-90' : 'rotate-90'}`} />
+          </button>
 
-                {!collapsed && (
-                  <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
-                    <span className="truncate">{item.name}</span>
-
-                    {item.badge && (
-                      <span className="rounded-md border border-violet-400/25 bg-violet-500/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-violet-200">
-                        {item.badge}
-                      </span>
-                    )}
-                  </span>
-                )}
-
-                {collapsed && item.badge && (
-                  <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-violet-400" />
-                )}
-              </>
-            )}
-          </NavLink>
-        ))}
-
-        {/* Switch between the workspaces this account was granted (for
-            example Admin console + Manager). The backend enforces each. */}
-        {switchTargets.length > 0 && (
-          <div className="mt-5 border-t border-white/[0.07] pt-4">
-            {!collapsed && (
-              <p className="mb-3 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#76698D]">
-                Switch workspace
-              </p>
-            )}
-            {switchTargets.map((target) => {
-              const Icon = target === 'admin' ? IconSidebarBuilding2 : IconSidebarArrowLeftRight;
-              return (
-                <NavLink
-                  key={target}
-                  to={workspaceHome(target)}
-                  title={collapsed ? WORKSPACE_LABELS[target] : undefined}
-                  className="group mb-1 flex items-center gap-3 rounded-xl border border-violet-400/15 bg-violet-500/[0.06] px-3 py-2.5 text-sm font-medium text-violet-100 transition-all hover:border-violet-400/30 hover:bg-violet-500/[0.12] hover:text-white"
-                >
-                  <Icon className="h-5 w-5 shrink-0 text-violet-300" />
-                  {!collapsed && (
-                    <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
-                      <span className="truncate">{WORKSPACE_LABELS[target]}</span>
-                      <IconSidebarArrowUpRight className="h-4 w-4 text-violet-300/70" />
-                    </span>
-                  )}
-                </NavLink>
-              );
-            })}
-          </div>
-        )}
-      </nav>
-
-      {/* Account Section */}
-      <div
-        ref={accountMenuRef}
-        className="relative shrink-0 border-t border-white/[0.08] bg-[#130D21] p-3"
-      >
         {/* Account Dropdown */}
         {accountMenuOpen && (
-          <div className="absolute bottom-full left-3 z-40 mb-3 w-72 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-violet-300/15 bg-[#19112B] p-2 text-white shadow-[0_16px_60px_rgba(0,0,0,0.5)]">
+          <div className="absolute right-0 top-full z-50 mt-3 w-72 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-violet-300/15 bg-[#19112B] p-2 text-white shadow-[0_16px_60px_rgba(0,0,0,0.5)]">
             {/* User Details */}
-            <div className="mb-2 flex items-center gap-3 rounded-xl border border-white/[0.05] bg-white/[0.035] p-3">
-              <div className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-violet-300/25 bg-gradient-to-br from-violet-500 to-indigo-700 text-sm font-bold text-white">
-                <span aria-hidden="true">{initials}</span>
-
-                {user?.avatar_url && (
-                  <img
-                    src={user.avatar_url}
-                    alt=""
-                    className="absolute inset-0 h-full w-full rounded-full object-cover"
-                    onError={(event) => {
-                      event.currentTarget.style.display = 'none';
-                    }}
-                  />
-                )}
-              </div>
+            <div className="mb-2 flex items-center gap-3 rounded-xl border border-white/5 bg-white/3.5 p-3">
+              <AccountAvatar
+                key={user?.email}
+                email={user?.email}
+                avatarUrl={user?.avatar_url}
+                size="large"
+              />
 
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-white">
+                <p className="dashboard-account-name truncate text-sm font-semibold text-[#E9D5FF]">
                   {user?.full_name || 'Your account'}
                 </p>
                 <p className="truncate text-xs text-[#A99DBD]">
@@ -462,7 +567,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm capitalize transition-colors ${
                         theme === option
                           ? 'bg-violet-500/15 text-violet-200'
-                          : 'text-[#B7ADC9] hover:bg-white/[0.05] hover:text-white'
+                          : 'text-[#B7ADC9] hover:bg-white/5 hover:text-white'
                       }`}
                     >
                       <span>{option}</span>
@@ -488,7 +593,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <span>Open Quickstart</span>
               </button>
 
-              <div className="my-2 border-t border-white/[0.08]" />
+              <div className="my-2 border-t border-white/8" />
 
               <button
                 type="button"
@@ -504,7 +609,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 type="button"
                 role="menuitem"
                 onClick={handleLogout}
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-rose-300 transition-colors hover:bg-rose-500/10 hover:text-rose-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
+                className="dashboard-account-logout flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-rose-300 transition-colors hover:bg-rose-500/10 hover:text-rose-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
               >
                 <IconSidebarLogOut className="h-4 w-4" />
                 <span>Log out</span>
@@ -513,53 +618,35 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         )}
 
-        {/* Account Button */}
-        <button
-          type="button"
-          aria-label="Open account menu"
-          aria-haspopup="menu"
-          aria-expanded={accountMenuOpen}
-          onClick={() => {
-            setAccountMenuOpen(!accountMenuOpen);
-            setThemeMenuOpen(false);
-          }}
-          className="flex w-full items-center gap-3 rounded-xl border border-transparent p-2 text-left transition-all hover:border-white/[0.08] hover:bg-white/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
-        >
-          <div className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-violet-300/25 bg-gradient-to-br from-violet-500 to-indigo-700 text-xs font-bold text-white">
-            <span aria-hidden="true">{initials}</span>
+        </div>
+      </div>
 
-            {user?.avatar_url && (
-              <img
-                src={user.avatar_url}
-                alt=""
-                className="absolute inset-0 h-full w-full rounded-full object-cover"
-                onError={(event) => {
-                  event.currentTarget.style.display = 'none';
-                }}
-              />
+      {mobileNavOpen && (
+        <div className="dashboard-mobile-nav border-t border-white/8 bg-[#19112B] px-4 py-4 shadow-[0_18px_40px_rgba(0,0,0,0.24)] lg:hidden sm:px-6">
+          <div className="mx-auto max-w-450">
+            {navigationGroups.map((group) => (
+              <section key={group.label} className="mb-4 last:mb-0">
+                <h2 className="mb-2 px-1 text-[9px] font-bold uppercase tracking-[0.16em] text-[#76698D]">
+                  {group.label}
+                </h2>
+                <div className="grid gap-1 sm:grid-cols-2">
+                  {group.items.map(renderNavItem)}
+                </div>
+              </section>
+            ))}
+            {switchTargets.length > 0 && (
+              <section className="mt-4 border-t border-white/8 pt-4">
+                <h2 className="mb-2 px-1 text-[9px] font-bold uppercase tracking-[0.16em] text-[#76698D]">
+                  Switch workspace
+                </h2>
+                <div className="grid gap-1 sm:grid-cols-2">
+                  {switchTargets.map(renderWorkspaceItem)}
+                </div>
+              </section>
             )}
           </div>
-
-          {!collapsed && (
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-white">
-                {user?.full_name || 'Your account'}
-              </p>
-              <p className="truncate text-xs text-[#9487AA]">
-                {user?.email}
-              </p>
-            </div>
-          )}
-
-          {!collapsed && (
-            <IconSidebarChevronRight
-              className={`h-4 w-4 shrink-0 text-[#8F83A7] transition-transform ${
-                accountMenuOpen ? '-rotate-90' : ''
-              }`}
-            />
-          )}
-        </button>
-      </div>
+        </div>
+      )}
 
       {/* Quickstart Dialog */}
       {quickstartOpen && (
@@ -609,7 +696,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   key={link.path}
                   type="button"
                   onClick={() => navigateFromMenu(link.path)}
-                  className="group flex w-full items-center gap-3 rounded-xl border border-white/[0.08] bg-white/[0.025] px-3 py-3 text-left transition-all hover:border-violet-400/30 hover:bg-violet-500/10"
+                  className="group flex w-full items-center gap-3 rounded-xl border border-white/8 bg-white/2.5 px-3 py-3 text-left transition-all hover:border-violet-400/30 hover:bg-violet-500/10"
                 >
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-violet-300/15 bg-violet-500/10 text-xs font-semibold text-violet-200">
                     {index + 1}
@@ -627,14 +714,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               type="button"
               onClick={() => setQuickstartOpen(false)}
-              className="mt-5 w-full rounded-xl bg-gradient-to-r from-violet-500 to-indigo-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-950/30 transition-all hover:from-violet-400 hover:to-indigo-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#19112B]"
+              className="mt-5 w-full rounded-xl bg-linear-to-r from-violet-500 to-indigo-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-950/30 transition-all hover:from-violet-400 hover:to-indigo-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#19112B]"
             >
               Done
             </button>
           </section>
         </div>
       )}
-    </aside>
+    </div>
   );
 };
 

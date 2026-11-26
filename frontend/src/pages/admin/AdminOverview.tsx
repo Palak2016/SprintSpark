@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { IconArrowRight, IconBuilding2, IconFolderKanban, IconKeyRound, IconMail, IconShieldCheck, IconUserCheck, IconUsersRound } from '../../icons';
+import { IconArrowRight, IconBuilding2, IconKeyRound, IconMail, IconUserCheck, IconUsersRound } from '../../icons';
 import { api } from '../../services/api';
 import {
   Company,
@@ -104,215 +104,312 @@ export const AdminOverview: React.FC = () => {
   const pendingMembers = portal.members.filter((m) => m.approval_status === 'PENDING');
   const pendingInvites = invitations?.filter((i) => i.status === 'PENDING') ?? [];
   const pendingTransfer = transfers?.find((t) => t.status === 'PENDING');
+  const teamTotal = portal.manager_count + portal.employee_count;
   const count = (role: string, status: string) =>
     portal.members.filter((m) => m.role === role && m.approval_status === status).length;
 
-  const tiles = [
-    { label: 'Managers', value: portal.manager_count, icon: IconShieldCheck, to: 'members' },
-    { label: 'Employees', value: portal.employee_count, icon: IconUsersRound, to: 'members' },
-    { label: 'Awaiting approval', value: portal.pending_count, icon: IconUserCheck, to: 'approvals', warn: portal.pending_count > 0 },
-    { label: 'Pending invitations', value: invitations ? pendingInvites.length : '—', icon: IconMail, to: 'invitations' },
-    { label: 'Projects', value: analytics ? analytics.project_count : '—', icon: IconFolderKanban, to: 'analytics' },
-  ];
-
   const riskRows = analytics?.portfolio.distribution ?? [];
-  const riskMax = Math.max(1, ...riskRows.map((r) => r.count));
+  const projectTotal = analytics?.project_count ?? 0;
+  const ringCircumference = 2 * Math.PI * 48;
+  let ringOffset = 0;
+  const riskSegments = riskRows.map((row) => {
+    const length = projectTotal > 0
+      ? (row.count / projectTotal) * ringCircumference
+      : 0;
+    const segment = { row, length, offset: ringOffset };
+    ringOffset += length;
+    return segment;
+  });
+  const adminInitials = (admin?.full_name ?? '—')
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part.charAt(0))
+    .join('')
+    .toUpperCase();
+  const statusTotals = STATUSES.map((status) => ({
+    status,
+    value: ROLES.reduce((total, role) => total + count(role.key, status), 0),
+  }));
 
   return (
-    <div className="space-y-7">
+    <div className="space-y-6 pb-8">
       <PageHeader
-        title="Overview"
-        description="Membership, pending work and recent administrative activity for this company."
+        eyebrow="Company operations"
+        title="Command center"
+        description="Monitor portfolio signals, team access and company activity from one place."
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <Link
+              to={adminPath(companyId, 'invitations')}
+              className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/4 px-3.5 py-2.5 text-sm font-semibold text-[#D8D0E7] transition hover:bg-white/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300"
+            >
+              <IconMail className="h-4 w-4" />
+              Invite team
+            </Link>
+            <Link
+              to={adminPath(companyId, 'approvals')}
+              className="inline-flex items-center gap-2 rounded-xl border border-violet-300/25 bg-violet-400/15 px-3.5 py-2.5 text-sm font-semibold text-violet-100 transition hover:bg-violet-400/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300"
+            >
+              <IconUserCheck className="h-4 w-4" />
+              Review approvals
+              {portal.pending_count > 0 && (
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-violet-300 px-1 text-[10px] font-bold text-[#211638]">
+                  {portal.pending_count}
+                </span>
+              )}
+            </Link>
+          </div>
+        }
       />
       {partial && (
         <ErrorBanner message="Some panels could not be loaded. Refresh the page to try again." />
       )}
 
-      {/* Company summary */}
-      <section className="flex flex-col gap-5 rounded-2xl border border-violet-300/15 bg-gradient-to-br from-violet-400/[0.08] to-white/[0.02] p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-        <div className="flex items-center gap-4">
-          <span className="flex h-12 w-12 items-center justify-center rounded-xl border border-violet-300/20 bg-violet-400/10 text-violet-100">
-            <IconBuilding2 className="h-6 w-6" />
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/2.5 px-4 py-3.5">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-violet-300/20 bg-violet-400/10 text-violet-200">
+            <IconBuilding2 className="h-5 w-5" />
           </span>
-          <div>
-            <h2 className="text-xl font-bold text-white">{portal.name}</h2>
-            <p className="mt-1 text-xs">Created {formatWhen(portal.created_at)}</p>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-white">{portal.name}</p>
+            <p className="mt-0.5 text-[11px] text-[#9487AA]">Created {formatWhen(portal.created_at)}</p>
           </div>
         </div>
-        <dl className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
-          <dt className="text-xs text-[#9487AA]">Company Admin</dt>
-          <dd className="truncate font-medium text-white">{admin?.full_name ?? '—'}</dd>
-          <dt className="text-xs text-[#9487AA]">Members</dt>
-          <dd className="font-medium text-white">{portal.members.length}</dd>
-        </dl>
-      </section>
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs">
+          <span className="inline-flex items-center gap-2 text-[#A99DBD]">
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-violet-400/15 text-[10px] font-bold text-violet-100">
+              {adminInitials}
+            </span>
+            Admin <strong className="font-semibold text-white">{admin?.full_name ?? '—'}</strong>
+          </span>
+          <span className="h-4 w-px bg-white/10" aria-hidden="true" />
+          <span className="text-[#A99DBD]">
+            Members <strong className="ml-1 font-semibold tabular-nums text-white">{portal.members.length}</strong>
+          </span>
+          <span className="text-[#A99DBD]">
+            Projects <strong className="ml-1 font-semibold tabular-nums text-white">{analytics ? analytics.project_count : '—'}</strong>
+          </span>
+        </div>
+      </div>
 
-      {/* Key numbers */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
-        {tiles.map((tile) => (
-          <Link
-            key={tile.label}
-            to={adminPath(companyId, tile.to)}
-            className={`group rounded-2xl border p-4 transition hover:border-violet-300/30 hover:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 ${
-              tile.warn ? 'border-amber-300/25 bg-amber-400/[0.05]' : 'border-white/10 bg-white/[0.025]'
-            }`}
+      <div className="grid gap-5 xl:grid-cols-12">
+        <div className="xl:col-span-7">
+          <Panel
+            title="Portfolio pulse"
+            description="Project distribution by the latest delivery-risk signal."
+            aside={
+              <Link to={adminPath(companyId, 'analytics')} className="inline-flex items-center gap-1 text-xs font-semibold text-violet-200 hover:text-violet-100">
+                Open analytics <IconArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            }
           >
-            <div className="flex items-center justify-between">
-              <p className="text-xs">{tile.label}</p>
-              <tile.icon className="h-4 w-4 text-violet-200/70" />
-            </div>
-            <p className="mt-2 text-2xl font-bold text-white">{tile.value}</p>
-          </Link>
-        ))}
-      </div>
-
-      <div className="grid gap-5 xl:grid-cols-2">
-        {/* Membership by role and status */}
-        <Panel title="Membership" description="People in this company by role and approval status.">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs text-[#9487AA]">
-                  <th scope="col" className="px-5 py-3 font-medium">Role</th>
-                  {STATUSES.map((s) => (
-                    <th key={s} scope="col" className="px-5 py-3 text-right font-medium">
-                      {s.charAt(0) + s.slice(1).toLowerCase()}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/[0.06]">
-                {ROLES.map((role) => (
-                  <tr key={role.key}>
-                    <th scope="row" className="px-5 py-3 text-left font-medium text-white">{role.label}</th>
-                    {STATUSES.map((s) => (
-                      <td key={s} className="px-5 py-3 text-right tabular-nums text-white">
-                        {count(role.key, s)}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Panel>
-
-        {/* Pending approvals */}
-        <Panel
-          title="Awaiting your approval"
-          description="People who joined with the company signup code."
-          aside={
-            <Link to={adminPath(companyId, 'approvals')} className="inline-flex items-center gap-1 text-xs font-semibold text-violet-200 hover:text-violet-100">
-              Review <IconArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          }
-        >
-          {pendingMembers.length === 0 ? (
-            <p className="px-5 py-8 text-center text-sm">Nobody is waiting for approval.</p>
-          ) : (
-            <ul className="divide-y divide-white/[0.06]">
-              {pendingMembers.slice(0, 5).map((m) => (
-                <li key={m.id} className="flex items-center justify-between gap-3 px-5 py-3 text-sm">
-                  <span className="min-w-0">
-                    <span className="block truncate font-medium text-white">{m.full_name}</span>
-                    <span className="block truncate text-xs text-[#9487AA]">{m.email}</span>
-                  </span>
-                  <span className="shrink-0 text-xs text-[#B7ADC9]">{m.role.toLowerCase()}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Panel>
-
-        {/* Ownership */}
-        <Panel
-          title="Ownership"
-          description="Company Admin transfers."
-          aside={
-            <Link to={adminPath(companyId, 'ownership')} className="inline-flex items-center gap-1 text-xs font-semibold text-violet-200 hover:text-violet-100">
-              Manage <IconArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          }
-        >
-          <div className="flex items-start gap-3 px-5 py-4 text-sm">
-            <IconKeyRound className="mt-0.5 h-4 w-4 shrink-0 text-violet-200/70" />
-            {transfers === null ? (
-              <p>Transfer status is unavailable.</p>
-            ) : pendingTransfer ? (
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-white">Transfer to {pendingTransfer.to_user_name}</span>
-                  <StatusPill status={pendingTransfer.status} />
-                </div>
-                <p className="mt-1 text-xs">
-                  Waiting for them to accept. Expires {formatWhen(pendingTransfer.expires_at)}.
-                  You stay Company Admin until then.
-                </p>
-              </div>
+            {!analytics ? (
+              <p className="px-5 py-8 text-center text-sm">Analytics are unavailable.</p>
+            ) : projectTotal === 0 ? (
+              <p className="px-5 py-8 text-center text-sm">This company has no projects yet.</p>
             ) : (
-              <p>No transfer in progress. You are this company's Company Admin.</p>
+              <div className="grid gap-5 p-5 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-center">
+                <div className="relative mx-auto h-40 w-40">
+                  <svg viewBox="0 0 120 120" role="img" aria-label={`${projectTotal} projects grouped by delivery risk`}>
+                    <circle cx="60" cy="60" r="48" fill="none" stroke="currentColor" strokeWidth="12" className="text-white/7" />
+                    <g transform="rotate(-90 60 60)">
+                      {riskSegments.map(({ row, length, offset }) => (
+                        <circle
+                          key={row.risk_level}
+                          cx="60"
+                          cy="60"
+                          r="48"
+                          fill="none"
+                          stroke={row.risk_level === 'HIGH' ? '#fb7185'
+                            : row.risk_level === 'MEDIUM' ? '#fbbf24'
+                            : row.risk_level === 'LOW' ? '#34d399'
+                            : '#94a3b8'}
+                          strokeWidth="12"
+                          strokeDasharray={`${length} ${ringCircumference - length}`}
+                          strokeDashoffset={-offset}
+                        />
+                      ))}
+                    </g>
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-3xl font-bold tabular-nums text-white">{projectTotal}</span>
+                    <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#A99DBD]">Projects</span>
+                  </div>
+                </div>
+                <ul className="space-y-3" aria-label="Project risk distribution">
+                  {riskRows.map((row) => {
+                    const share = projectTotal > 0 ? (row.count / projectTotal) * 100 : 0;
+                    return (
+                      <li key={row.risk_level} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5">
+                        <span className="text-xs font-medium text-[#D1C7E0]">
+                          {RISK_LABELS[row.risk_level] ?? row.risk_level}
+                        </span>
+                        <span className="text-xs font-semibold tabular-nums text-white">
+                          {row.count} <span className="font-normal text-[#9487AA]">({Math.round(share)}%)</span>
+                        </span>
+                        <span className="col-span-2 h-1.5 overflow-hidden rounded-full bg-white/7" aria-hidden="true">
+                          <span
+                            className={`block h-full rounded-full ${RISK_BAR[row.risk_level] ?? 'bg-slate-400/60'}`}
+                            style={{ width: `${share}%` }}
+                          />
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
             )}
-          </div>
-        </Panel>
+          </Panel>
+        </div>
 
-        {/* Project risk */}
-        <Panel
-          title="Project delivery risk"
-          description="Latest risk analysis of each project in this company."
-          aside={
-            <Link to={adminPath(companyId, 'analytics')} className="inline-flex items-center gap-1 text-xs font-semibold text-violet-200 hover:text-violet-100">
-              Analytics <IconArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          }
-        >
-          {!analytics ? (
-            <p className="px-5 py-8 text-center text-sm">Analytics are unavailable.</p>
-          ) : analytics.project_count === 0 ? (
-            <p className="px-5 py-8 text-center text-sm">This company has no projects yet.</p>
-          ) : (
-            <ul className="space-y-3 p-5" aria-label="Projects by risk level">
-              {riskRows.map((row) => (
-                <li key={row.risk_level} className="flex items-center gap-3 text-sm">
-                  <span className="w-32 shrink-0 text-[#D1C7E0]">{RISK_LABELS[row.risk_level] ?? row.risk_level}</span>
-                  <span className="h-2 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
-                    <span
-                      className={`block h-full rounded-full ${RISK_BAR[row.risk_level] ?? 'bg-slate-400/60'}`}
-                      style={{ width: `${(row.count / riskMax) * 100}%` }}
-                    />
-                  </span>
-                  <span className="w-6 text-right font-semibold tabular-nums text-white">{row.count}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Panel>
+        <div className="xl:col-span-5">
+          <Panel
+            title="People & access"
+            description="A snapshot of team structure and membership status."
+            aside={
+              <Link to={adminPath(companyId, 'members')} className="inline-flex items-center gap-1 text-xs font-semibold text-violet-200 hover:text-violet-100">
+                Manage team <IconArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            }
+          >
+            <div className="p-5">
+              <div className="mb-3 flex items-end justify-between">
+                <div>
+                  <p className="text-3xl font-bold tabular-nums text-white">{teamTotal}</p>
+                  <p className="mt-1 text-xs text-[#A99DBD]">Managers and employees</p>
+                </div>
+                <IconUsersRound className="mb-1 h-5 w-5 text-violet-200/70" />
+              </div>
+              <div
+                role="img"
+                aria-label={`${portal.manager_count} managers and ${portal.employee_count} employees`}
+                className="flex h-2.5 overflow-hidden rounded-full bg-white/7"
+              >
+                <span
+                  className="h-full bg-violet-400"
+                  style={{ width: `${teamTotal ? (portal.manager_count / teamTotal) * 100 : 0}%` }}
+                />
+                <span
+                  className="h-full bg-sky-400"
+                  style={{ width: `${teamTotal ? (portal.employee_count / teamTotal) * 100 : 0}%` }}
+                />
+              </div>
+              <div className="mt-3 flex items-center justify-between text-xs">
+                <span className="inline-flex items-center gap-2 text-[#D8D0E7]">
+                  <span className="h-2 w-2 rounded-full bg-violet-400" />
+                  Managers <strong className="text-white">{portal.manager_count}</strong>
+                </span>
+                <span className="inline-flex items-center gap-2 text-[#D8D0E7]">
+                  <span className="h-2 w-2 rounded-full bg-sky-400" />
+                  Employees <strong className="text-white">{portal.employee_count}</strong>
+                </span>
+              </div>
+              <div className="mt-5 grid grid-cols-3 gap-2 border-t border-white/7 pt-4">
+                {statusTotals.map(({ status, value }) => (
+                  <div key={status} className="rounded-xl border border-white/7 bg-white/2.5 px-3 py-2.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#9487AA]">
+                      {status.charAt(0) + status.slice(1).toLowerCase()}
+                    </p>
+                    <p className="mt-1 text-lg font-bold tabular-nums text-white">{value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Panel>
+        </div>
+
+        <div className="xl:col-span-8">
+          <Panel
+            title="Company activity"
+            description="Recent administrative events, newest first."
+            aside={
+              <Link to={adminPath(companyId, 'activity')} className="inline-flex items-center gap-1 text-xs font-semibold text-violet-200 hover:text-violet-100">
+                View audit trail <IconArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            }
+          >
+            {events === null ? (
+              <p className="px-5 py-8 text-center text-sm">Activity is unavailable.</p>
+            ) : events.length === 0 ? (
+              <p className="px-5 py-8 text-center text-sm">No activity recorded yet.</p>
+            ) : (
+              <ol className="grid divide-y divide-white/6 sm:grid-cols-2 sm:divide-y-0">
+                {events.slice(0, 4).map((event, index) => (
+                  <li
+                    key={event.id}
+                    className={`flex items-start gap-3 px-5 py-4 ${
+                      index % 2 === 0 ? 'sm:border-r sm:border-white/6' : ''
+                    }`}
+                  >
+                    <span className="relative mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-violet-300/15 bg-violet-400/8">
+                      <span className="h-2 w-2 rounded-full bg-violet-300" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-semibold text-white">{eventLabel(event.event_type)}</span>
+                      <span className="mt-1 block text-xs text-[#9487AA]">{formatWhen(event.created_at)}</span>
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </Panel>
+        </div>
+
+        <div className="xl:col-span-4">
+          <Panel
+            title="Governance"
+            description="Ownership and open invitations."
+            aside={
+              <Link to={adminPath(companyId, 'ownership')} className="inline-flex items-center gap-1 text-xs font-semibold text-violet-200 hover:text-violet-100">
+                Manage <IconArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            }
+          >
+            <div className="space-y-4 p-5">
+              <div className="flex items-center gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-violet-300/15 bg-violet-400/8 text-violet-200">
+                  <IconKeyRound className="h-4 w-4" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-[#9487AA]">Company admin</p>
+                  <p className="truncate text-sm font-semibold text-white">{admin?.full_name ?? '—'}</p>
+                </div>
+              </div>
+              {transfers === null ? (
+                <p className="rounded-xl border border-white/7 bg-white/2.5 p-3 text-xs">Transfer status is unavailable.</p>
+              ) : pendingTransfer ? (
+                <div className="rounded-xl border border-amber-300/15 bg-amber-400/5 p-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-semibold text-white">Transfer to {pendingTransfer.to_user_name}</span>
+                    <StatusPill status={pendingTransfer.status} />
+                  </div>
+                  <p className="mt-1 text-xs leading-5">
+                    Waiting for acceptance · Expires {formatWhen(pendingTransfer.expires_at)}
+                  </p>
+                </div>
+              ) : (
+                <p className="rounded-xl border border-emerald-300/15 bg-emerald-400/4 p-3 text-xs leading-5">
+                  No ownership transfer is in progress.
+                </p>
+              )}
+              <Link
+                to={adminPath(companyId, 'invitations')}
+                className="flex items-center justify-between rounded-xl border border-white/7 bg-white/2.5 px-3.5 py-3 transition hover:bg-white/5"
+              >
+                <span className="inline-flex items-center gap-2 text-sm font-medium text-white">
+                  <IconMail className="h-4 w-4 text-violet-200" />
+                  Pending invitations
+                </span>
+                <span className="inline-flex items-center gap-2 text-sm font-semibold tabular-nums text-white">
+                  {invitations === null ? '—' : pendingInvites.length}
+                  <IconArrowRight className="h-4 w-4 text-[#827795]" />
+                </span>
+              </Link>
+            </div>
+          </Panel>
+        </div>
       </div>
-
-      {/* Recent activity */}
-      <Panel
-        title="Recent activity"
-        description="Recorded administrative actions, most recent first."
-        aside={
-          <Link to={adminPath(companyId, 'activity')} className="inline-flex items-center gap-1 text-xs font-semibold text-violet-200 hover:text-violet-100">
-            All activity <IconArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        }
-      >
-        {events === null ? (
-          <p className="px-5 py-8 text-center text-sm">Activity is unavailable.</p>
-        ) : events.length === 0 ? (
-          <p className="px-5 py-8 text-center text-sm">No activity recorded yet.</p>
-        ) : (
-          <ul className="divide-y divide-white/[0.06]">
-            {events.slice(0, 6).map((event) => (
-              <li key={event.id} className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 text-sm">
-                <span className="font-medium text-white">{eventLabel(event.event_type)}</span>
-                <span className="text-xs text-[#9487AA]">{formatWhen(event.created_at)}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Panel>
     </div>
   );
 };

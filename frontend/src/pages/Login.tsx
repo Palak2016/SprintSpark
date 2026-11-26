@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, useReducedMotion } from 'motion/react';
 import { Logo } from '../components/common/Logo';
+import { AuthShowcase } from '../components/common/AuthShowcase';
 import { useAuth } from '../context/AuthContext';
 import { IconActivity, IconAlertCircle, IconArrowRight, IconEye, IconEyeOff, IconLockKeyhole, IconMail, IconShieldCheck } from '../icons';
 
@@ -65,22 +66,22 @@ export const Login: React.FC = () => {
   };
 
   const inputClass =
-    'signin-input w-full rounded-xl border border-white/[0.12] bg-[#0C0D0F]/80 px-4 py-3 text-sm text-white outline-none transition placeholder:text-[#73777D] hover:border-white/25 focus:border-white/50 focus:ring-2 focus:ring-white/[0.08]';
+    'signin-input w-full rounded-xl border border-white/12 bg-[#0C0D0F]/80 px-4 py-3 text-sm text-white outline-none transition placeholder:text-[#73777D] hover:border-white/25 focus:border-white/50 focus:ring-2 focus:ring-white/8';
 
   const labelClass =
     'signin-label mb-2 block text-xs font-semibold tracking-wide text-[#D1D3D6]';
 
   return (
-    <div className="signin-page relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#0B0C0E] px-4 py-10 text-white selection:bg-white/20 sm:px-6 lg:py-14">
+    <div className="signin-page relative flex min-h-screen items-center justify-center overflow-hidden bg-[#0B0C0E] px-4 py-8 text-white selection:bg-white/20 sm:px-6 lg:py-8">
       {/* Background glow effects */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -left-40 top-0 h-96 w-96 rounded-full bg-white/[0.045] blur-[120px]"
+        className="pointer-events-none absolute -left-40 top-0 h-96 w-96 rounded-full bg-white/4.5 blur-[120px]"
       />
 
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -right-40 bottom-0 h-96 w-96 rounded-full bg-slate-400/[0.06] blur-[120px]"
+        className="pointer-events-none absolute -right-40 bottom-0 h-96 w-96 rounded-full bg-slate-400/6 blur-[120px]"
       />
 
       {/* Subtle background grid */}
@@ -93,16 +94,19 @@ export const Login: React.FC = () => {
         initial={reduceMotion ? false : { opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: 'easeOut' }}
-        className="relative z-10 w-full max-w-md"
+        className="relative z-10 grid w-full max-w-7xl items-start gap-5 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]"
       >
-        {/* Brand and heading */}
-        <div className="mb-8 text-center">
+        <AuthShowcase mode="signin" />
+
+        <section className="mx-auto w-full max-w-xl">
+          {/* Compact mobile heading; desktop branding lives in the side panel. */}
+          <div className="mb-6 text-center lg:hidden">
           <Link
             to="/"
             aria-label="WorkPilot AI home"
-            className="mb-6 inline-flex rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white/70"
+            className="mb-4 inline-flex rounded-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white/70"
           >
-            <Logo size="lg" onDarkBackground />
+            <Logo size="md" onDarkBackground />
           </Link>
 
           <div className="mb-3 flex items-center justify-center gap-2">
@@ -121,16 +125,28 @@ export const Login: React.FC = () => {
             Pick up where you left off. Your projects, team updates, and
             AI-powered insights are waiting for you.
           </p>
-        </div>
+          </div>
+
+          <div className="mb-5 hidden lg:block">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-300">
+              Workspace access
+            </p>
+            <h1 className="mt-2 text-3xl font-bold tracking-tight text-white">
+              Sign in to your workspace
+            </h1>
+            <p className="mt-2 text-sm text-[#AEB4BA]">
+              Continue with your WorkPilot account.
+            </p>
+          </div>
 
         {/* Login card */}
-        <div className="signin-card overflow-hidden rounded-3xl border border-white/[0.09] bg-[#141619]/95 shadow-[0_24px_100px_rgba(0,0,0,.5)] backdrop-blur-2xl">
+        <div className="signin-card overflow-hidden rounded-3xl border border-white/9 bg-[#141619]/95 shadow-[0_24px_100px_rgba(0,0,0,.5)] backdrop-blur-2xl">
           <div className="signin-card-accent h-1" />
 
           <div className="p-6 sm:p-8">
             {/* Card intro */}
             <div className="mb-6 flex items-center gap-3">
-              <div className="signin-icon-tile flex h-11 w-11 items-center justify-center rounded-xl border border-white/[0.1] bg-white/[0.04] text-[#D1D3D6]">
+              <div className="signin-icon-tile flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/4 text-[#D1D3D6]">
                 <IconLockKeyhole className="h-5 w-5" />
               </div>
 
@@ -148,7 +164,7 @@ export const Login: React.FC = () => {
             {errorMessage && (
               <div
                 role="alert"
-                className="mb-5 flex items-start gap-3 rounded-xl border border-rose-400/20 bg-rose-400/[0.08] p-3.5 text-sm text-rose-200"
+                className="mb-5 flex items-start gap-3 rounded-xl border border-rose-400/20 bg-rose-400/8 p-3.5 text-sm text-rose-200"
               >
                 <IconAlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
                 <span>{errorMessage}</span>
@@ -215,7 +231,7 @@ export const Login: React.FC = () => {
                     title={showPassword ? 'Hide password' : 'Show password'}
                     aria-pressed={showPassword}
                     onClick={() => setShowPassword(!showPassword)}
-                    className="signin-secondary-action absolute right-3.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-[#92979D] transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/70"
+                    className="signin-secondary-action absolute right-3.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-[#92979D] transition hover:text-white focus-visible:outline-2 focus-visible:outline-white/70"
                   >
                     {showPassword ? (
                       <IconEyeOff className="h-4 w-4" />
@@ -243,7 +259,7 @@ export const Login: React.FC = () => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="signin-primary-action group flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-sm font-bold transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 disabled:cursor-not-allowed disabled:opacity-50"
+                className="signin-primary-action group flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-sm font-bold transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-3 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <span>
                   {isSubmitting ? 'Signing in...' : 'Sign in to workspace'}
@@ -267,7 +283,7 @@ export const Login: React.FC = () => {
             {/* Signup link */}
             <Link
               to="/signup"
-              className="signin-secondary-action flex w-full items-center justify-center gap-2 rounded-xl border border-white/[0.12] bg-white/[0.025] px-4 py-3 text-sm font-semibold text-[#D1D3D6] transition hover:border-white/25 hover:bg-white/[0.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70"
+              className="signin-secondary-action flex w-full items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/2.5 px-4 py-3 text-sm font-semibold text-[#D1D3D6] transition hover:border-white/25 hover:bg-white/6 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70"
             >
               Create an account
               <IconArrowRight className="h-4 w-4" />
@@ -300,6 +316,7 @@ export const Login: React.FC = () => {
             Back to home
           </Link>
         </div>
+        </section>
       </motion.div>
     </div>
   );

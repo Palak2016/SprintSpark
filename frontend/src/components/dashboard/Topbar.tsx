@@ -1,7 +1,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { IconDashboardArrowUpRight, IconDashboardBell, IconDashboardCheck, IconDashboardCheckCheck, IconDashboardChevronDown, IconDashboardFolderKanban, IconDashboardLayers3, IconDashboardLogOut, IconDashboardMenu } from '../../icons';
+import { IconDashboardArrowUpRight, IconDashboardBell, IconDashboardCheck, IconDashboardCheckCheck, IconDashboardChevronDown, IconDashboardFolderKanban, IconDashboardLayers3, IconDashboardLogOut } from '../../icons';
 import { useAuth } from '../../context/AuthContext';
 import { useProject } from '../../context/ProjectContext';
 import { api } from '../../services/api';
@@ -9,13 +9,11 @@ import { Notification } from '../../types';
 import { formatIndianDateTime } from '../../utils/date';
 
 interface TopbarProps {
-  onToggleMobileSidebar: () => void;
   /** Shown instead of the project picker (the Admin console's company picker). */
   leading?: React.ReactNode;
 }
 
 export const Topbar: React.FC<TopbarProps> = ({
-  onToggleMobileSidebar,
   leading,
 }) => {
   const { logout } = useAuth();
@@ -162,21 +160,12 @@ export const Topbar: React.FC<TopbarProps> = ({
   };
 
   const controlClass =
-    'dashboard-control rounded-xl border border-white/[0.08] bg-white/[0.025] text-[#B7ADC9] transition-all hover:border-violet-400/25 hover:bg-violet-500/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400';
+    'dashboard-control rounded-xl border border-white/8 bg-white/2.5 text-[#B7ADC9] transition-all hover:border-violet-400/25 hover:bg-violet-500/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400';
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between gap-3 border-b border-white/[0.08] bg-[#100B1D]/90 px-3 backdrop-blur-xl sm:px-6">
-      {/* Left: Mobile menu and project selector */}
+    <header className="relative z-10 flex min-h-14 shrink-0 items-center justify-between gap-3 border-t border-b border-t-white/6 border-b-white/8 bg-[#100B1D]/90 px-3 backdrop-blur-xl sm:px-6">
+      {/* Project selector and company context */}
       <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-        <button
-          type="button"
-          onClick={onToggleMobileSidebar}
-          aria-label="Toggle navigation sidebar"
-          className={`shrink-0 p-2 md:hidden ${controlClass}`} title="Toggle navigation sidebar"
-        >
-          <IconDashboardMenu className="h-5 w-5" />
-        </button>
-
         {leading ?? (
         /* Project Selector */
         <div ref={projectMenuRef} className="relative min-w-0">
@@ -199,7 +188,7 @@ export const Topbar: React.FC<TopbarProps> = ({
                 Active project
               </span>
 
-              <span className="block max-w-[125px] truncate font-medium text-[#F3EDFF] sm:max-w-[200px]">
+              <span className="block max-w-31.25 truncate font-medium text-[#F3EDFF] sm:max-w-50">
                 {activeProject?.name || 'Select Project'}
               </span>
             </span>
@@ -217,7 +206,7 @@ export const Topbar: React.FC<TopbarProps> = ({
               aria-label="Select active project"
               className="absolute left-0 top-full z-40 mt-3 w-[min(19rem,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-violet-300/15 bg-[#19112B] p-2 shadow-[0_18px_55px_rgba(0,0,0,0.45)]"
             >
-              <div className="flex items-center gap-3 border-b border-white/[0.07] px-3 py-3">
+              <div className="flex items-center gap-3 border-b border-white/7 px-3 py-3">
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-500/15">
                   <IconDashboardLayers3 className="h-4 w-4 text-violet-300" />
                 </div>
@@ -259,14 +248,14 @@ export const Topbar: React.FC<TopbarProps> = ({
                         className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors ${
                           isActive
                             ? 'bg-violet-500/15 text-white'
-                            : 'text-[#B7ADC9] hover:bg-white/[0.05] hover:text-white'
+                            : 'text-[#B7ADC9] hover:bg-white/5 hover:text-white'
                         }`}
                       >
                         <span
                           className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
                             isActive
                               ? 'bg-violet-500/20 text-violet-200'
-                              : 'bg-white/[0.05] text-[#9487AA]'
+                              : 'bg-white/5 text-[#9487AA]'
                           }`}
                         >
                           <IconDashboardFolderKanban className="h-4 w-4" />
@@ -310,7 +299,7 @@ export const Topbar: React.FC<TopbarProps> = ({
             {unreadCount > 0 && (
               <>
                 <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-violet-400" />
-                <span className="absolute -right-1.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-[#100B1D] bg-rose-500 px-1 text-[9px] font-bold text-white">
+                <span className="absolute -right-1.5 -top-1.5 flex h-4.5 min-w-4.5 items-center justify-center rounded-full border-2 border-[#100B1D] bg-rose-500 px-1 text-[9px] font-bold text-white">
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
               </>
@@ -324,7 +313,7 @@ export const Topbar: React.FC<TopbarProps> = ({
               className="absolute right-0 top-full z-40 mt-3 w-[min(24rem,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-violet-300/15 bg-[#19112B] shadow-[0_18px_55px_rgba(0,0,0,0.5)]"
             >
               {/* Notifications header */}
-              <div className="flex items-center justify-between gap-3 border-b border-white/[0.08] px-4 py-4">
+              <div className="flex items-center justify-between gap-3 border-b border-white/8 px-4 py-4">
                 <div>
                   <h2 className="text-sm font-semibold text-white">
                     Notifications
@@ -350,10 +339,10 @@ export const Topbar: React.FC<TopbarProps> = ({
               </div>
 
               {/* Notification list */}
-              <div className="max-h-[min(22rem,60vh)] divide-y divide-white/[0.06] overflow-y-auto">
+              <div className="max-h-[min(22rem,60vh)] divide-y divide-white/6 overflow-y-auto">
                 {notifications.length === 0 ? (
                   <div className="px-5 py-10 text-center">
-                    <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-violet-300/10 bg-violet-500/[0.08]">
+                    <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-violet-300/10 bg-violet-500/8">
                       <IconDashboardBell className="h-5 w-5 text-violet-300" />
                     </div>
                     <p className="text-sm font-medium text-[#E5DDF2]">
@@ -383,11 +372,11 @@ export const Topbar: React.FC<TopbarProps> = ({
                             }
                           : undefined
                       }
-                      className={`relative px-4 py-3.5 transition-colors hover:bg-white/[0.025] ${
-                        notification.is_read ? '' : 'bg-violet-500/[0.045]'
+                      className={`relative px-4 py-3.5 transition-colors hover:bg-white/2.5 ${
+                        notification.is_read ? '' : 'bg-violet-500/4.5'
                       } ${
                         clickable
-                          ? 'cursor-pointer hover:bg-white/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-400'
+                          ? 'cursor-pointer hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-400'
                           : ''
                       }`}
                     >
@@ -425,7 +414,7 @@ export const Topbar: React.FC<TopbarProps> = ({
                 )}
               </div>
 
-              <div className="border-t border-white/[0.07] bg-white/[0.015] px-4 py-2.5">
+              <div className="border-t border-white/7 bg-white/1.5 px-4 py-2.5">
                 <p className="text-center text-[10px] text-[#827594]">
                   WorkPilot AI · Workspace updates
                 </p>
@@ -440,7 +429,7 @@ export const Topbar: React.FC<TopbarProps> = ({
           onClick={handleLogout}
           disabled={loggingOut}
           title="Sign out of your account"
-          className="inline-flex items-center gap-2 rounded-xl border border-rose-400/15 bg-rose-500/[0.08] px-2.5 py-2.5 text-xs font-semibold text-rose-300 transition-all hover:border-rose-400/30 hover:bg-rose-500/[0.15] hover:text-rose-200 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3"
+          className="inline-flex items-center gap-2 rounded-xl border border-rose-400/15 bg-rose-500/8 px-2.5 py-2.5 text-xs font-semibold text-rose-300 transition-all hover:border-rose-400/30 hover:bg-rose-500/15 hover:text-rose-200 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3"
         >
           <IconDashboardLogOut className="h-4 w-4" />
           <span className="hidden sm:inline">

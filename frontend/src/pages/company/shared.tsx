@@ -73,15 +73,17 @@ export const PageHeader: React.FC<{
   description: string;
   actions?: React.ReactNode;
 }> = ({ eyebrow = 'Admin console', title, description, actions }) => (
-  <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-    <div>
-      <span className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-300">
+  <header className="relative flex flex-col justify-between gap-5 overflow-hidden rounded-2xl border border-white/8 bg-linear-to-br from-white/3.5 to-transparent p-5 sm:flex-row sm:items-end sm:p-6">
+    <span aria-hidden="true" className="absolute bottom-5 left-0 top-5 w-1 rounded-r-full bg-violet-300/60" />
+    <div className="relative min-w-0 pl-1">
+      <span className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.17em] text-violet-300">
+        <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-violet-300" />
         {eyebrow}
       </span>
-      <h1 className="mt-2 text-3xl font-bold tracking-tight text-white">{title}</h1>
+      <h1 className="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">{title}</h1>
       <p className="mt-2 max-w-2xl text-sm leading-6 text-[#B7ADC9]">{description}</p>
     </div>
-    {actions}
+    {actions && <div className="relative shrink-0">{actions}</div>}
   </header>
 );
 
@@ -89,7 +91,7 @@ export const ErrorBanner: React.FC<{ message: string | null }> = ({ message }) =
   message ? (
     <div
       role="alert"
-      className="flex items-start gap-3 rounded-xl border border-rose-400/25 bg-rose-400/[0.08] p-4 text-sm text-rose-200"
+      className="flex items-start gap-3 rounded-xl border border-rose-400/25 bg-rose-400/8 p-4 text-sm text-rose-200"
     >
       <IconAlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
       <span>{message}</span>
@@ -100,14 +102,14 @@ export const SuccessBanner: React.FC<{ message: string | null }> = ({ message })
   message ? (
     <div
       role="status"
-      className="rounded-xl border border-emerald-400/25 bg-emerald-400/[0.08] p-4 text-sm text-emerald-200"
+      className="rounded-xl border border-emerald-400/25 bg-emerald-400/8 p-4 text-sm text-emerald-200"
     >
       {message}
     </div>
   ) : null;
 
 export const Loading: React.FC<{ label?: string }> = ({ label = 'Loading...' }) => (
-  <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-8 text-sm text-[#B7ADC9]">
+  <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/3 p-8 text-sm text-[#B7ADC9]">
     <IconSpinner className="h-5 w-5 animate-spin" />
     {label}
   </div>
@@ -119,13 +121,16 @@ export const Panel: React.FC<{
   aside?: React.ReactNode;
   children: React.ReactNode;
 }> = ({ title, description, aside, children }) => (
-  <section className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.025]">
-    <header className="flex items-center justify-between gap-4 border-b border-white/[0.08] px-5 py-4">
-      <div>
+  <section className="company-admin-panel relative overflow-hidden rounded-2xl border border-white/10 bg-linear-to-br from-[#1B1428] to-[#19112B] shadow-[0_12px_34px_rgba(0,0,0,0.12)]">
+    <header className="flex items-center justify-between gap-4 border-b border-white/8 bg-white/1.5 px-5 py-4">
+      <div className="flex min-w-0 items-start gap-3">
+        <span aria-hidden="true" className="mt-0.5 h-8 w-1 shrink-0 rounded-full bg-violet-300/50" />
+        <div className="min-w-0">
         <h2 className="font-bold text-white">{title}</h2>
         {description && <p className="mt-1 text-xs text-[#A99DBD]">{description}</p>}
+        </div>
       </div>
-      {aside}
+      {aside && <div className="shrink-0">{aside}</div>}
     </header>
     {children}
   </section>

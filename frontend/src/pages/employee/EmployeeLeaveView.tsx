@@ -157,7 +157,7 @@ export const EmployeeLeaveView: React.FC = () => {
     'inline-flex items-center justify-center gap-2 rounded-xl border border-violet-400/20 bg-violet-600 px-4 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-violet-500';
 
   return (
-    <div className="min-h-full max-w-5xl space-y-6 text-[#FAF8FF]">
+    <div className="mx-auto min-h-full w-full space-y-6 text-[#FAF8FF]">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>

@@ -7,6 +7,8 @@
 
 WorkPilot AI is an intelligent project management platform that helps teams plan projects, assign tasks, track progress, manage workforce availability, identify potential delays, and discover workflow automation opportunities. Its Agentic AI system analyzes project data and recommends actionable recovery plans to help teams make better decisions and improve project execution.
 
+For a whole-project walkthrough suitable for a viva, see [WorkPilot AI Viva Guide](./docs/authentication-to-recovery-plan.md).
+
 > **Project Type:** Full-Stack Web Application + Agentic AI  
 > **Development Timeline:** 15 Days (MVP)  
 > **Team Size:** 4 Members  

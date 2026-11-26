@@ -87,30 +87,87 @@ export const EmployeeOverview: React.FC = () => {
     (leave) => leave.status === 'PENDING'
   );
 
+  const completionPct = myTasks.length
+    ? Math.round((completedTasks.length / myTasks.length) * 100)
+    : 0;
+  const progressCircumference = 2 * Math.PI * 44;
+
   return (
-    <div className="space-y-8 text-[#FAF8FF]">
-      {/* Welcome Header */}
-      <section>
-        <span className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-300">
-          Contributor Workspace
-        </span>
+    <div className="space-y-6 text-[#FAF8FF]">
+      <section className="relative overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.12)]">
+        <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-28 h-72 w-72 rounded-full bg-violet-500/12 blur-3xl" />
+        <div className="relative grid gap-6 p-5 text-slate-900 sm:p-7 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-center">
+          <div>
+            <span className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-violet-800">
+              Contributor workbench
+            </span>
+            <h1 className="mt-4 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
+              Welcome back{user?.full_name ? `, ${user.full_name}` : ''}
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+              Your workday, organized around the tasks and milestones that need your attention.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-3">
+              <Link
+                to="/employee/tasks"
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
+              >
+                Open my tasks
+                <IconArrowRight className="h-4 w-4" />
+              </Link>
+              <Link
+                to="/employee/daily-updates"
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
+              >
+                Post an update
+                <IconSend className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
 
-        <h1 className="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">
-          Welcome back{user?.full_name ? `, ${user.full_name}` : ''}
-        </h1>
-
-        <p className="mt-2 text-sm leading-6 text-[#B7ADC9]">
-          Here is your project workspace, task queue, upcoming milestones,
-          and time-off status.
-        </p>
+          <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5 lg:justify-self-end lg:min-w-70">
+            <div className="relative h-24 w-24 shrink-0">
+              <svg viewBox="0 0 110 110" role="img" aria-label={`${completionPct}% of assigned tasks completed`}>
+                <circle cx="55" cy="55" r="44" fill="none" stroke="currentColor" strokeWidth="9" className="text-slate-200" />
+                <circle
+                  cx="55"
+                  cy="55"
+                  r="44"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="9"
+                  strokeLinecap="round"
+                  strokeDasharray={`${(completionPct / 100) * progressCircumference} ${progressCircumference}`}
+                  transform="rotate(-90 55 55)"
+                  className="text-violet-300"
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-xl font-bold tabular-nums text-slate-950">{completionPct}%</span>
+                <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500">Complete</span>
+              </div>
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-600">Work pulse</p>
+              <p className="mt-2 text-sm font-semibold text-slate-900">
+                {activeTasks.length} active task{activeTasks.length === 1 ? '' : 's'}
+              </p>
+              <p className="mt-1 text-xs leading-5 text-slate-600">
+                {blockedTasks.length
+                  ? `${blockedTasks.length} blocked item${blockedTasks.length === 1 ? '' : 's'} need attention`
+                  : 'No blockers reported'}
+              </p>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* KPI Cards */}
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title="Assigned Tasks"
+          title="Active Tasks"
           value={activeTasks.length}
-          subtitle={`${completedTasks.length} tasks completed`}
+          subtitle={`${completedTasks.length} of ${myTasks.length} completed`}
           icon={IconCheckSquare}
           variant="forest"
           action={{
@@ -220,7 +277,7 @@ export const EmployeeOverview: React.FC = () => {
                       </div>
 
                       <div className="min-w-0">
-                        <h3 className="break-words text-sm font-bold text-white">
+                        <h3 className="wrap-break-word text-sm font-bold text-white">
                           {project.name}
                         </h3>
 
@@ -235,13 +292,13 @@ export const EmployeeOverview: React.FC = () => {
                     </span>
                   </div>
 
-                  <p className="mt-4 min-h-[40px] text-xs leading-5 text-[#B7ADC9]">
+                  <p className="mt-4 min-h-10 text-xs leading-5 text-[#B7ADC9]">
                     {project.description || 'No project description provided.'}
                   </p>
 
                   {/* Project Statistics */}
                   <div className="mt-4 grid grid-cols-2 gap-3">
-                    <div className="rounded-xl border border-white/[0.06] bg-[#211638] p-3">
+                    <div className="rounded-xl border border-white/6 bg-[#211638] p-3">
                       <p className="text-xs text-[#A99DBD]">
                         Total Tasks
                       </p>
@@ -251,7 +308,7 @@ export const EmployeeOverview: React.FC = () => {
                       </p>
                     </div>
 
-                    <div className="rounded-xl border border-white/[0.06] bg-[#211638] p-3">
+                    <div className="rounded-xl border border-white/6 bg-[#211638] p-3">
                       <p className="text-xs text-[#A99DBD]">
                         Completed
                       </p>
@@ -283,7 +340,7 @@ export const EmployeeOverview: React.FC = () => {
                   </div>
 
                   {/* Project Dates */}
-                  <div className="mt-4 space-y-2 border-t border-white/[0.07] pt-4">
+                  <div className="mt-4 space-y-2 border-t border-white/7 pt-4">
                     <div className="flex items-center justify-between gap-3 text-xs">
                       <span className="text-[#A99DBD]">
                         Start Date
@@ -370,7 +427,7 @@ export const EmployeeOverview: React.FC = () => {
                   type="button"
                   key={task.id}
                   onClick={() => navigate('/employee/tasks')}
-                  className="flex w-full items-center justify-between gap-4 border-b border-white/[0.07] p-4 text-left transition-colors last:border-b-0 hover:bg-violet-500/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-400"
+                  className="flex w-full items-center justify-between gap-4 border-b border-white/7 p-4 text-left transition-colors last:border-b-0 hover:bg-violet-500/7 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-400"
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
@@ -471,7 +528,7 @@ export const EmployeeOverview: React.FC = () => {
               myLeaves.map((leave) => (
                 <div
                   key={leave.id}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-white/[0.07] bg-[#211638] p-3"
+                  className="flex items-center justify-between gap-3 rounded-xl border border-white/7 bg-[#211638] p-3"
                 >
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-white">

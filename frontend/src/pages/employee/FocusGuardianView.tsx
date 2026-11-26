@@ -127,7 +127,7 @@ export const FocusGuardianView: React.FC = () => {
     'w-full rounded-xl border border-white/10 bg-[#130D21] px-3.5 py-3 text-sm text-[#FAF8FF] outline-none transition placeholder:text-[#807493] focus:border-violet-400/50 focus:ring-2 focus:ring-violet-500/20 disabled:cursor-not-allowed disabled:opacity-50';
 
   return (
-    <div className="max-w-5xl space-y-6 text-[#FAF8FF]">
+    <div className="mx-auto w-full space-y-6 text-[#FAF8FF]">
       {/* Page heading */}
       <header>
         <div className="mb-2 flex items-center gap-2 text-xs text-[#B7ADC9]">

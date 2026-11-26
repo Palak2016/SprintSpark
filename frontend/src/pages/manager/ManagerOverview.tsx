@@ -41,6 +41,7 @@ export const ManagerOverview: React.FC = () => {
     useState<RecoveryProposal | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [recentActivityExpanded, setRecentActivityExpanded] = useState(true);
 
   // Prevent overlapping refresh requests.
   const isRefreshing = useRef(false);
@@ -184,6 +185,10 @@ export const ManagerOverview: React.FC = () => {
     (task) => task.status === 'COMPLETED'
   ).length;
 
+  const inProgressTasks = tasks.filter(
+    (task) => task.status === 'IN_PROGRESS'
+  ).length;
+
   const blockedTasks = tasks.filter(
     (task) =>
       task.is_blocked || task.status === 'BLOCKED'
@@ -206,62 +211,104 @@ export const ManagerOverview: React.FC = () => {
         )
       : 0;
 
+  const progressCircumference = 2 * Math.PI * 48;
+
   return (
-    <div className="space-y-8 text-[#FAF8FF]">
-      {/* Project header */}
-      <section className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div>
-          <span className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-300">
-            Manager Control Center
-          </span>
+    <div className="space-y-6 text-[#FAF8FF]">
+      <section className="manager-delivery-card relative overflow-hidden rounded-[28px] border border-violet-300/15 bg-linear-to-br from-[#211638] via-[#19112B] to-[#151020] shadow-[0_18px_50px_rgba(0,0,0,0.2)]">
+        <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-28 h-72 w-72 rounded-full bg-violet-500/12 blur-3xl" />
+        <div className="relative grid gap-8 p-5 sm:p-7 xl:grid-cols-[minmax(0,1fr)_300px] xl:items-center">
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-full border border-violet-300/20 bg-violet-400/8 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-violet-200">
+                Manager delivery room
+              </span>
+              {activeProject && (
+                <span className="text-xs text-[#A99DBD]">
+                  Project #{activeProject.id}
+                </span>
+              )}
+            </div>
 
-          <h1 className="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">
-            {activeProject
-              ? activeProject.name
-              : 'Project Overview'}
-          </h1>
+            <h1 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+              {activeProject?.name ?? 'Your project workspace'}
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#C4B6DB]">
+              {activeProject
+                ? `Welcome back${user?.full_name ? `, ${user.full_name}` : ''}. Review delivery progress, unblock work and keep the team aligned.`
+                : 'Select a project to bring its delivery signals, team workload and priority tasks into focus.'}
+            </p>
 
-          <p className="mt-2 text-sm leading-6 text-[#B7ADC9]">
-            Welcome back
-            {user?.full_name ? `, ${user.full_name}` : ''}.
-            Here is the current delivery status and risk posture.
-          </p>
-
-          <p className="mt-2 flex items-center gap-2 text-xs text-[#A99DBD]">
-            <IconSpinner
-              className={`h-3 w-3 ${
-                isLoading ? 'animate-spin' : ''
-              }`}
-            />
-
-            {lastUpdated
-              ? `Last updated at ${formatIndianTime(lastUpdated.toISOString(), true)} · Auto-refresh every 5 seconds`
-              : 'Loading latest project data...'}
-          </p>
-        </div>
-
-        {riskAnalysis && (
-          <div className="flex items-center gap-3">
-            <RiskBadge
-              level={riskAnalysis.risk_level}
-              score={riskAnalysis.score}
-              size="lg"
-            />
-
-            <Link
-              to="/manager/risk"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-violet-400/30 bg-violet-500/10 px-3 py-2 text-sm font-semibold text-violet-200 transition-colors hover:bg-violet-500/20 hover:text-white"
-              title="Inspect Risk Details"
-            >
-              Details
-              <IconManagerArrowUpRight className="h-4 w-4" />
-            </Link>
+            <div className="mt-5 flex flex-wrap items-center gap-3">
+              <Link
+                to={activeProject ? '/manager/tasks' : '/manager/projects'}
+                className="inline-flex items-center gap-2 rounded-xl border border-violet-300/30 bg-violet-400/15 px-4 py-2.5 text-sm font-semibold text-violet-100 transition hover:bg-violet-400/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300"
+              >
+                {activeProject ? 'Open task board' : 'Browse projects'}
+                <IconManagerArrowRight className="h-4 w-4" />
+              </Link>
+              {riskAnalysis && (
+                <Link
+                  to="/manager/risk"
+                  className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/3.5 px-4 py-2.5 text-sm font-semibold text-[#D8D0E7] transition hover:bg-white/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300"
+                >
+                  Risk intelligence
+                  <IconManagerArrowUpRight className="h-4 w-4" />
+                </Link>
+              )}
+              <p className="flex items-center gap-2 text-xs text-[#A99DBD]">
+                <IconSpinner className={`h-3 w-3 ${isLoading ? 'animate-spin' : ''}`} />
+                {lastUpdated
+                  ? `Updated ${formatIndianTime(lastUpdated.toISOString(), true)}`
+                  : 'Loading latest project data...'}
+              </p>
+            </div>
           </div>
-        )}
+
+          <div className="manager-pulse-card flex items-center gap-5 rounded-2xl border border-white/8 bg-black/10 p-4 sm:p-5 xl:justify-self-end xl:min-w-70">
+            <div className="relative h-28 w-28 shrink-0">
+              <svg viewBox="0 0 120 120" role="img" aria-label={`${completionPct}% average task progress`}>
+                <circle cx="60" cy="60" r="48" fill="none" stroke="currentColor" strokeWidth="9" className="text-white/8" />
+                <circle
+                  cx="60"
+                  cy="60"
+                  r="48"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="9"
+                  strokeLinecap="round"
+                  strokeDasharray={`${(completionPct / 100) * progressCircumference} ${progressCircumference}`}
+                  transform="rotate(-90 60 60)"
+                  className="text-violet-300"
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-2xl font-bold tabular-nums text-white">{completionPct}%</span>
+                <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-[#A99DBD]">Progress</span>
+              </div>
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#A99DBD]">Delivery pulse</p>
+              <p className="mt-2 text-sm font-semibold text-white">
+                {totalTasks ? `${completedTasks} of ${totalTasks} tasks complete` : 'No task data yet'}
+              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                {riskAnalysis ? (
+                  <RiskBadge level={riskAnalysis.risk_level} score={riskAnalysis.score} />
+                ) : (
+                  <span className="rounded-full border border-white/10 px-2.5 py-1 text-[10px] font-semibold text-[#B7ADC9]">
+                    Risk signal pending
+                  </span>
+                )}
+                <span className="text-xs text-[#A99DBD]">{blockedTasks} blockers</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       {user?.role === 'MANAGER' && (
-        <section className="flex flex-col justify-between gap-4 rounded-2xl border border-violet-400/20 bg-violet-500/[0.06] p-5 sm:flex-row sm:items-center">
+        <section className="flex flex-col justify-between gap-4 rounded-2xl border border-violet-400/20 bg-violet-500/6 p-5 sm:flex-row sm:items-center">
           <div>
             <div className="flex items-center gap-2 text-sm font-bold text-white">
               <IconManagerBuilding2 className="h-4 w-4 text-violet-300" />
@@ -303,7 +350,7 @@ export const ManagerOverview: React.FC = () => {
 
       {/* Pending recovery proposals */}
       {pendingProposals.length > 0 && (
-        <section className="manager-recovery-proposal flex flex-col justify-between gap-5 rounded-2xl border border-violet-400/20 bg-gradient-to-r from-[#291849] via-[#211638] to-[#19112B] p-5 shadow-xl md:flex-row md:items-center">
+        <section className="manager-recovery-proposal flex flex-col justify-between gap-5 rounded-2xl border border-violet-400/20 bg-linear-to-r from-[#291849] via-[#211638] to-[#19112B] p-5 shadow-xl md:flex-row md:items-center">
           <div className="flex items-start gap-4">
             <div className="mt-0.5 rounded-xl border border-violet-300/20 bg-violet-500/15 p-3">
               <IconManagerClipboardCheck className="h-6 w-6 text-violet-300" />
@@ -343,9 +390,9 @@ export const ManagerOverview: React.FC = () => {
       {/* KPI cards */}
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title="Overall Completion"
-          value={`${completionPct}%`}
-          subtitle="Average progress reported across tasks"
+          title="In Progress"
+          value={inProgressTasks}
+          subtitle="Tasks currently moving forward"
           icon={IconManagerCheckSquare}
           variant="forest"
           action={{
@@ -455,7 +502,7 @@ export const ManagerOverview: React.FC = () => {
                   type="button"
                   key={task.id}
                   onClick={() => navigate('/manager/tasks')}
-                  className="flex w-full items-center justify-between gap-4 border-b border-white/[0.07] p-4 text-left transition-colors last:border-b-0 hover:bg-violet-500/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-400"
+                  className="flex w-full items-center justify-between gap-4 border-b border-white/7 p-4 text-left transition-colors last:border-b-0 hover:bg-violet-500/7 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-400"
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
@@ -555,16 +602,36 @@ export const ManagerOverview: React.FC = () => {
               </p>
             </div>
 
-            <Link
-              to="/manager/audit"
-              className="inline-flex items-center gap-2 rounded-lg border border-violet-400/30 bg-violet-500/10 px-3 py-2 text-sm font-bold text-violet-200 transition-all hover:border-violet-300/60 hover:bg-violet-500/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
-            >
-              Full Audit Trail
-              <IconManagerArrowUpRight className="h-4 w-4" />
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                to="/manager/audit"
+                className="inline-flex items-center gap-2 rounded-lg border border-violet-400/30 bg-violet-500/10 px-3 py-2 text-sm font-bold text-violet-200 transition-all hover:border-violet-300/60 hover:bg-violet-500/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
+              >
+                Full Audit Trail
+                <IconManagerArrowUpRight className="h-4 w-4" />
+              </Link>
+              <button
+                type="button"
+                aria-label={recentActivityExpanded ? 'Collapse recent activity' : 'Expand recent activity'}
+                aria-expanded={recentActivityExpanded}
+                aria-controls="manager-recent-activity"
+                onClick={() => setRecentActivityExpanded((expanded) => !expanded)}
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-charcoal-200 bg-white text-charcoal-600 transition-colors hover:bg-charcoal-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
+              >
+                <IconManagerArrowRight
+                  className={`h-4 w-4 transition-transform duration-200 ${
+                    recentActivityExpanded ? '-rotate-90' : 'rotate-90'
+                  }`}
+                />
+              </button>
+            </div>
           </div>
 
-          <div className="space-y-3 rounded-2xl border border-white/10 bg-[#19112B] p-4 shadow-[0_10px_35px_rgba(0,0,0,0.15)]">
+          <div
+            id="manager-recent-activity"
+            hidden={!recentActivityExpanded}
+            className="space-y-3 rounded-2xl border border-white/10 bg-[#19112B] p-4 shadow-[0_10px_35px_rgba(0,0,0,0.15)]"
+          >
             {isLoading ? (
               <p className="py-6 text-center text-sm text-[#B7ADC9]">
                 Loading audit activity...
@@ -577,7 +644,7 @@ export const ManagerOverview: React.FC = () => {
               recentAudits.map((audit) => (
                 <div
                   key={audit.id}
-                  className="border-b border-white/[0.07] pb-3 text-xs last:border-0 last:pb-0"
+                  className="border-b border-white/7 pb-3 text-xs last:border-0 last:pb-0"
                 >
                   <div className="mb-1 flex items-center justify-between gap-3">
                     <span className="font-bold uppercase tracking-wider text-violet-300">

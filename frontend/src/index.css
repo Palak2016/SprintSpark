@@ -1279,3 +1279,111 @@
   border-color: #1d2125;
   background: #cbd5e1;
 }
+
+:root[data-theme='light'] .dashboard-layout.dashboard-layout main .company-admin-panel,
+:root[data-theme='light'] .dashboard-layout.dashboard-layout main .company-admin-panel > header {
+  background: #ffffff !important;
+}
+
+:root[data-theme='light'] .dashboard-layout.dashboard-layout main .manager-delivery-card,
+:root[data-theme='light'] .dashboard-layout.dashboard-layout main .manager-pulse-card {
+  background: #ffffff !important;
+  background-image: none !important;
+}
+
+:root[data-theme] .dashboard-app-navigation {
+  background-color: #1c2025 !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme='dark'] .dashboard-app-navigation {
+  background-color: #101317 !important;
+}
+
+:root[data-theme] .dashboard-app-navigation [class*="bg-[#19112B]"] {
+  background-color: #24292e !important;
+}
+
+:root[data-theme] .dashboard-app-navigation [class*="bg-white/"] {
+  background-color: rgb(255 255 255 / 5%) !important;
+}
+
+:root[data-theme] .dashboard-app-navigation [class*="text-"] {
+  color: #ffffff !important;
+}
+
+:root[data-theme] .dashboard-app-navigation [aria-current="page"] {
+  background-color: #475569 !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme] .dashboard-app-navigation [aria-current="page"] [class*="text-"] {
+  color: #ffffff !important;
+}
+
+:root[data-theme] .dashboard-app-navigation [role="menu"] button {
+  background-color: transparent !important;
+}
+
+:root[data-theme] .dashboard-app-navigation [role="menu"] button:hover {
+  background-color: rgb(255 255 255 / 8%) !important;
+}
+
+:root[data-theme] .dashboard-app-navigation [aria-label="Choose theme"] button[class*="bg-violet-"] {
+  background-color: #475569 !important;
+}
+
+:root[data-theme='light'] .dashboard-layout.dashboard-layout .dashboard-app-navigation .dashboard-account-name {
+  color: #e9d5ff !important;
+}
+
+:root[data-theme='light'] .dashboard-layout.dashboard-layout .dashboard-app-navigation .dashboard-account-label {
+  color: #c4b5fd !important;
+}
+
+:root[data-theme] .dashboard-layout .dashboard-app-navigation button[aria-label="Toggle workspace navigation"],
+:root[data-theme] .dashboard-layout .dashboard-app-navigation button[aria-label="Toggle workspace navigation"] * {
+  color: #ffffff !important;
+}
+
+.auth-showcase {
+  background:
+    radial-gradient(circle at 82% 10%, rgb(255 255 255 / 90%), transparent 36%),
+    linear-gradient(150deg, #f8f9fa, #eceff2 72%, #e3e7eb);
+  border-color: #d7dce1 !important;
+  box-shadow: 0 28px 90px rgb(30 41 59 / 14%) !important;
+  color: #1c2025;
+}
+
+.auth-showcase-preview {
+  background: rgb(255 255 255 / 82%);
+  border-color: #d7dce1 !important;
+  box-shadow: 0 2px 8px rgb(30 41 59 / 5%);
+}
+
+.auth-showcase .workpilot-logo-name,
+.auth-showcase .workpilot-logo-ai {
+  color: #1c2025 !important;
+}
+
+.auth-showcase [class*="border-white/"] {
+  border-color: rgb(28 32 37 / 12%) !important;
+}
+
+.auth-showcase [class*="bg-white/"] {
+  background-color: rgb(255 255 255 / 88%) !important;
+}
+
+.auth-showcase .h-2.overflow-hidden {
+  background-color: #d8dde3 !important;
+}
+
+:root[data-theme='light'] .dashboard-layout.dashboard-layout .dashboard-app-navigation [role="menu"] button.dashboard-account-logout,
+:root[data-theme='light'] .dashboard-layout.dashboard-layout .dashboard-app-navigation [role="menu"] button.dashboard-account-logout * {
+  color: #fda4af !important;
+}
+
+:root[data-theme='light'] .dashboard-layout.dashboard-layout .dashboard-app-navigation [role="menu"] button.dashboard-account-logout:hover,
+:root[data-theme='light'] .dashboard-layout.dashboard-layout .dashboard-app-navigation [role="menu"] button.dashboard-account-logout:hover * {
+  color: #fecdd3 !important;
+}
